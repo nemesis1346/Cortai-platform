@@ -1,0 +1,18 @@
+[Unit]
+Description=COrtai FastAPI service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=cortai
+Group=cortai
+WorkingDirectory=/opt/cortai/apps/cortai-api
+EnvironmentFile=/opt/cortai/apps/cortai-api/.env
+ExecStart=/home/cortai/.local/bin/uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

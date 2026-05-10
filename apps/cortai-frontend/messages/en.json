@@ -1,0 +1,41 @@
+{
+  "login": {
+    "title": "Sign in to operations",
+    "subtitle": "Access the COrtai unified hotel command center.",
+    "org": "Organization",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "loading": "Signing in...",
+    "invalid": "Enter a valid email and password.",
+    "failed": "Unable to sign in with those credentials."
+  },
+  "nav": {
+    "title": "Hotel Operations",
+    "live": "LIVE",
+    "hotelOps": "Unified Hotel Platform",
+    "admin": "Administration",
+    "users": "Users"
+  },
+  "users": {
+    "title": "Admin / Users",
+    "subtitle": "Manage access for hotel and service-provider teams.",
+    "directory": "User Directory",
+    "create": "Create user",
+    "createUser": "Create user",
+    "search": "Search users",
+    "filter": "Filter",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "status": "Status",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "fullName": "Full name",
+    "password": "Temporary password",
+    "close": "Close",
+    "save": "Save user",
+    "saving": "Saving..."
+  }
+}

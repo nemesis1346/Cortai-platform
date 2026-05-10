@@ -1,0 +1,30 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.auth.router import router as auth_router
+from app.config import get_settings
+from app.health import router as health_router
+from app.logging import configure_logging
+from app.middleware.tenant import TenantContextMiddleware
+from app.modules.admin.users.router import router as admin_users_router
+
+
+def create_app() -> FastAPI:
+    configure_logging()
+    settings = get_settings()
+    app = FastAPI(title=settings.app_name)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    app.add_middleware(TenantContextMiddleware)
+    app.include_router(health_router)
+    app.include_router(auth_router)
+    app.include_router(admin_users_router)
+    return app
+
+
+app = create_app()

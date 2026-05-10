@@ -1,0 +1,41 @@
+{
+  "login": {
+    "title": "Connexion aux opérations",
+    "subtitle": "Accédez au centre de commande hôtelier unifié COrtai.",
+    "org": "Organisation",
+    "email": "Courriel",
+    "password": "Mot de passe",
+    "submit": "Se connecter",
+    "loading": "Connexion...",
+    "invalid": "Entrez un courriel et un mot de passe valides.",
+    "failed": "Impossible de se connecter avec ces identifiants."
+  },
+  "nav": {
+    "title": "Opérations hôtelières",
+    "live": "EN DIRECT",
+    "hotelOps": "Plateforme hôtelière unifiée",
+    "admin": "Administration",
+    "users": "Utilisateurs"
+  },
+  "users": {
+    "title": "Admin / Utilisateurs",
+    "subtitle": "Gérez les accès des équipes hôtel et fournisseur.",
+    "directory": "Répertoire des utilisateurs",
+    "create": "Créer un utilisateur",
+    "createUser": "Créer un utilisateur",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "name": "Nom",
+    "email": "Courriel",
+    "role": "Rôle",
+    "status": "Statut",
+    "actions": "Actions",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "fullName": "Nom complet",
+    "password": "Mot de passe temporaire",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "saving": "Enregistrement..."
+  }
+}
