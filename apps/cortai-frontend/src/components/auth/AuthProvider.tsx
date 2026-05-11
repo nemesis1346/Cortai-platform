@@ -1,7 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
-import type { AuthUser } from "@/lib/api";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { apiFetch, type AuthUser } from "@/lib/api";
 
 type AuthContextValue = {
   user: AuthUser | null;
@@ -12,6 +12,19 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
+  useEffect(() => {
+    let active = true;
+    apiFetch<AuthUser>("/api/auth/me")
+      .then((currentUser) => {
+        if (active) setUser(currentUser);
+      })
+      .catch(() => {
+        if (active) setUser(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   const value = useMemo(() => ({ user, setUser }), [user]);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

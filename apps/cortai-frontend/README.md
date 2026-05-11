@@ -31,3 +31,9 @@ npm run test:e2e
 
 The UI intentionally re-implements the visual direction from the mockup as typed,
 composable React components rather than copying the mockup HTML or CSS.
+
+## Logging
+
+Server-side frontend logs use `pino` and are emitted as JSON to stdout. The
+systemd unit sends stdout/stderr to journald, so retention and rotation are
+managed by the host journald policy.

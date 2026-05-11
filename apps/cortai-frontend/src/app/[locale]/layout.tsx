@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { logger } from "@/lib/logger";
 
 export const metadata: Metadata = {
   title: "COrtai",
@@ -9,13 +10,12 @@ export const metadata: Metadata = {
 };
 
 export default async function LocaleLayout({
-  children,
-  params
+  children
 }: {
   children: React.ReactNode;
-  params: { locale: string };
 }) {
   const messages = await getMessages();
+  logger.debug("render_locale_layout");
   return (
     <NextIntlClientProvider messages={messages}>
       <AuthProvider>{children}</AuthProvider>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 
 export default async function DashboardLayout({
   children,
@@ -13,15 +14,15 @@ export default async function DashboardLayout({
     <main className="flex h-screen overflow-hidden bg-cortai-bg text-[13px]">
       <aside className="flex w-[52px] min-w-[52px] flex-col items-center gap-1 border-r border-cortai-border bg-[#0d1220] py-3">
         <div className="mb-3 grid h-9 w-9 place-items-center rounded-md bg-cortai-teal font-bold text-[#071a14]">
-          C
+          {t("brandInitial")}
         </div>
         <div className="grid h-9 w-9 place-items-center rounded-md border border-cortai-teal/25 bg-cortai-teal/10 text-cortai-teal">
-          H
+          {t("hotelInitial")}
         </div>
       </aside>
       <aside className="flex w-[210px] min-w-[210px] flex-col border-r border-cortai-border bg-cortai-bg2">
         <div className="border-b border-cortai-border px-3.5 py-3">
-          <div className="text-[13px] font-bold tracking-[0.05em] text-cortai-teal">CORTAI</div>
+          <div className="text-[13px] font-bold tracking-[0.05em] text-cortai-teal">{t("brand")}</div>
           <div className="text-[10px] text-cortai-text3">{t("hotelOps")}</div>
         </div>
         <nav className="flex-1 p-2">
@@ -43,8 +44,9 @@ export default async function DashboardLayout({
             {t("live")}
           </span>
           <div className="ml-auto flex items-center gap-2 text-xs text-cortai-text2">
-            <Link href="/en/dashboard/admin/users">EN</Link>
-            <Link href="/fr/dashboard/admin/users">FR</Link>
+            <Link href="/en/dashboard/admin/users">{t("english")}</Link>
+            <Link href="/fr/dashboard/admin/users">{t("french")}</Link>
+            <LogoutButton />
           </div>
         </header>
         <div className="flex-1 overflow-y-auto p-4">{children}</div>

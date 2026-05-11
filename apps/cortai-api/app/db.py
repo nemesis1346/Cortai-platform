@@ -3,7 +3,12 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 from sqlalchemy.orm import DeclarativeBase
 
 from app.config import get_settings
@@ -30,7 +35,10 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 
 async def set_current_org(session: AsyncSession, org_id: str) -> None:
-    await session.execute(text("select set_config('app.current_org_id', :org_id, true)"), {"org_id": org_id})
+    await session.execute(
+        text("select set_config('app.current_org_id', :org_id, true)"),
+        {"org_id": org_id},
+    )
 
 
 async def get_db_version(session: AsyncSession) -> str:

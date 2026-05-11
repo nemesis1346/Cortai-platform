@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,6 +23,7 @@ type LoginResponse = {
 
 export default function LoginPage() {
   const t = useTranslations("login");
+  const navT = useTranslations("nav");
   const locale = useLocale();
   const router = useRouter();
   const { setUser } = useAuth();
@@ -58,10 +60,16 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,_rgba(0,196,163,0.16),_transparent_35%),#0b0f1a] p-6">
       <div className="w-full max-w-md">
-        <div className="mb-5">
-          <p className="text-xs uppercase tracking-[0.2em] text-cortai-teal">COrtai</p>
-          <h1 className="mt-2 text-2xl font-semibold">{t("title")}</h1>
-          <p className="mt-1 text-sm text-cortai-text2">{t("subtitle")}</p>
+        <div className="mb-5 flex items-start gap-4">
+          <div>
+            <p className="text-xs uppercase tracking-[0.2em] text-cortai-teal">{t("brand")}</p>
+            <h1 className="mt-2 text-2xl font-semibold">{t("title")}</h1>
+            <p className="mt-1 text-sm text-cortai-text2">{t("subtitle")}</p>
+          </div>
+          <div className="ml-auto flex gap-2 text-xs text-cortai-text2">
+            <Link href="/en/login">{navT("english")}</Link>
+            <Link href="/fr/login">{navT("french")}</Link>
+          </div>
         </div>
         <Card>
           <form action={onSubmit} className="grid gap-4">

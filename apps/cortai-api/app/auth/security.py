@@ -71,7 +71,9 @@ def decode_token(token: str) -> Principal:
             )
         )
     except jwt.PyJWTError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token") from exc
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
+        ) from exc
 
     return Principal(
         user_id=uuid.UUID(claims.sub),
@@ -91,4 +93,6 @@ def token_from_request(request: Request) -> str | None:
 
 def require_roles(principal: Principal, allowed_roles: set[UserRole]) -> None:
     if principal.role not in allowed_roles:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions"
+        )

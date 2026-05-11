@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
@@ -12,15 +12,13 @@ import { Modal } from "@/components/ui/Modal";
 import { Table, Td } from "@/components/ui/Table";
 import { apiFetch, type AdminUser, type UserRole, type UserStatus } from "@/lib/api";
 
-const userSchema = z.object({
-  email: z.string().email(),
-  full_name: z.string().min(2),
-  role: z.enum(["IT_ADMIN", "SERVICE_PROVIDER_ADMIN", "HOTEL_ADMIN", "STAFF"]),
-  status: z.enum(["ACTIVE", "INVITED", "DISABLED"]),
-  password: z.string().min(10)
-});
-
-type UserForm = z.infer<typeof userSchema>;
+type UserForm = {
+  email: string;
+  full_name: string;
+  role: UserRole;
+  status: UserStatus;
+  password?: string;
+};
 
 type UserList = {
   items: AdminUser[];
@@ -31,39 +29,95 @@ type UserList = {
 
 export function UsersClient() {
   const t = useTranslations("users");
+  const userSchema = z.object({
+    email: z.string().email(),
+    full_name: z.string().min(2),
+    role: z.enum(["IT_ADMIN", "SERVICE_PROVIDER_ADMIN", "HOTEL_ADMIN", "STAFF"]),
+    status: z.enum(["ACTIVE", "INVITED", "DISABLED"]),
+    password: z.string().optional()
+  }).refine((value) => !value.password || value.password.length >= 10, {
+    path: ["password"],
+    message: t("passwordMinLength")
+  });
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
   const [open, setOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(false);
   const form = useForm<UserForm>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       role: "HOTEL_ADMIN",
-      status: "INVITED"
+      status: "INVITED",
+      password: ""
     }
   });
 
-  async function loadUsers(query = search) {
+  const loadUsers = useCallback(async (query: string, role: UserRole | "") => {
     const params = new URLSearchParams({ page: "1", page_size: "20" });
     if (query) params.set("search", query);
+    if (role) params.set("role", role);
     const response = await apiFetch<UserList>(`/api/admin/users?${params.toString()}`);
     setUsers(response.items);
-  }
-
-  useEffect(() => {
-    void loadUsers("");
   }, []);
 
-  async function createUser(values: UserForm) {
+  useEffect(() => {
+    void loadUsers("", "");
+  }, [loadUsers]);
+
+  function applyFilters(query: string, role: UserRole | "") {
+    setSearch(query);
+    setRoleFilter(role);
+    void loadUsers(query, role);
+  }
+
+  function openCreateModal() {
+    setEditingUser(null);
+    form.reset({ role: "HOTEL_ADMIN", status: "INVITED", password: "" });
+    setOpen(true);
+  }
+
+  function openEditModal(user: AdminUser) {
+    setEditingUser(user);
+    form.reset({
+      email: user.email,
+      full_name: user.full_name,
+      role: user.role,
+      status: user.status,
+      password: ""
+    });
+    setOpen(true);
+  }
+
+  function closeModal() {
+    setOpen(false);
+    setEditingUser(null);
+    form.reset({ role: "HOTEL_ADMIN", status: "INVITED", password: "" });
+  }
+
+  async function submitUser(values: UserForm) {
+    if (!editingUser && !values.password) {
+      form.setError("password", { message: t("passwordRequired") });
+      return;
+    }
+
     setLoading(true);
     try {
-      await apiFetch<AdminUser>("/api/admin/users", {
-        method: "POST",
-        body: JSON.stringify(values)
-      });
-      setOpen(false);
-      form.reset({ role: "HOTEL_ADMIN", status: "INVITED" });
-      await loadUsers();
+      if (editingUser) {
+        const { password, ...rest } = values;
+        await apiFetch<AdminUser>(`/api/admin/users/${editingUser.id}`, {
+          method: "PATCH",
+          body: JSON.stringify(password ? { ...rest, password } : rest)
+        });
+      } else {
+        await apiFetch<AdminUser>("/api/admin/users", {
+          method: "POST",
+          body: JSON.stringify(values)
+        });
+      }
+      closeModal();
+      await loadUsers(search, roleFilter);
     } finally {
       setLoading(false);
     }
@@ -71,7 +125,7 @@ export function UsersClient() {
 
   async function deleteUser(userId: string) {
     await apiFetch<void>(`/api/admin/users/${userId}`, { method: "DELETE" });
-    await loadUsers();
+    await loadUsers(search, roleFilter);
   }
 
   return (
@@ -81,7 +135,7 @@ export function UsersClient() {
           <h1 className="text-lg font-semibold">{t("title")}</h1>
           <p className="text-xs text-cortai-text2">{t("subtitle")}</p>
         </div>
-        <Button className="ml-auto" onClick={() => setOpen(true)}>
+        <Button className="ml-auto" onClick={openCreateModal}>
           {t("create")}
         </Button>
       </div>
@@ -92,16 +146,31 @@ export function UsersClient() {
           <form
             action={(formData) => {
               const value = String(formData.get("search") ?? "");
-              setSearch(value);
-              void loadUsers(value);
+              const role = String(formData.get("role") ?? "") as UserRole | "";
+              applyFilters(value, role);
             }}
             className="flex gap-2"
           >
             <input
               name="search"
+              defaultValue={search}
               className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-1.5 text-xs outline-none focus:border-cortai-teal"
               placeholder={t("search")}
             />
+            <select
+              name="role"
+              className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-1.5 text-xs outline-none focus:border-cortai-teal"
+              value={roleFilter}
+              aria-label={t("roleFilter")}
+              onChange={(event) => {
+                applyFilters(search, event.target.value as UserRole | "");
+              }}
+            >
+              <option value="">{t("allRoles")}</option>
+              {(["IT_ADMIN", "SERVICE_PROVIDER_ADMIN", "HOTEL_ADMIN", "STAFF"] satisfies UserRole[]).map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
             <Button type="submit" variant="ghost">
               {t("filter")}
             </Button>
@@ -121,7 +190,7 @@ export function UsersClient() {
               </Td>
               <Td>
                 <div className="flex gap-2">
-                  <Button variant="ghost" type="button">
+                  <Button variant="ghost" type="button" onClick={() => openEditModal(user)}>
                     {t("edit")}
                   </Button>
                   <Button variant="danger" type="button" onClick={() => void deleteUser(user.id)}>
@@ -134,8 +203,13 @@ export function UsersClient() {
         </Table>
       </Card>
 
-      <Modal open={open} title={t("createUser")} closeLabel={t("close")} onClose={() => setOpen(false)}>
-        <form onSubmit={form.handleSubmit(createUser)} className="grid gap-3">
+      <Modal
+        open={open}
+        title={editingUser ? t("editUser") : t("createUser")}
+        closeLabel={t("close")}
+        onClose={closeModal}
+      >
+        <form onSubmit={form.handleSubmit(submitUser)} className="grid gap-3">
           <Input label={t("email")} {...form.register("email")} error={form.formState.errors.email?.message} />
           <Input
             label={t("fullName")}
@@ -160,12 +234,12 @@ export function UsersClient() {
           </label>
           <Input
             type="password"
-            label={t("password")}
+            label={editingUser ? t("passwordOptional") : t("password")}
             {...form.register("password")}
             error={form.formState.errors.password?.message}
           />
           <Button type="submit" disabled={loading}>
-            {loading ? t("saving") : t("save")}
+            {loading ? t("saving") : editingUser ? t("update") : t("save")}
           </Button>
         </form>
       </Modal>

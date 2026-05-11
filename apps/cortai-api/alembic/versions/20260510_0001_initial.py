@@ -7,9 +7,10 @@ Create Date: 2026-05-10
 
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision: str = "20260510_0001"
 down_revision: str | None = None
@@ -24,8 +25,11 @@ def upgrade() -> None:
         "HOTEL_ADMIN",
         "STAFF",
         name="user_role",
+        create_type=False,
     )
-    user_status = postgresql.ENUM("ACTIVE", "INVITED", "DISABLED", name="user_status")
+    user_status = postgresql.ENUM(
+        "ACTIVE", "INVITED", "DISABLED", name="user_status", create_type=False
+    )
     user_role.create(op.get_bind(), checkfirst=True)
     user_status.create(op.get_bind(), checkfirst=True)
 

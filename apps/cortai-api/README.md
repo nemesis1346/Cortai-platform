@@ -40,3 +40,9 @@ uv run alembic revision --autogenerate -m "message"
 
 RLS is enforced with `app.current_org_id`; authenticated requests set it through
 `select set_config('app.current_org_id', :org_id, true)`.
+
+## Logging
+
+The API emits structured JSON logs to stdout through `structlog`. The systemd
+unit sends stdout/stderr to journald, so retention and rotation are managed by
+the host journald policy.

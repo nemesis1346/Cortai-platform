@@ -1,5 +1,6 @@
 {
   "login": {
+    "brand": "COrtai",
     "title": "Sign in to operations",
     "subtitle": "Access the COrtai unified hotel command center.",
     "org": "Organization",
@@ -11,11 +12,18 @@
     "failed": "Unable to sign in with those credentials."
   },
   "nav": {
+    "brand": "CORTAI",
+    "brandInitial": "C",
+    "hotelInitial": "H",
+    "english": "EN",
+    "french": "FR",
     "title": "Hotel Operations",
     "live": "LIVE",
     "hotelOps": "Unified Hotel Platform",
     "admin": "Administration",
-    "users": "Users"
+    "users": "Users",
+    "logout": "Log out",
+    "loggingOut": "Logging out..."
   },
   "users": {
     "title": "Admin / Users",
@@ -23,6 +31,7 @@
     "directory": "User Directory",
     "create": "Create user",
     "createUser": "Create user",
+    "editUser": "Edit user",
     "search": "Search users",
     "filter": "Filter",
     "name": "Name",
@@ -34,8 +43,14 @@
     "delete": "Delete",
     "fullName": "Full name",
     "password": "Temporary password",
+    "passwordOptional": "New password (optional)",
+    "passwordRequired": "Temporary password is required.",
+    "passwordMinLength": "Password must contain at least 10 characters.",
+    "roleFilter": "Role filter",
+    "allRoles": "All roles",
     "close": "Close",
     "save": "Save user",
+    "update": "Update user",
     "saving": "Saving..."
   }
 }

@@ -1,5 +1,6 @@
 {
   "login": {
+    "brand": "COrtai",
     "title": "Connexion aux opérations",
     "subtitle": "Accédez au centre de commande hôtelier unifié COrtai.",
     "org": "Organisation",
@@ -11,11 +12,18 @@
     "failed": "Impossible de se connecter avec ces identifiants."
   },
   "nav": {
+    "brand": "CORTAI",
+    "brandInitial": "C",
+    "hotelInitial": "H",
+    "english": "EN",
+    "french": "FR",
     "title": "Opérations hôtelières",
     "live": "EN DIRECT",
     "hotelOps": "Plateforme hôtelière unifiée",
     "admin": "Administration",
-    "users": "Utilisateurs"
+    "users": "Utilisateurs",
+    "logout": "Se déconnecter",
+    "loggingOut": "Déconnexion..."
   },
   "users": {
     "title": "Admin / Utilisateurs",
@@ -23,6 +31,7 @@
     "directory": "Répertoire des utilisateurs",
     "create": "Créer un utilisateur",
     "createUser": "Créer un utilisateur",
+    "editUser": "Modifier l'utilisateur",
     "search": "Rechercher",
     "filter": "Filtrer",
     "name": "Nom",
@@ -34,8 +43,14 @@
     "delete": "Supprimer",
     "fullName": "Nom complet",
     "password": "Mot de passe temporaire",
+    "passwordOptional": "Nouveau mot de passe (facultatif)",
+    "passwordRequired": "Le mot de passe temporaire est requis.",
+    "passwordMinLength": "Le mot de passe doit contenir au moins 10 caractères.",
+    "roleFilter": "Filtre par rôle",
+    "allRoles": "Tous les rôles",
     "close": "Fermer",
     "save": "Enregistrer",
+    "update": "Mettre à jour",
     "saving": "Enregistrement..."
   }
 }

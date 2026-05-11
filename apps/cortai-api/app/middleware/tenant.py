@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.auth.security import decode_token, token_from_request
-from app.db import SessionLocal, set_current_org
+from app.db import set_current_org
 
 
 class TenantContextMiddleware(BaseHTTPMiddleware):
