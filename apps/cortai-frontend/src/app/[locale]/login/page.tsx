@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { LocaleToggleLinks } from "@/components/i18n/LocaleToggleLinks";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -67,8 +67,12 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-cortai-text2">{t("subtitle")}</p>
           </div>
           <div className="ml-auto flex gap-2 text-xs text-cortai-text2">
-            <Link href="/en/login">{navT("english")}</Link>
-            <Link href="/fr/login">{navT("french")}</Link>
+            <LocaleToggleLinks
+              items={[
+                { locale: "en", label: navT("english") },
+                { locale: "fr", label: navT("french") }
+              ]}
+            />
           </div>
         </div>
         <Card>

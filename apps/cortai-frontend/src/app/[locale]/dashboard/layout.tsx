@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { LocaleToggleLinks } from "@/components/i18n/LocaleToggleLinks";
 
 export default async function DashboardLayout({
   children,
@@ -44,8 +45,12 @@ export default async function DashboardLayout({
             {t("live")}
           </span>
           <div className="ml-auto flex items-center gap-2 text-xs text-cortai-text2">
-            <Link href="/en/dashboard/admin/users">{t("english")}</Link>
-            <Link href="/fr/dashboard/admin/users">{t("french")}</Link>
+            <LocaleToggleLinks
+              items={[
+                { locale: "en", label: t("english") },
+                { locale: "fr", label: t("french") }
+              ]}
+            />
             <LogoutButton />
           </div>
         </header>
