@@ -1,9 +1,9 @@
+import uuid
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, Mock
 
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
-from test_admin_users import ADMIN_ID, ORG_A, FakeSession
 
 from app.auth.dependencies import get_principal
 from app.auth.router import logout, set_auth_cookie
@@ -20,11 +20,35 @@ from app.main import create_app
 from app.models import User, UserRole, UserStatus
 
 
-class AuthSession(FakeSession):
+ORG_A = uuid.uuid4()
+ADMIN_ID = uuid.uuid4()
+
+
+class FakeSession:
+    def __init__(self) -> None:
+        now = datetime.now(UTC)
+        self.users: list[User] = [
+            User(
+                id=ADMIN_ID,
+                org_id=ORG_A,
+                email="admin@hotel-a.example.com",
+                full_name="Admin",
+                role=UserRole.IT_ADMIN,
+                status=UserStatus.ACTIVE,
+                password_hash="hash",  # noqa: S106
+                created_at=now,
+                updated_at=now,
+            )
+        ]
+
     async def get(self, model: type[User], user_id: object) -> User | None:
         if model is User and user_id == ADMIN_ID:
             return self.users[0]
         return None
+
+
+class AuthSession(FakeSession):
+    pass
 
 
 def test_me_returns_current_user() -> None:

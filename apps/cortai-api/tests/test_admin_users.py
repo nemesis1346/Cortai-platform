@@ -1,178 +1,260 @@
 import uuid
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy import text
 
 from app.auth.dependencies import get_principal
 from app.auth.schemas import Principal
-from app.db import get_session
+from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
-from app.models import User, UserRole, UserStatus
-
-ORG_A = uuid.uuid4()
-ORG_B = uuid.uuid4()
-ADMIN_ID = uuid.uuid4()
+from app.models import Organization, User, UserRole, UserStatus
 
 
-class FakeScalars:
-    def __init__(self, items: list[User]) -> None:
-        self._items = items
+@pytest_asyncio.fixture
+async def seeded_admin_users() -> dict[str, uuid.UUID | str]:
+    """
+    Integration test seed data for admin users endpoints.
 
-    def all(self) -> list[User]:
-        return self._items
+    Uses two organizations and multiple users and cleans them up afterwards.
+    RLS is enabled/forced on `users`, so writes/deletes must set `app.current_org_id`.
+    """
 
+    org_a = uuid.uuid4()
+    org_b = uuid.uuid4()
+    now = datetime.now(UTC)
 
-class FakeSession:
-    def __init__(self) -> None:
-        self.users: list[User] = [
-            self.make_user(org_id=ORG_A, email="admin@hotel-a.example.com"),
-            self.make_user(org_id=ORG_B, email="admin@hotel-b.example.com"),
-        ]
-        self.committed = False
+    admin_id = uuid.uuid4()
+    user_a2_id = uuid.uuid4()
+    user_b_id = uuid.uuid4()
 
-    @staticmethod
-    def make_user(org_id: uuid.UUID, email: str) -> User:
-        now = datetime.now(UTC)
-        user = User(
-            id=uuid.uuid4(),
-            org_id=org_id,
-            email=email,
-            full_name=email.split("@")[0],
-            role=UserRole.IT_ADMIN,
-            status=UserStatus.ACTIVE,
-            password_hash="hash",  # noqa: S106
-            created_at=now,
-            updated_at=now,
+    email_admin_a = f"admin-{org_a}@hotel-a.example.com"
+    email_user_a2 = f"user-{org_a}@hotel-a.example.com"
+    email_admin_b = f"admin-{org_b}@hotel-b.example.com"
+
+    async with SessionLocal() as session:
+        session.add_all(
+            [
+                Organization(id=org_a, name="Admin Users Org A", slug=f"admin-users-a-{org_a}"),
+                Organization(id=org_b, name="Admin Users Org B", slug=f"admin-users-b-{org_b}"),
+            ]
         )
-        return user
+        await session.commit()
 
-    async def scalar(self, statement: object) -> int | User | None:
-        query = str(statement)
-        if "count" in query:
-            return len([user for user in self.users if user.org_id == ORG_A])
-        if "WHERE users.id" in query:
-            return next((user for user in self.users if user.org_id == ORG_A), None)
-        if "users.email" in query:
-            return None
-        return None
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_a))
+        session.add_all(
+            [
+                User(
+                    id=admin_id,
+                    org_id=org_a,
+                    email=email_admin_a,
+                    full_name="Org A Admin",
+                    role=UserRole.IT_ADMIN,
+                    status=UserStatus.ACTIVE,
+                    password_hash="hash",  # noqa: S106
+                    created_at=now,
+                    updated_at=now,
+                ),
+                User(
+                    id=user_a2_id,
+                    org_id=org_a,
+                    email=email_user_a2,
+                    full_name="Org A Second User",
+                    role=UserRole.HOTEL_ADMIN,
+                    status=UserStatus.ACTIVE,
+                    password_hash="hash",  # noqa: S106
+                    created_at=now,
+                    updated_at=now,
+                ),
+            ]
+        )
+        await session.commit()
 
-    async def scalars(self, statement: object) -> FakeScalars:
-        return FakeScalars([user for user in self.users if user.org_id == ORG_A])
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_b))
+        session.add(
+            User(
+                id=user_b_id,
+                org_id=org_b,
+                email=email_admin_b,
+                full_name="Org B Admin",
+                role=UserRole.IT_ADMIN,
+                status=UserStatus.ACTIVE,
+                password_hash="hash",  # noqa: S106
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        await session.commit()
 
-    def add(self, user: User) -> None:
-        self.users.append(user)
+    yield {
+        "org_a": org_a,
+        "org_b": org_b,
+        "admin_id": admin_id,
+        "user_a2_id": user_a2_id,
+        "user_b_id": user_b_id,
+        "email_admin_a": email_admin_a,
+        "email_user_a2": email_user_a2,
+        "email_admin_b": email_admin_b,
+    }
 
-    async def commit(self) -> None:
-        self.committed = True
-
-    async def refresh(self, user: User) -> None:
-        if user.id is None:
-            user.id = uuid.uuid4()
-        now = datetime.now(UTC)
-        if user.created_at is None:
-            user.created_at = now
-        if user.updated_at is None:
-            user.updated_at = now
-
-    async def delete(self, user: User) -> None:
-        self.users.remove(user)
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_a))
+        await session.execute(text("delete from users where org_id = :org_id"), {"org_id": org_a})
+        await set_current_org(session, str(org_b))
+        await session.execute(text("delete from users where org_id = :org_id"), {"org_id": org_b})
+        await session.execute(
+            text("delete from organizations where id in (:org_a, :org_b)"),
+            {"org_a": org_a, "org_b": org_b},
+        )
+        await session.commit()
 
 
-@pytest.fixture
-def client() -> TestClient:
+def _client_for_org(
+    *, org_id: uuid.UUID, user_id: uuid.UUID, role: UserRole, email: str
+) -> AsyncClient:
     app = create_app()
-    fake_session = FakeSession()
-
-    async def override_session() -> FakeSession:
-        return fake_session
 
     async def override_principal() -> Principal:
-        return Principal(
-            user_id=ADMIN_ID,
-            org_id=ORG_A,
-            email="admin@hotel-a.example.com",
-            role=UserRole.IT_ADMIN,
-        )
+        return Principal(user_id=user_id, org_id=org_id, email=email, role=role)
 
-    app.dependency_overrides[get_session] = override_session
+    async def override_session():  # type: ignore[no-untyped-def]
+        async with SessionLocal() as session:
+            await set_current_org(session, str(org_id))
+            yield session
+
     app.dependency_overrides[get_principal] = override_principal
-    return TestClient(app)
+    app.dependency_overrides[get_session] = override_session
+
+    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
-def test_list_users_is_scoped_to_principal_org(client: TestClient) -> None:
-    response = client.get("/api/admin/users")
+@pytest.mark.asyncio
+async def test_list_users_is_scoped_to_principal_org(seeded_admin_users) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    admin_id = seeded_admin_users["admin_id"]
+    email_admin_a = seeded_admin_users["email_admin_a"]
+
+    async with _client_for_org(
+        org_id=org_a, user_id=admin_id, role=UserRole.IT_ADMIN, email=str(email_admin_a)
+    ) as client:
+        response = await client.get("/api/admin/users")
 
     assert response.status_code == 200
     body = response.json()
-    assert body["total"] == 1
-    assert all(item["org_id"] == str(ORG_A) for item in body["items"])
+    assert body["total"] == 2
+    assert all(item["org_id"] == str(org_a) for item in body["items"])
 
 
-def test_create_user_uses_principal_org(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr("app.modules.admin.users.router.hash_password", lambda password: "hashed")
-    response = client.post(
-        "/api/admin/users",
-        json={
-            "email": "new.user@hotel-a.example.com",
-            "full_name": "New User",
-            "role": "HOTEL_ADMIN",
-            "status": "ACTIVE",
-            "password": "very-secure-password",
-        },
-    )
+@pytest.mark.asyncio
+async def test_create_user_uses_principal_org(
+    seeded_admin_users, monkeypatch: pytest.MonkeyPatch
+) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    admin_id = seeded_admin_users["admin_id"]
+    email_admin_a = seeded_admin_users["email_admin_a"]
+    monkeypatch.setattr("app.modules.admin.users.router.hash_password", lambda _password: "hashed")
+    new_email = f"new.user-{uuid.uuid4()}@hotel-a.example.com"
 
-    assert response.status_code == 201
-    assert response.json()["org_id"] == str(ORG_A)
-    assert response.json()["email"] == "new.user@hotel-a.example.com"
-
-
-def test_non_admin_is_forbidden() -> None:
-    app = create_app()
-
-    async def override_session() -> AsyncMock:
-        return AsyncMock()
-
-    async def override_principal() -> Principal:
-        return Principal(
-            user_id=ADMIN_ID,
-            org_id=ORG_A,
-            email="staff@hotel-a.example.com",
-            role=UserRole.STAFF,
+    async with _client_for_org(
+        org_id=org_a, user_id=admin_id, role=UserRole.IT_ADMIN, email=str(email_admin_a)
+    ) as client:
+        response = await client.post(
+            "/api/admin/users",
+            json={
+                "email": new_email,
+                "full_name": "New User",
+                "role": "HOTEL_ADMIN",
+                "status": "ACTIVE",
+                "password": "very-secure-password",
+            },
         )
 
-    app.dependency_overrides[get_session] = override_session
-    app.dependency_overrides[get_principal] = override_principal
-    response = TestClient(app).get("/api/admin/users")
+    assert response.status_code == 201
+    assert response.json()["org_id"] == str(org_a)
+    assert response.json()["email"] == new_email.lower()
 
+
+@pytest.mark.asyncio
+async def test_non_admin_is_forbidden(seeded_admin_users) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    staff_id = uuid.uuid4()
+    async with _client_for_org(
+        org_id=org_a, user_id=staff_id, role=UserRole.STAFF, email="staff@hotel-a.example.com"
+    ) as client:
+        response = await client.get("/api/admin/users")
     assert response.status_code == 403
 
 
-def test_get_user_returns_same_org_user(client: TestClient) -> None:
-    response = client.get(f"/api/admin/users/{uuid.uuid4()}")
+@pytest.mark.asyncio
+async def test_get_user_returns_same_org_user(seeded_admin_users) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    admin_id = seeded_admin_users["admin_id"]
+    user_a2_id = seeded_admin_users["user_a2_id"]
+    email_admin_a = seeded_admin_users["email_admin_a"]
+
+    async with _client_for_org(
+        org_id=org_a, user_id=admin_id, role=UserRole.IT_ADMIN, email=str(email_admin_a)
+    ) as client:
+        response = await client.get(f"/api/admin/users/{user_a2_id}")
 
     assert response.status_code == 200
-    assert response.json()["org_id"] == str(ORG_A)
+    assert response.json()["org_id"] == str(org_a)
+    assert response.json()["id"] == str(user_a2_id)
 
 
-def test_update_user_changes_same_org_user(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setattr("app.modules.admin.users.router.hash_password", lambda password: "updated")
-    response = client.patch(
-        f"/api/admin/users/{uuid.uuid4()}",
-        json={"full_name": "Updated Admin", "password": "new-secure-password"},
-    )
+@pytest.mark.asyncio
+async def test_get_user_returns_404_for_other_org_user(seeded_admin_users) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    admin_id = seeded_admin_users["admin_id"]
+    user_b_id = seeded_admin_users["user_b_id"]
+    email_admin_a = seeded_admin_users["email_admin_a"]
+
+    async with _client_for_org(
+        org_id=org_a, user_id=admin_id, role=UserRole.IT_ADMIN, email=str(email_admin_a)
+    ) as client:
+        response = await client.get(f"/api/admin/users/{user_b_id}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_update_user_changes_same_org_user(
+    seeded_admin_users, monkeypatch: pytest.MonkeyPatch
+) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    admin_id = seeded_admin_users["admin_id"]
+    user_a2_id = seeded_admin_users["user_a2_id"]
+    email_admin_a = seeded_admin_users["email_admin_a"]
+    monkeypatch.setattr("app.modules.admin.users.router.hash_password", lambda _password: "updated")
+
+    async with _client_for_org(
+        org_id=org_a, user_id=admin_id, role=UserRole.IT_ADMIN, email=str(email_admin_a)
+    ) as client:
+        response = await client.patch(
+            f"/api/admin/users/{user_a2_id}",
+            json={"full_name": "Updated User", "password": "new-secure-password"},
+        )
 
     assert response.status_code == 200
-    assert response.json()["full_name"] == "Updated Admin"
-    assert response.json()["org_id"] == str(ORG_A)
+    assert response.json()["full_name"] == "Updated User"
+    assert response.json()["org_id"] == str(org_a)
+    assert response.json()["id"] == str(user_a2_id)
 
 
-def test_delete_user_removes_same_org_user(client: TestClient) -> None:
-    response = client.delete(f"/api/admin/users/{uuid.uuid4()}")
+@pytest.mark.asyncio
+async def test_delete_user_removes_same_org_user(seeded_admin_users) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    admin_id = seeded_admin_users["admin_id"]
+    user_a2_id = seeded_admin_users["user_a2_id"]
+    email_admin_a = seeded_admin_users["email_admin_a"]
+
+    async with _client_for_org(
+        org_id=org_a, user_id=admin_id, role=UserRole.IT_ADMIN, email=str(email_admin_a)
+    ) as client:
+        response = await client.delete(f"/api/admin/users/{user_a2_id}")
 
     assert response.status_code == 204

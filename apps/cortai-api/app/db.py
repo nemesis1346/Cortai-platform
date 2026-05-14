@@ -1,8 +1,9 @@
+import os
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
 from fastapi import Depends, Request
-from sqlalchemy import text
+from sqlalchemy import pool, text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -19,7 +20,16 @@ class Base(DeclarativeBase):
 
 
 settings = get_settings()
-engine: AsyncEngine = create_async_engine(settings.database_url, pool_pre_ping=True)
+
+# Async connection pools are bound to a single event loop. During pytest runs,
+# tests may execute across multiple loops (e.g. sync TestClient vs async tests),
+# which can lead to "Future attached to a different loop" errors when pooled
+# connections are reused. Disable pooling under pytest to keep connections
+# loop-local and short-lived.
+_is_pytest = "PYTEST_CURRENT_TEST" in os.environ
+engine: AsyncEngine = create_async_engine(
+    settings.database_url, pool_pre_ping=True, poolclass=pool.NullPool if _is_pytest else None
+)
 SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 

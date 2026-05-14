@@ -43,6 +43,10 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+# Reuse one event loop across tests to avoid asyncpg connection/pool
+# objects being bound to a different loop between tests.
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
 pythonpath = ["."]
 testpaths = ["tests"]
