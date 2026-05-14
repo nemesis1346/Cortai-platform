@@ -2,7 +2,8 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
@@ -27,8 +28,17 @@ type UserList = {
   page_size: number;
 };
 
+function clampInt(value: string | null, fallback: number, min: number, max: number): number {
+  const n = Number.parseInt(String(value ?? ""), 10);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, n));
+}
+
 export function UsersClient() {
   const t = useTranslations("users");
+  const router = useRouter();
+  const pathname = usePathname() ?? "";
+  const searchParams = useSearchParams();
   const userSchema = z.object({
     email: z.string().email(),
     full_name: z.string().min(2),
@@ -42,6 +52,9 @@ export function UsersClient() {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<UserRole | "">("");
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [open, setOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(false);
@@ -54,22 +67,54 @@ export function UsersClient() {
     }
   });
 
-  const loadUsers = useCallback(async (query: string, role: UserRole | "") => {
-    const params = new URLSearchParams({ page: "1", page_size: "20" });
+  const effective = useMemo(() => {
+    const q = searchParams.get("search") ?? "";
+    const r = (searchParams.get("role") ?? "") as UserRole | "";
+    const p = clampInt(searchParams.get("page"), 1, 1, 10_000);
+    const ps = clampInt(searchParams.get("page_size"), 20, 1, 100);
+    return { q, r, p, ps };
+  }, [searchParams]);
+
+  const loadUsers = useCallback(async (query: string, role: UserRole | "", nextPage: number, nextPageSize: number) => {
+    const params = new URLSearchParams({
+      page: String(nextPage),
+      page_size: String(nextPageSize)
+    });
     if (query) params.set("search", query);
     if (role) params.set("role", role);
     const response = await apiFetch<UserList>(`/api/admin/users?${params.toString()}`);
     setUsers(response.items);
+    setTotal(response.total);
+    setPage(response.page);
+    setPageSize(response.page_size);
   }, []);
 
   useEffect(() => {
-    void loadUsers("", "");
-  }, [loadUsers]);
+    setSearch(effective.q);
+    setRoleFilter(effective.r);
+    void loadUsers(effective.q, effective.r, effective.p, effective.ps);
+  }, [effective, loadUsers]);
+
+  function pushQuery(next: { search?: string; role?: UserRole | ""; page?: number; page_size?: number }) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (next.search !== undefined) {
+      const v = next.search.trim();
+      if (v) params.set("search", v);
+      else params.delete("search");
+    }
+    if (next.role !== undefined) {
+      if (next.role) params.set("role", next.role);
+      else params.delete("role");
+    }
+    if (next.page !== undefined) params.set("page", String(next.page));
+    if (next.page_size !== undefined) params.set("page_size", String(next.page_size));
+    router.push(`${pathname}?${params.toString()}` as unknown as Parameters<typeof router.push>[0]);
+  }
 
   function applyFilters(query: string, role: UserRole | "") {
     setSearch(query);
     setRoleFilter(role);
-    void loadUsers(query, role);
+    pushQuery({ search: query, role, page: 1 });
   }
 
   function openCreateModal() {
@@ -117,7 +162,7 @@ export function UsersClient() {
         });
       }
       closeModal();
-      await loadUsers(search, roleFilter);
+      await loadUsers(effective.q, effective.r, effective.p, effective.ps);
     } finally {
       setLoading(false);
     }
@@ -125,8 +170,12 @@ export function UsersClient() {
 
   async function deleteUser(userId: string) {
     await apiFetch<void>(`/api/admin/users/${userId}`, { method: "DELETE" });
-    await loadUsers(search, roleFilter);
+    await loadUsers(effective.q, effective.r, effective.p, effective.ps);
   }
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const canPrev = page > 1;
+  const canNext = page < totalPages;
 
   return (
     <div className="grid gap-4">
@@ -201,6 +250,47 @@ export function UsersClient() {
             </tr>
           ))}
         </Table>
+        <div className="flex flex-wrap items-center gap-3 border-t border-cortai-border bg-cortai-bg2 px-3 py-2 text-xs text-cortai-text2">
+          <div className="flex items-center gap-2">
+            <span>{t("rowsPerPage")}</span>
+            <select
+              className="rounded-md border border-cortai-border bg-cortai-bg px-2 py-1 text-xs text-cortai-text outline-none focus:border-cortai-teal"
+              value={pageSize}
+              onChange={(event) => {
+                const next = clampInt(event.target.value, 20, 1, 100);
+                pushQuery({ page_size: next, page: 1 });
+              }}
+            >
+              {[10, 20, 50, 100].map((size) => (
+                <option key={size} value={size}>
+                  {size}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="ml-auto flex items-center gap-2">
+            <span>
+              {t("page")} {page} {t("of")} {totalPages}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={!canPrev}
+              onClick={() => pushQuery({ page: page - 1 })}
+            >
+              {t("previous")}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={!canNext}
+              onClick={() => pushQuery({ page: page + 1 })}
+            >
+              {t("next")}
+            </Button>
+          </div>
+        </div>
       </Card>
 
       <Modal

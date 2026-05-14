@@ -51,6 +51,11 @@
     "close": "Close",
     "save": "Save user",
     "update": "Update user",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "page": "Page",
+    "of": "of",
+    "previous": "Previous",
+    "next": "Next",
+    "rowsPerPage": "Rows per page"
   }
 }

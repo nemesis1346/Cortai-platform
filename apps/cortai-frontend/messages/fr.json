@@ -51,6 +51,11 @@
     "close": "Fermer",
     "save": "Enregistrer",
     "update": "Mettre à jour",
-    "saving": "Enregistrement..."
+    "saving": "Enregistrement...",
+    "page": "Page",
+    "of": "sur",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "rowsPerPage": "Lignes par page"
   }
 }
