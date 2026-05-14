@@ -1,9 +1,11 @@
+from collections.abc import Callable
 from typing import Annotated, cast
 
 from fastapi import Depends, HTTPException, Request, status
 
 from app.auth.schemas import Principal
-from app.auth.security import decode_token, token_from_request
+from app.auth.security import decode_token, require_roles, token_from_request
+from app.models import UserRole
 
 
 async def get_principal(request: Request) -> Principal:
@@ -20,3 +22,18 @@ async def get_principal(request: Request) -> Principal:
 
 
 PrincipalDep = Annotated[Principal, Depends(get_principal)]
+
+
+def require_roles_dep(allowed_roles: set[UserRole]) -> Callable[[PrincipalDep], Principal]:
+    """
+    Reusable RBAC dependency.
+
+    Usage:
+      principal: Annotated[Principal, Depends(require_roles_dep({UserRole.IT_ADMIN}))]
+    """
+
+    def _dep(principal: PrincipalDep) -> Principal:
+        require_roles(principal, allowed_roles)
+        return principal
+
+    return _dep

@@ -1,32 +1,30 @@
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 
-from app.auth.dependencies import PrincipalDep
-from app.auth.security import hash_password, require_roles
+from app.auth.dependencies import PrincipalDep, require_roles_dep
+from app.auth.security import hash_password
 from app.db import SessionDep
 from app.models import User, UserRole
 from app.modules.admin.users.schemas import UserCreate, UserList, UserRead, UserUpdate
 
 router = APIRouter(prefix="/api/admin/users", tags=["admin-users"])
 ADMIN_ROLES = {UserRole.IT_ADMIN, UserRole.SERVICE_PROVIDER_ADMIN}
-
-
-def authorize_admin(principal: PrincipalDep) -> None:
-    require_roles(principal, ADMIN_ROLES)
+AdminPrincipalDep = Annotated[PrincipalDep, Depends(require_roles_dep(ADMIN_ROLES))]
 
 
 @router.get("", response_model=UserList)
 async def list_users(
-    principal: PrincipalDep,
+    principal: AdminPrincipalDep,
     session: SessionDep,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
     search: str | None = None,
     role: UserRole | None = None,
 ) -> UserList:
-    authorize_admin(principal)
     filters = [User.org_id == principal.org_id]
     if search:
         term = f"%{search.lower()}%"
@@ -52,9 +50,8 @@ async def list_users(
 
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user(
-    user_id: uuid.UUID, principal: PrincipalDep, session: SessionDep
+    user_id: uuid.UUID, principal: AdminPrincipalDep, session: SessionDep
 ) -> UserRead:
-    authorize_admin(principal)
     user = await session.scalar(
         select(User).where(User.id == user_id, User.org_id == principal.org_id)
     )
@@ -65,9 +62,8 @@ async def get_user(
 
 @router.post("", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user(
-    payload: UserCreate, principal: PrincipalDep, session: SessionDep
+    payload: UserCreate, principal: AdminPrincipalDep, session: SessionDep
 ) -> UserRead:
-    authorize_admin(principal)
     existing = await session.scalar(
         select(User).where(User.org_id == principal.org_id, User.email == payload.email.lower())
     )
@@ -90,9 +86,8 @@ async def create_user(
 
 @router.patch("/{user_id}", response_model=UserRead)
 async def update_user(
-    user_id: uuid.UUID, payload: UserUpdate, principal: PrincipalDep, session: SessionDep
+    user_id: uuid.UUID, payload: UserUpdate, principal: AdminPrincipalDep, session: SessionDep
 ) -> UserRead:
-    authorize_admin(principal)
     user = await session.scalar(
         select(User).where(User.id == user_id, User.org_id == principal.org_id)
     )
@@ -114,9 +109,8 @@ async def update_user(
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
-    user_id: uuid.UUID, principal: PrincipalDep, session: SessionDep
+    user_id: uuid.UUID, principal: AdminPrincipalDep, session: SessionDep
 ) -> None:
-    authorize_admin(principal)
     user = await session.scalar(
         select(User).where(User.id == user_id, User.org_id == principal.org_id)
     )

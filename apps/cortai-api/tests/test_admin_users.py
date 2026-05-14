@@ -190,6 +190,20 @@ async def test_non_admin_is_forbidden(seeded_admin_users) -> None:  # type: igno
 
 
 @pytest.mark.asyncio
+async def test_hotel_admin_is_forbidden(seeded_admin_users) -> None:  # type: ignore[no-untyped-def]
+    org_a = seeded_admin_users["org_a"]
+    hotel_admin_id = uuid.uuid4()
+    async with _client_for_org(
+        org_id=org_a,
+        user_id=hotel_admin_id,
+        role=UserRole.HOTEL_ADMIN,
+        email="hotel.admin@hotel-a.example.com",
+    ) as client:
+        response = await client.get("/api/admin/users")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_get_user_returns_same_org_user(seeded_admin_users) -> None:  # type: ignore[no-untyped-def]
     org_a = seeded_admin_users["org_a"]
     admin_id = seeded_admin_users["admin_id"]
