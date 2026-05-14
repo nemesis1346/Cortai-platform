@@ -21,5 +21,10 @@ export default function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/(en|fr)/:path*"]
+  matcher: [
+    "/",
+    "/(en|fr)/:path*",
+    // Exclude Next internals/static assets
+    "/((?!_next|favicon.ico|robots.txt|sitemap.xml).*)"
+  ]
 };

@@ -67,6 +67,11 @@ cp -r public .next/standalone/public
 # Ensure systemd uses the updated unit files from the repo
 sudo cp -f /opt/cortai/deploy/systemd/cortai-api.service /etc/systemd/system/cortai-api.service
 sudo cp -f /opt/cortai/deploy/systemd/cortai-frontend.service /etc/systemd/system/cortai-frontend.service
+if [[ -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf ]]; then
+  sudo mkdir -p /etc/systemd/journald.conf.d
+  sudo cp -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf /etc/systemd/journald.conf.d/cortai.conf
+  sudo systemctl restart systemd-journald
+fi
 if [[ -f /opt/cortai/deploy/Caddyfile ]]; then
   sudo cp -f /opt/cortai/deploy/Caddyfile /etc/caddy/Caddyfile
   sudo caddy fmt --overwrite /etc/caddy/Caddyfile || true

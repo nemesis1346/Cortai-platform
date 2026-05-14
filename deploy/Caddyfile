@@ -14,6 +14,12 @@ app.cortai-staging.lionston.com {
 
 # Allow accessing the app/API by raw IP during staging (HTTP).
 :80 {
+  # Serve Next static assets directly to avoid proxy/path encoding edge-cases.
+  handle_path /_next/static/* {
+    root * /opt/cortai/apps/cortai-frontend/.next/static
+    file_server
+  }
+
   @api path /api/* /docs* /openapi.json
   reverse_proxy @api 127.0.0.1:8000
   reverse_proxy 127.0.0.1:3000
