@@ -57,12 +57,21 @@ cd /opt/cortai/apps/cortai-frontend
 npm ci
 npm run build
 
-# Next.js standalone needs static/public copied alongside server.js
+# Next.js standalone expects static/public copied alongside server.js
 mkdir -p .next/standalone/.next
 rm -rf .next/standalone/.next/static
 cp -r .next/static .next/standalone/.next/static
 rm -rf .next/standalone/public
 cp -r public .next/standalone/public
+
+# Ensure systemd uses the updated unit files from the repo
+sudo cp -f /opt/cortai/deploy/systemd/cortai-api.service /etc/systemd/system/cortai-api.service
+sudo cp -f /opt/cortai/deploy/systemd/cortai-frontend.service /etc/systemd/system/cortai-frontend.service
+if [[ -f /opt/cortai/deploy/Caddyfile ]]; then
+  sudo cp -f /opt/cortai/deploy/Caddyfile /etc/caddy/Caddyfile
+  sudo caddy fmt --overwrite /etc/caddy/Caddyfile || true
+  sudo systemctl reload caddy || sudo systemctl restart caddy
+fi
 
 sudo systemctl daemon-reload
 sudo systemctl restart cortai-api cortai-frontend

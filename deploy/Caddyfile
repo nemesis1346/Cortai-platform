@@ -1,7 +1,20 @@
+{
+  # Until DNS exists for app/api hostnames, don't attempt ACME/HTTPS.
+  auto_https off
+}
+
+# Preferred hostnames (HTTP for now; enable HTTPS once DNS exists).
 api.cortai-staging.lionston.com {
   reverse_proxy 127.0.0.1:8000
 }
 
 app.cortai-staging.lionston.com {
+  reverse_proxy 127.0.0.1:3000
+}
+
+# Allow accessing the app/API by raw IP during staging (HTTP).
+:80 {
+  @api path /api/* /docs* /openapi.json
+  reverse_proxy @api 127.0.0.1:8000
   reverse_proxy 127.0.0.1:3000
 }

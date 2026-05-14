@@ -9,7 +9,7 @@ Group=cortai
 WorkingDirectory=/opt/cortai/apps/cortai-frontend
 Environment=NODE_ENV=production
 EnvironmentFile=/opt/cortai/apps/cortai-frontend/.env
-ExecStart=/usr/bin/npm run start -- --hostname 127.0.0.1 --port 3000
+ExecStart=/usr/bin/node /opt/cortai/apps/cortai-frontend/.next/standalone/server.js --hostname 127.0.0.1 --port 3000
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
