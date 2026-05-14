@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:17
+    build:
+      context: ./docker/postgres
+    image: cortai-postgres:pg17
     environment:
       POSTGRES_DB: cortai
       POSTGRES_USER: cortai_app

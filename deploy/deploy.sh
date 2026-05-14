@@ -5,6 +5,10 @@ REMOTE="${REMOTE:-ubuntu@ec2-15-223-47-64.ca-central-1.compute.amazonaws.com}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/cortai}"
 SSH_IDENTITY="${SSH_IDENTITY:-}"
 
+if [[ -z "${SSH_IDENTITY}" && -f "./deploy/cortai.pem" ]]; then
+  SSH_IDENTITY="./deploy/cortai.pem"
+fi
+
 SSH_OPTS=()
 if [[ -n "${SSH_IDENTITY}" ]]; then
   SSH_OPTS+=(-i "${SSH_IDENTITY}" -o IdentitiesOnly=yes)
