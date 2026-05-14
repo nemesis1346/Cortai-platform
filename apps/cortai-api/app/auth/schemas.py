@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.models import UserRole, UserStatus
 
@@ -25,9 +25,21 @@ class Principal(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    org_slug: str
+    # Brief calls this field "org"; we accept both for backwards compatibility.
+    org: str | None = None
+    org_slug: str | None = Field(default=None, validation_alias="org")
     email: EmailStr
     password: str
+
+    @model_validator(mode="after")
+    def _require_org(self) -> "LoginRequest":
+        if (self.org or "").strip():
+            self.org_slug = self.org.strip()
+            return self
+        if (self.org_slug or "").strip():
+            self.org_slug = self.org_slug.strip()
+            return self
+        raise ValueError("org is required")
 
 
 class AuthUser(BaseModel):

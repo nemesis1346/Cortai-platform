@@ -27,9 +27,8 @@ def set_auth_cookie(response: Response, token_response: TokenResponse) -> None:
 
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, response: Response, session: SessionDep) -> TokenResponse:
-    organization = await session.scalar(
-        select(Organization).where(Organization.slug == payload.org_slug)
-    )
+    org_slug = payload.org_slug
+    organization = await session.scalar(select(Organization).where(Organization.slug == org_slug))
     if organization is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     await set_current_org(session, str(organization.id))

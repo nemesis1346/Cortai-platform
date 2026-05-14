@@ -41,6 +41,18 @@ uv run alembic revision --autogenerate -m "message"
 RLS is enforced with `app.current_org_id`; authenticated requests set it through
 `select set_config('app.current_org_id', :org_id, true)`.
 
+## Auth
+
+Login expects `org` (organization slug), `email`, and `password`:
+
+```bash
+curl -sS -X POST http://localhost:8000/api/auth/login \
+  -H 'content-type: application/json' \
+  -d '{"org":"hotel-a","email":"admin@hotel-a.example.com","password":"ChangeMe123!"}'
+```
+
+For backwards compatibility, `org_slug` is also accepted.
+
 ## Logging
 
 The API emits structured JSON logs to stdout through `structlog`. The systemd

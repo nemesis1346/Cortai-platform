@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { apiFetch, type AuthUser } from "@/lib/api";
 
 const schema = z.object({
-  org_slug: z.string().min(1),
+  org: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(1)
 });
@@ -34,7 +34,7 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
     const payload = schema.safeParse({
-      org_slug: formData.get("org_slug"),
+      org: formData.get("org_slug"),
       email: formData.get("email"),
       password: formData.get("password")
     });
