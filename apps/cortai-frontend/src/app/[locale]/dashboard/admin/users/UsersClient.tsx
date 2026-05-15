@@ -178,13 +178,13 @@ export function UsersClient() {
   const canNext = page < totalPages;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" data-testid="users-page">
       <div className="flex items-center gap-3">
         <div>
           <h1 className="text-lg font-semibold">{t("title")}</h1>
           <p className="text-xs text-cortai-text2">{t("subtitle")}</p>
         </div>
-        <Button className="ml-auto" onClick={openCreateModal}>
+        <Button className="ml-auto" onClick={openCreateModal} data-testid="users-create-open">
           {t("create")}
         </Button>
       </div>
@@ -300,9 +300,15 @@ export function UsersClient() {
         onClose={closeModal}
       >
         <form onSubmit={form.handleSubmit(submitUser)} className="grid gap-3">
-          <Input label={t("email")} {...form.register("email")} error={form.formState.errors.email?.message} />
+          <Input
+            label={t("email")}
+            data-testid="user-form-email"
+            {...form.register("email")}
+            error={form.formState.errors.email?.message}
+          />
           <Input
             label={t("fullName")}
+            data-testid="user-form-full-name"
             {...form.register("full_name")}
             error={form.formState.errors.full_name?.message}
           />
@@ -325,10 +331,11 @@ export function UsersClient() {
           <Input
             type="password"
             label={editingUser ? t("passwordOptional") : t("password")}
+            data-testid="user-form-password"
             {...form.register("password")}
             error={form.formState.errors.password?.message}
           />
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} data-testid="user-form-submit">
             {loading ? t("saving") : editingUser ? t("update") : t("save")}
           </Button>
         </form>

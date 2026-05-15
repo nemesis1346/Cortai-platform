@@ -43,15 +43,15 @@ test("login and create user happy path", async ({ page }) => {
   });
 
   await page.goto("/en/login");
-  await page.getByLabel("Organization").fill("hotel-a");
-  await page.getByLabel("Email").fill("admin@hotel-a.test");
-  await page.getByLabel("Password").fill("password");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByTestId("login-org").fill("hotel-a");
+  await page.getByTestId("login-email").fill("admin@hotel-a.test");
+  await page.getByTestId("login-password").fill("password");
+  await page.getByTestId("login-submit").click();
 
-  await expect(page.getByRole("heading", { name: "Admin / Users" })).toBeVisible();
-  await page.getByRole("button", { name: "Create user" }).click();
-  await page.getByLabel("Email").fill("new.user@hotel-a.test");
-  await page.getByLabel("Full name").fill("New User");
-  await page.getByLabel("Temporary password").fill("temporary-password");
-  await page.getByRole("button", { name: "Save user" }).click();
+  await expect(page.getByTestId("users-page")).toBeVisible();
+  await page.getByTestId("users-create-open").click();
+  await page.getByTestId("user-form-email").fill("new.user@hotel-a.test");
+  await page.getByTestId("user-form-full-name").fill("New User");
+  await page.getByTestId("user-form-password").fill("temporary-password");
+  await page.getByTestId("user-form-submit").click();
 });

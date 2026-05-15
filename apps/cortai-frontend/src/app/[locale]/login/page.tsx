@@ -77,16 +77,28 @@ export default function LoginPage() {
         </div>
         <Card>
           <form action={onSubmit} className="grid gap-4">
-            <Input name="org_slug" label={t("org")} autoComplete="organization" />
-            <Input name="email" type="email" label={t("email")} autoComplete="email" />
+            <Input
+              name="org_slug"
+              label={t("org")}
+              autoComplete="organization"
+              data-testid="login-org"
+            />
+            <Input
+              name="email"
+              type="email"
+              label={t("email")}
+              autoComplete="email"
+              data-testid="login-email"
+            />
             <Input
               name="password"
               type="password"
               label={t("password")}
               autoComplete="current-password"
+              data-testid="login-password"
             />
             {error ? <p className="text-xs text-cortai-red">{error}</p> : null}
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} data-testid="login-submit">
               {loading ? t("loading") : t("submit")}
             </Button>
           </form>
