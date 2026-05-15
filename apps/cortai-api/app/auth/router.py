@@ -75,4 +75,8 @@ async def refresh(
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(response: Response) -> None:
-    response.delete_cookie("cortai_access_token", path="/")
+    settings = get_settings()
+    delete_kwargs: dict[str, str] = {"path": "/"}
+    if settings.cookie_domain:
+        delete_kwargs["domain"] = settings.cookie_domain
+    response.delete_cookie("cortai_access_token", **delete_kwargs)

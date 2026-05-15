@@ -1,9 +1,8 @@
 {
-  # Until DNS exists for app/api hostnames, don't attempt ACME/HTTPS.
-  auto_https off
+  # Production TLS via Let's Encrypt requires ports 80/443 open
+  # and DNS records for the hostnames below pointing to this server.
 }
 
-# Preferred hostnames (HTTP for now; enable HTTPS once DNS exists).
 api.cortai-staging.lionston.com {
   reverse_proxy 127.0.0.1:8000
 }
@@ -12,15 +11,7 @@ app.cortai-staging.lionston.com {
   reverse_proxy 127.0.0.1:3000
 }
 
-# Allow accessing the app/API by raw IP during staging (HTTP).
+# Redirect raw-IP HTTP access to the HTTPS app domain (prevents clear-text JWT/cookies).
 :80 {
-  # Serve Next static assets directly to avoid proxy/path encoding edge-cases.
-  handle_path /_next/static/* {
-    root * /opt/cortai/apps/cortai-frontend/.next/static
-    file_server
-  }
-
-  @api path /api/* /docs* /openapi.json
-  reverse_proxy @api 127.0.0.1:8000
-  reverse_proxy 127.0.0.1:3000
+  redir https://app.cortai-staging.lionston.com{uri} permanent
 }
