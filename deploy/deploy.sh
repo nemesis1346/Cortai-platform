@@ -53,8 +53,12 @@ cd /opt/cortai/apps/cortai-api
 uv sync
 uv run alembic upgrade head
 
+# Avoid serving mixed Next.js assets during rebuilds
+sudo systemctl stop cortai-frontend || true
+
 cd /opt/cortai/apps/cortai-frontend
 npm ci
+rm -rf .next
 npm run build
 
 # Next.js standalone expects static/public copied alongside server.js
