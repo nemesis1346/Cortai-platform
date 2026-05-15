@@ -55,6 +55,8 @@ uv run alembic upgrade head
 
 # Avoid serving mixed Next.js assets during rebuilds
 sudo systemctl stop cortai-frontend || true
+# Always bring the frontend back up, even if a later step fails.
+trap 'sudo systemctl start cortai-frontend || true' EXIT
 
 cd /opt/cortai/apps/cortai-frontend
 npm ci
