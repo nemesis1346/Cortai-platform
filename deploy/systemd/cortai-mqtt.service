@@ -1,0 +1,31 @@
+[Unit]
+Description=COrtai Mosquitto MQTT broker (mTLS)
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5
+
+# Mosquitto runs in Docker; configs live in the repo.
+# NOTE: certs are expected at /etc/cortai/mosquitto/certs/ (not committed).
+ExecStartPre=-/usr/bin/docker rm -f cortai-mqtt
+ExecStartPre=/usr/bin/docker pull eclipse-mosquitto:2
+
+ExecStart=/usr/bin/docker run --name cortai-mqtt \
+  --network host \
+  --read-only \
+  --tmpfs /tmp \
+  --tmpfs /var/lib/mosquitto \
+  --volume /opt/cortai/deploy/mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro \
+  --volume /opt/cortai/deploy/mosquitto/aclfile:/mosquitto/config/aclfile:ro \
+  --volume /etc/cortai/mosquitto/certs:/mosquitto/certs:ro \
+  eclipse-mosquitto:2
+
+ExecStop=/usr/bin/docker stop cortai-mqtt
+
+[Install]
+WantedBy=multi-user.target
+

@@ -25,6 +25,8 @@ if [[ ${#SSH_OPTS[@]} -gt 0 ]]; then
     --exclude "node_modules" \
     --exclude ".next" \
     --exclude ".venv" \
+    --exclude "secrets" \
+    --exclude "deploy/mosquitto/certs" \
     ./ "${REMOTE}:${REMOTE_DIR}/"
 else
   rsync -az --delete \
@@ -32,6 +34,8 @@ else
     --exclude "node_modules" \
     --exclude ".next" \
     --exclude ".venv" \
+    --exclude "secrets" \
+    --exclude "deploy/mosquitto/certs" \
     ./ "${REMOTE}:${REMOTE_DIR}/"
 fi
 
@@ -73,6 +77,9 @@ cp -r public .next/standalone/public
 # Ensure systemd uses the updated unit files from the repo
 sudo cp -f /opt/cortai/deploy/systemd/cortai-api.service /etc/systemd/system/cortai-api.service
 sudo cp -f /opt/cortai/deploy/systemd/cortai-frontend.service /etc/systemd/system/cortai-frontend.service
+if [[ -f /opt/cortai/deploy/systemd/cortai-mqtt.service ]]; then
+  sudo cp -f /opt/cortai/deploy/systemd/cortai-mqtt.service /etc/systemd/system/cortai-mqtt.service
+fi
 if [[ -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf ]]; then
   sudo mkdir -p /etc/systemd/journald.conf.d
   sudo cp -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf /etc/systemd/journald.conf.d/cortai.conf
@@ -86,5 +93,11 @@ fi
 
 sudo systemctl daemon-reload
 sudo systemctl restart cortai-api cortai-frontend
-sudo systemctl status --no-pager cortai-api cortai-frontend
+if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
+  sudo systemctl restart cortai-mqtt || true
+fi
+sudo systemctl status --no-pager cortai-api cortai-frontend || true
+if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
+  sudo systemctl status --no-pager cortai-mqtt || true
+fi
 REMOTE_SCRIPT
