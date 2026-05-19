@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cortai.example/schemas/edge_message_envelope.schema.json",
+  "title": "COrtai Edge Message Envelope",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["device_id", "ts", "type", "schema_version", "payload"],
+  "properties": {
+    "device_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128
+    },
+    "ts": {
+      "type": "string",
+      "description": "RFC3339/ISO-8601 timestamp",
+      "format": "date-time"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["detection", "telemetry", "health", "event"]
+    },
+    "schema_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 32,
+      "pattern": "^[0-9]+\\.[0-9]+$"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Message-type specific payload. Validated by downstream schemas once introduced.",
+      "additionalProperties": true
+    }
+  }
+}
+
