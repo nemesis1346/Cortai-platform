@@ -1,0 +1,19 @@
+[Unit]
+Description=COrtai edge-ingest service
+After=network-online.target cortai-mqtt.service
+Wants=network-online.target
+
+[Service]
+User=cortai
+Group=cortai
+WorkingDirectory=/opt/cortai/apps/edge-ingest
+EnvironmentFile=/opt/cortai/apps/edge-ingest/.env
+ExecStart=/home/cortai/.local/bin/uv run python -m edge_ingest.main
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+

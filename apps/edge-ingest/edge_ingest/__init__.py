@@ -1,0 +1,2 @@
+"""Edge ingest service package."""
+

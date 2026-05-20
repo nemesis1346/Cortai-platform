@@ -21,6 +21,8 @@ fi
 
 if [[ ${#SSH_OPTS[@]} -gt 0 ]]; then
   rsync -az --delete -e "${RSYNC_SSH_CMD}" \
+    --exclude ".env" \
+    --exclude ".env.*" \
     --exclude ".git" \
     --exclude "node_modules" \
     --exclude ".next" \
@@ -30,6 +32,8 @@ if [[ ${#SSH_OPTS[@]} -gt 0 ]]; then
     ./ "${REMOTE}:${REMOTE_DIR}/"
 else
   rsync -az --delete \
+    --exclude ".env" \
+    --exclude ".env.*" \
     --exclude ".git" \
     --exclude "node_modules" \
     --exclude ".next" \
@@ -57,6 +61,10 @@ cd /opt/cortai/apps/cortai-api
 uv sync
 uv run alembic upgrade head
 
+# edge-ingest
+cd /opt/cortai/apps/edge-ingest
+uv sync
+
 # Avoid serving mixed Next.js assets during rebuilds
 sudo systemctl stop cortai-frontend || true
 # Always bring the frontend back up, even if a later step fails.
@@ -80,6 +88,9 @@ sudo cp -f /opt/cortai/deploy/systemd/cortai-frontend.service /etc/systemd/syste
 if [[ -f /opt/cortai/deploy/systemd/cortai-mqtt.service ]]; then
   sudo cp -f /opt/cortai/deploy/systemd/cortai-mqtt.service /etc/systemd/system/cortai-mqtt.service
 fi
+if [[ -f /opt/cortai/deploy/systemd/cortai-edge-ingest.service ]]; then
+  sudo cp -f /opt/cortai/deploy/systemd/cortai-edge-ingest.service /etc/systemd/system/cortai-edge-ingest.service
+fi
 if [[ -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf ]]; then
   sudo mkdir -p /etc/systemd/journald.conf.d
   sudo cp -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf /etc/systemd/journald.conf.d/cortai.conf
@@ -96,8 +107,14 @@ sudo systemctl restart cortai-api cortai-frontend
 if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
   sudo systemctl restart cortai-mqtt || true
 fi
+if systemctl list-unit-files | grep -q '^cortai-edge-ingest\.service'; then
+  sudo systemctl restart cortai-edge-ingest || true
+fi
 sudo systemctl status --no-pager cortai-api cortai-frontend || true
 if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
   sudo systemctl status --no-pager cortai-mqtt || true
+fi
+if systemctl list-unit-files | grep -q '^cortai-edge-ingest\.service'; then
+  sudo systemctl status --no-pager cortai-edge-ingest || true
 fi
 REMOTE_SCRIPT

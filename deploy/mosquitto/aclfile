@@ -13,5 +13,10 @@
 # NOTE: Mosquitto ACL variable substitution works with `pattern` rules.
 #   %u = username (mapped from client cert identity via use_identity_as_username)
 
+# Ingest service (privileged): can read all device topics.
+user edge-ingest
+topic read cortai/+/+/edge/+/+
+
+# Default rule for device clients: only their own device_id path.
 pattern readwrite cortai/+/+/edge/%u/+
 

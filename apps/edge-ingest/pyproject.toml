@@ -1,0 +1,39 @@
+[project]
+name = "edge-ingest"
+version = "0.1.0"
+description = "COrtai edge ingestion service (DE-03)"
+requires-python = ">=3.12"
+dependencies = [
+  "asyncpg>=0.29.0",
+  "jsonschema>=4.23.0",
+  "paho-mqtt<2",
+  "pydantic-settings>=2.5.2",
+  "structlog>=24.4.0",
+  "asyncio-mqtt>=0.16.2"
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.11.2",
+  "pytest>=8.3.3",
+  "pytest-asyncio>=0.24.0",
+  "ruff>=0.6.9"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "ASYNC", "S"]
+ignore = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+
