@@ -1,17 +1,37 @@
 {
-  # Production TLS via Let's Encrypt requires ports 80/443 open
-  # and DNS records for the hostnames below pointing to this server.
+  # When using only the raw EC2 IP (no DNS/TLS), keep auto-https off.
+  # If you later enable DNS + TLS for the domains below, you can remove this.
+  auto_https off
 }
 
+# Optional domains (only work once DNS exists)
 api.cortai-staging.lionston.com {
   reverse_proxy 127.0.0.1:8000
 }
 
 app.cortai-staging.lionston.com {
+  @api path /api/* /docs* /openapi.json
+  reverse_proxy @api 127.0.0.1:8000
+
+  @ws path /ws/*
+  reverse_proxy @ws 127.0.0.1:8000
+
   reverse_proxy 127.0.0.1:3000
 }
 
-# Redirect raw-IP HTTP access to the HTTPS app domain (prevents clear-text JWT/cookies).
+# Raw IP access (HTTP)
 :80 {
-  redir https://app.cortai-staging.lionston.com{uri} permanent
+  # Serve Next static assets directly (no proxy -> no %5B/%5D decoding issues)
+  handle_path /_next/static/* {
+    root * /opt/cortai/apps/cortai-frontend/.next/static
+    file_server
+  }
+
+  @api path /api/* /docs* /openapi.json
+  reverse_proxy @api 127.0.0.1:8000
+
+  @ws path /ws/*
+  reverse_proxy @ws 127.0.0.1:8000
+
+  reverse_proxy 127.0.0.1:3000
 }

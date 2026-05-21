@@ -73,6 +73,22 @@ async def _persist_message(
             json.dumps(message["payload"]),
         )
 
+        # Publish a live event for DE-05 via Postgres NOTIFY.
+        # Channel naming is fixed (`cortai_live`) and messages are filtered by property_id downstream.
+        live_event = {
+            "type": "edge_message",
+            "org_id": org_id,
+            "property_id": property_id,
+            "topic_type": topic_type,
+            "device_id": message["device_id"],
+            "ts": message["ts"],
+            "schema_version": message["schema_version"],
+            "payload": message["payload"],
+            "_broker_received_at_ms": message.get("_broker_received_at_ms"),
+            "_ingested_at_ms": int(datetime.now(UTC).timestamp() * 1000),
+        }
+        await conn.execute("select pg_notify('cortai_live', $1)", json.dumps(live_event))
+
     logger.info(
         "edge.message.persisted",
         org_id=org_id,
@@ -113,6 +129,7 @@ async def run() -> None:
 
                 async for msg in messages:
                     try:
+                        broker_received_at_ms = int(datetime.now(UTC).timestamp() * 1000)
                         t = parse_edge_topic(msg.topic)
 
                         payload = json.loads(msg.payload.decode("utf-8"))
@@ -160,7 +177,7 @@ async def run() -> None:
                             org_id=org_id,
                             property_id=property_id,
                             topic_type=t.msg_type,
-                            message=payload,
+                            message={**payload, "_broker_received_at_ms": broker_received_at_ms},
                         )
                     except EdgeEnvelopeValidationError as e:
                         logger.warning(

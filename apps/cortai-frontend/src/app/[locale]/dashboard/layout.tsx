@@ -36,6 +36,12 @@ export default async function DashboardLayout({
           >
             {t("users")}
           </Link>
+          <Link
+            className="mt-2 flex rounded-md border border-cortai-border bg-cortai-bg px-2.5 py-2 text-xs text-cortai-text2 hover:border-cortai-teal/25 hover:bg-cortai-teal/10 hover:text-cortai-teal"
+            href={`/${params.locale}/dashboard/live`}
+          >
+            Live
+          </Link>
         </nav>
       </aside>
       <section className="flex min-w-0 flex-1 flex-col">
