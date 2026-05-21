@@ -61,7 +61,9 @@ async def _listen_and_forward(
     ws: WebSocket,
     dsn: str,
     channel: str,
-    property_id: str,
+    org_id: str,
+    property_id: str | None,
+    scope: str,
     stop: asyncio.Event,
 ) -> None:
     conn = await asyncpg.connect(dsn)
@@ -76,7 +78,13 @@ async def _listen_and_forward(
         maybe = conn.add_listener(channel, _on_notify)
         if inspect.isawaitable(maybe):
             await maybe
-        logger.info("live.pg.listen_started", channel=channel, property_id=property_id)
+        logger.info(
+            "live.pg.listen_started",
+            channel=channel,
+            org_id=org_id,
+            property_id=property_id,
+            scope=scope,
+        )
 
         while not stop.is_set():
             try:
@@ -91,18 +99,36 @@ async def _listen_and_forward(
                 logger.warning("live.pg.bad_payload", channel=channel)
                 continue
 
-            msg_property_id = str(msg.get("property_id") or "")
-            if msg_property_id != property_id:
-                # Other properties may be publishing to the same channel.
+            msg_org_id = str(msg.get("org_id") or "")
+            if msg_org_id != org_id:
                 continue
-            logger.info("live.pg.notify_received", channel=channel, property_id=property_id)
+
+            if scope == "property":
+                msg_property_id = str(msg.get("property_id") or "")
+                if property_id is None or msg_property_id != property_id:
+                    # Other properties may be publishing to the same channel.
+                    continue
+                logger.info(
+                    "live.pg.notify_received", channel=channel, org_id=org_id, property_id=property_id
+                )
+            else:
+                # Org-level alerts subscription: forward only alert-style events.
+                if str(msg.get("type") or "") != "device_offline":
+                    continue
+                logger.info("live.pg.notify_received", channel=channel, org_id=org_id, scope=scope)
 
             # Attach server timestamps for latency measurement.
             msg["_server_published_at"] = now
             msg["_server_published_at_ms"] = int(time.time() * 1000)
             try:
                 await ws.send_json(msg)
-                logger.info("live.ws.forwarded", property_id=property_id, channel=channel)
+                logger.info(
+                    "live.ws.forwarded",
+                    channel=channel,
+                    org_id=org_id,
+                    property_id=property_id,
+                    scope=scope,
+                )
             except WebSocketDisconnect:
                 return
     finally:
@@ -140,6 +166,7 @@ async def live_socket(ws: WebSocket) -> None:
     dsn = _dsn_for_asyncpg(settings.database_url)
     channel = "cortai_live"
     subscribed_property_id: str | None = None
+    subscribed_scope: str = "property"
 
     try:
         while True:
@@ -158,15 +185,23 @@ async def live_socket(ws: WebSocket) -> None:
                 await ws.send_json({"type": "error", "error": "unsupported_message_type"})
                 continue
 
-            property_id = str(data.get("property_id") or "")
-            if not property_id:
-                await ws.send_json({"type": "error", "error": "property_id_required"})
+            scope = str(data.get("scope") or "property")
+            if scope not in {"property", "org_alerts"}:
+                await ws.send_json({"type": "error", "error": "invalid_scope"})
                 continue
 
-            allowed = await _authorize_property(org_id=str(principal.org_id), property_id=property_id)
-            if not allowed:
-                await ws.send_json({"type": "error", "error": "forbidden"})
-                continue
+            property_id = str(data.get("property_id") or "")
+            if scope == "property":
+                if not property_id:
+                    await ws.send_json({"type": "error", "error": "property_id_required"})
+                    continue
+
+                allowed = await _authorize_property(
+                    org_id=str(principal.org_id), property_id=property_id
+                )
+                if not allowed:
+                    await ws.send_json({"type": "error", "error": "forbidden"})
+                    continue
 
             # One subscription per connection for V1.
             if task is not None:
@@ -177,15 +212,29 @@ async def live_socket(ws: WebSocket) -> None:
                     pass
                 stop = asyncio.Event()
 
-            subscribed_property_id = property_id
-            await ws.send_json({"type": "subscribed", "channel": f"cortai.live.{property_id}"})
-            logger.info("live.ws.subscribed", org_id=str(principal.org_id), property_id=property_id)
+            subscribed_scope = scope
+            subscribed_property_id = property_id if scope == "property" else None
+            await ws.send_json(
+                {
+                    "type": "subscribed",
+                    "scope": subscribed_scope,
+                    "channel": f"cortai.live.{property_id}" if subscribed_property_id else "cortai.alerts",
+                }
+            )
+            logger.info(
+                "live.ws.subscribed",
+                org_id=str(principal.org_id),
+                property_id=subscribed_property_id,
+                scope=subscribed_scope,
+            )
             task = asyncio.create_task(
                 _listen_and_forward(
                     ws=ws,
                     dsn=dsn,
                     channel=channel,
-                    property_id=property_id,
+                    org_id=str(principal.org_id),
+                    property_id=subscribed_property_id,
+                    scope=subscribed_scope,
                     stop=stop,
                 )
             )

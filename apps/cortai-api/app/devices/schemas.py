@@ -11,6 +11,9 @@ class DevicePublicRead(BaseModel):
     type: str
     capabilities: list[str] = Field(default_factory=list)
     logical_bindings: dict = Field(default_factory=dict)
+    last_seen_at: datetime | None = None
+    is_offline: bool = False
+    offline_since: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

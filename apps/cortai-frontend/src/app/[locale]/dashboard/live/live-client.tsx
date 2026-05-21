@@ -42,6 +42,7 @@ export function LiveClient() {
   const [status, setStatus] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [error, setError] = useState<string | null>(null);
   const [propertyId, setPropertyId] = useState("");
+  const [mode, setMode] = useState<"property" | "org_alerts">("property");
   const [messages, setMessages] = useState<LiveMsg[]>([]);
   const wsRef = useRef<WebSocket | null>(null);
 
@@ -52,7 +53,7 @@ export function LiveClient() {
 
   useEffect(() => {
     if (!user) return;
-    if (!propertyId) return;
+    if (mode === "property" && !propertyId) return;
 
     setStatus("connecting");
     setError(null);
@@ -61,7 +62,11 @@ export function LiveClient() {
 
     ws.onopen = () => {
       setStatus("connected");
-      ws.send(JSON.stringify({ type: "subscribe", property_id: propertyId }));
+      if (mode === "property") {
+        ws.send(JSON.stringify({ type: "subscribe", scope: "property", property_id: propertyId }));
+      } else {
+        ws.send(JSON.stringify({ type: "subscribe", scope: "org_alerts" }));
+      }
     };
     ws.onerror = () => {
       setStatus("error");
@@ -83,7 +88,7 @@ export function LiveClient() {
       ws.close();
       wsRef.current = null;
     };
-  }, [propertyId, user, wsUrl]);
+  }, [propertyId, user, wsUrl, mode]);
 
   const metrics = useMemo(() => {
     const e2e = messages
@@ -119,12 +124,24 @@ export function LiveClient() {
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="grid gap-1.5 text-xs text-cortai-text2">
+          <span>Mode</span>
+          <select
+            className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-2 text-xs text-cortai-text outline-none focus:border-cortai-teal"
+            value={mode}
+            onChange={(e) => setMode(e.target.value as typeof mode)}
+          >
+            <option value="property">Property events</option>
+            <option value="org_alerts">Org alerts</option>
+          </select>
+        </label>
+        <label className="grid gap-1.5 text-xs text-cortai-text2">
           <span>Property ID (UUID)</span>
           <input
             className="w-[360px] rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-2 text-xs text-cortai-text outline-none focus:border-cortai-teal"
             value={propertyId}
             onChange={(e) => setPropertyId(e.target.value.trim())}
             placeholder="e.g. 80b6c65b-554b-4ab0-aba0-f42bcd7ee610"
+            disabled={mode !== "property"}
           />
         </label>
         <button

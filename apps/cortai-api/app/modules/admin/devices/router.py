@@ -45,7 +45,7 @@ async def list_devices(
             text(
                 f"""
                 select id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,
-                       logical_bindings, created_at, updated_at
+                       logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at
                 from platform.devices
                 where {where}
                 order by created_at desc
@@ -76,14 +76,14 @@ async def create_device(
         """
         insert into platform.devices (
           id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,
-          logical_bindings, created_at, updated_at
+          logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at
         )
         values (
           :id, :org_id, :property_id, :device_id, :type, :capabilities, :cert_fingerprint,
-          :logical_bindings, :created_at, :updated_at
+          :logical_bindings, null, false, null, :created_at, :updated_at
         )
         returning id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,
-                  logical_bindings, created_at, updated_at
+                  logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at
         """
     ).bindparams(sa.bindparam("logical_bindings", type_=postgresql.JSONB))
     try:
@@ -144,7 +144,7 @@ async def update_device(
             set {", ".join(sets)}
             where id = :id and org_id = :org_id
             returning id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,
-                      logical_bindings, created_at, updated_at
+                      logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at
             """  # noqa: S608
         )
         .bindparams(sa.bindparam("logical_bindings", type_=postgresql.JSONB))

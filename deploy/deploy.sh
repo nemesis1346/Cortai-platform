@@ -85,6 +85,12 @@ cp -r public .next/standalone/public
 # Ensure systemd uses the updated unit files from the repo
 sudo cp -f /opt/cortai/deploy/systemd/cortai-api.service /etc/systemd/system/cortai-api.service
 sudo cp -f /opt/cortai/deploy/systemd/cortai-frontend.service /etc/systemd/system/cortai-frontend.service
+if [[ -f /opt/cortai/deploy/systemd/cortai-device-offline-sweeper.service ]]; then
+  sudo cp -f /opt/cortai/deploy/systemd/cortai-device-offline-sweeper.service /etc/systemd/system/cortai-device-offline-sweeper.service
+fi
+if [[ -f /opt/cortai/deploy/systemd/cortai-device-offline-sweeper.timer ]]; then
+  sudo cp -f /opt/cortai/deploy/systemd/cortai-device-offline-sweeper.timer /etc/systemd/system/cortai-device-offline-sweeper.timer
+fi
 if [[ -f /opt/cortai/deploy/systemd/cortai-mqtt.service ]]; then
   sudo cp -f /opt/cortai/deploy/systemd/cortai-mqtt.service /etc/systemd/system/cortai-mqtt.service
 fi
@@ -104,6 +110,9 @@ fi
 
 sudo systemctl daemon-reload
 sudo systemctl restart cortai-api cortai-frontend
+if systemctl list-unit-files | grep -q '^cortai-device-offline-sweeper\.timer'; then
+  sudo systemctl enable --now cortai-device-offline-sweeper.timer
+fi
 if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
   sudo systemctl restart cortai-mqtt || true
 fi
@@ -111,6 +120,9 @@ if systemctl list-unit-files | grep -q '^cortai-edge-ingest\.service'; then
   sudo systemctl restart cortai-edge-ingest || true
 fi
 sudo systemctl status --no-pager cortai-api cortai-frontend || true
+if systemctl list-unit-files | grep -q '^cortai-device-offline-sweeper\.timer'; then
+  sudo systemctl status --no-pager cortai-device-offline-sweeper.timer || true
+fi
 if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
   sudo systemctl status --no-pager cortai-mqtt || true
 fi

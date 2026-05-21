@@ -31,6 +31,9 @@ class DeviceUpdate(BaseModel):
 class DeviceRead(DeviceBase):
     id: uuid.UUID
     org_id: uuid.UUID
+    last_seen_at: datetime | None = None
+    is_offline: bool = False
+    offline_since: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

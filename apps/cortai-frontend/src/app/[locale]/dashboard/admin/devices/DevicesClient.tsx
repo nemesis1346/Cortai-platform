@@ -22,6 +22,9 @@ type AdminDevice = {
   capabilities: string[];
   cert_fingerprint: string | null;
   logical_bindings: Record<string, unknown>;
+  last_seen_at: string | null;
+  is_offline: boolean;
+  offline_since: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -208,12 +211,18 @@ export function DevicesClient() {
       </div>
 
       <Card title={t("registry")}>
-        <Table headers={[t("deviceId"), t("type"), t("propertyId"), t("capabilities"), t("actions")]}>
+        <Table headers={[t("status"), t("deviceId"), t("type"), t("lastSeen"), t("propertyId"), t("capabilities"), t("actions")]}>
           {devices.map((d) => (
             <tr key={d.id} className="hover:bg-white/[0.02]">
+              <Td>
+                <StatusBadge offline={Boolean(d.is_offline)} />
+              </Td>
               <Td>{d.device_id}</Td>
               <Td>
                 <Badge>{d.type}</Badge>
+              </Td>
+              <Td className="text-[11px] text-cortai-text2">
+                {d.last_seen_at ? new Date(d.last_seen_at).toLocaleString() : "—"}
               </Td>
               <Td className="font-mono text-[11px]">{d.property_id ?? "—"}</Td>
               <Td className="text-[11px] text-cortai-text2">{(d.capabilities ?? []).join(", ") || "—"}</Td>
@@ -340,6 +349,21 @@ function Badge({ children }: { children: React.ReactNode }) {
   return (
     <span className="rounded-pill border border-cortai-teal/25 bg-cortai-teal/10 px-2 py-0.5 text-[10px] font-semibold text-cortai-teal">
       {children}
+    </span>
+  );
+}
+
+function StatusBadge({ offline }: { offline: boolean }) {
+  if (offline) {
+    return (
+      <span className="rounded-pill border border-cortai-red/25 bg-cortai-red/10 px-2 py-0.5 text-[10px] font-semibold text-cortai-red">
+        OFFLINE
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-pill border border-cortai-green/25 bg-cortai-green/10 px-2 py-0.5 text-[10px] font-semibold text-cortai-green">
+      ONLINE
     </span>
   );
 }

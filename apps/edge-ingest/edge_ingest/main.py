@@ -60,6 +60,22 @@ async def _persist_message(
 
     async with conn.transaction():
         await set_current_org(conn, org_id)
+
+        # DE-08: Update device last-seen on any successfully validated message ingestion.
+        # Use broker/server receive time to avoid device clock skew.
+        last_seen_at = datetime.now(UTC)
+        await conn.execute(
+            """
+            update platform.devices
+            set last_seen_at = $1,
+                is_offline = false,
+                offline_since = null
+            where org_id = $2 and device_id = $3
+            """,
+            last_seen_at,
+            org_id,
+            message["device_id"],
+        )
         await conn.execute(
             f"""
             insert into {table} (org_id, property_id, device_id, ts, schema_version, payload)
@@ -86,6 +102,7 @@ async def _persist_message(
             "payload": message["payload"],
             "_broker_received_at_ms": message.get("_broker_received_at_ms"),
             "_ingested_at_ms": int(datetime.now(UTC).timestamp() * 1000),
+            "_device_last_seen_at": last_seen_at.isoformat(),
         }
         await conn.execute("select pg_notify('cortai_live', $1)", json.dumps(live_event))
 

@@ -28,7 +28,7 @@ async def list_devices(
             text(
                 f"""
                 select id, property_id, device_id, type, capabilities, logical_bindings,
-                       created_at, updated_at
+                       last_seen_at, is_offline, offline_since, created_at, updated_at
                 from platform.devices
                 {where}
                 order by created_at desc
