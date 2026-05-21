@@ -3,10 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.router import router as auth_router
 from app.config import get_settings
+from app.devices.router import router as devices_router
 from app.health import router as health_router
 from app.live import live_router
 from app.logging import configure_logging
 from app.middleware.tenant import TenantContextMiddleware
+from app.modules.admin.devices.router import router as admin_devices_router
 from app.modules.admin.users.router import router as admin_users_router
 
 
@@ -24,7 +26,9 @@ def create_app() -> FastAPI:
     app.add_middleware(TenantContextMiddleware)
     app.include_router(health_router)
     app.include_router(auth_router)
+    app.include_router(devices_router)
     app.include_router(admin_users_router)
+    app.include_router(admin_devices_router)
     app.include_router(live_router)
     return app
 

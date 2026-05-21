@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { LocaleToggleLinks } from "@/components/i18n/LocaleToggleLinks";
+import { AdminNav } from "./AdminNav";
 
 export default async function DashboardLayout({
   children,
@@ -30,12 +31,7 @@ export default async function DashboardLayout({
           <div className="px-2 pb-2 pt-1 text-[9px] font-bold uppercase tracking-[0.12em] text-cortai-text3">
             {t("admin")}
           </div>
-          <Link
-            className="flex rounded-md border border-cortai-teal/25 bg-cortai-teal/10 px-2.5 py-2 text-xs text-cortai-teal"
-            href={`/${params.locale}/dashboard/admin/users`}
-          >
-            {t("users")}
-          </Link>
+          <AdminNav locale={params.locale} />
           <Link
             className="mt-2 flex rounded-md border border-cortai-border bg-cortai-bg px-2.5 py-2 text-xs text-cortai-text2 hover:border-cortai-teal/25 hover:bg-cortai-teal/10 hover:text-cortai-teal"
             href={`/${params.locale}/dashboard/live`}

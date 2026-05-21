@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode, TdHTMLAttributes } from "react";
 
 type TableProps = {
   headers: string[];
@@ -27,6 +27,17 @@ export function Table({ headers, children }: TableProps) {
   );
 }
 
-export function Td({ children }: { children: ReactNode }) {
-  return <td className="border-b border-cortai-border/50 px-3 py-2.5 align-middle">{children}</td>;
+type TdProps = TdHTMLAttributes<HTMLTableCellElement> & {
+  children: ReactNode;
+};
+
+export function Td({ children, className = "", ...props }: TdProps) {
+  return (
+    <td
+      className={`border-b border-cortai-border/50 px-3 py-2.5 align-middle ${className}`}
+      {...props}
+    >
+      {children}
+    </td>
+  );
 }
