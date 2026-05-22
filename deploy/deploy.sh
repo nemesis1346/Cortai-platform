@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REMOTE="${REMOTE:-ubuntu@ec2-15-223-47-64.ca-central-1.compute.amazonaws.com}"
+REMOTE="${REMOTE:-ubuntu@ec2-3-96-21-119.ca-central-1.compute.amazonaws.com}"
 REMOTE_DIR="${REMOTE_DIR:-/opt/cortai}"
 SSH_IDENTITY="${SSH_IDENTITY:-}"
 

@@ -35,10 +35,16 @@ SessionLocal = async_sessionmaker(engine, expire_on_commit=False)
 
 async def get_session(request: Request) -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
+        # Make the session available to middleware (best-effort).
+        request.state.db = session
         principal = getattr(request.state, "principal", None)
         if principal is not None:
             await set_current_org(session, str(principal.org_id))
-        yield session
+        try:
+            yield session
+        finally:
+            # Avoid leaking the session onto a reused Request object (tests).
+            request.state.db = None
 
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]

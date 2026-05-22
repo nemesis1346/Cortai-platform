@@ -7,6 +7,7 @@ from app.devices.router import router as devices_router
 from app.health import router as health_router
 from app.live import live_router
 from app.logging import configure_logging
+from app.middleware.audit import AuditLogMiddleware
 from app.middleware.tenant import TenantContextMiddleware
 from app.modules.admin.devices.router import router as admin_devices_router
 from app.modules.admin.users.router import router as admin_users_router
@@ -23,6 +24,8 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(AuditLogMiddleware)
+    # Tenant must run before audit logging (sets request.state.principal).
     app.add_middleware(TenantContextMiddleware)
     app.include_router(health_router)
     app.include_router(auth_router)
