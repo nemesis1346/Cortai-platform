@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import Request, Response
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -67,6 +68,19 @@ async def _best_effort_before_snapshot(
         )
         m = row.mappings().first()
         return dict(m) if m is not None else None
+    if entity_type == "admin_property":
+        row = await session.execute(
+            text(
+                """
+                select id, org_id, name, slug, marsha_property_id, address, room_count, status, created_at, updated_at
+                from properties
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": entity_id, "org_id": str(principal.org_id)},
+        )
+        m = row.mappings().first()
+        return dict(m) if m is not None else None
     return None
 
 
@@ -76,6 +90,8 @@ def _entity_type_for_path(path: str) -> str:
         return "admin_user"
     if path.startswith("/api/admin/devices"):
         return "admin_device"
+    if path.startswith("/api/admin/properties"):
+        return "admin_property"
     if path.startswith("/api/operations/"):
         return "operations"
     return "unknown"
@@ -151,6 +167,10 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         ip = _client_ip(request)
         user_agent = request.headers.get("user-agent")
 
+        # Ensure JSONB params are serializable (uuid/datetime -> strings).
+        safe_before_json = jsonable_encoder(before_json) if before_json is not None else None
+        safe_after_json = jsonable_encoder(after_json) if after_json is not None else None
+
         # Use a dedicated session so audit doesn't depend on request dependencies.
         async with SessionLocal() as session:
             await set_current_org(session, str(principal.org_id))
@@ -178,8 +198,8 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                     "action": action,
                     "entity_type": entity_type,
                     "entity_id": entity_id,
-                    "before_json": before_json,
-                    "after_json": after_json,
+                    "before_json": safe_before_json,
+                    "after_json": safe_after_json,
                     "ts": datetime.now(UTC),
                     "ip": ip,
                     "user_agent": user_agent,

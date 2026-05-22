@@ -2,6 +2,7 @@ import enum
 import uuid
 from datetime import UTC, datetime
 
+import sqlalchemy as sa
 from sqlalchemy import DateTime, Enum, ForeignKey, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -20,6 +21,11 @@ class UserStatus(enum.StrEnum):
     ACTIVE = "ACTIVE"
     INVITED = "INVITED"
     DISABLED = "DISABLED"
+
+
+class PropertyStatus(enum.StrEnum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
 
 
 class TimestampMixin:
@@ -65,3 +71,25 @@ class User(TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
     organization: Mapped[Organization] = relationship(back_populates="users")
+
+
+class Property(TimestampMixin, Base):
+    __tablename__ = "properties"
+    __table_args__ = (UniqueConstraint("org_id", "slug", name="uq_properties_org_slug"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False
+    )
+
+    name: Mapped[str] = mapped_column(String(180), nullable=False)
+    slug: Mapped[str] = mapped_column(String(80), nullable=False)
+
+    marsha_property_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    address: Mapped[str | None] = mapped_column(sa.Text(), nullable=True)  # type: ignore[name-defined]
+    room_count: Mapped[int | None] = mapped_column(sa.Integer(), nullable=True)  # type: ignore[name-defined]
+    status: Mapped[PropertyStatus] = mapped_column(
+        Enum(PropertyStatus, name="property_status"), default=PropertyStatus.ACTIVE, nullable=False
+    )

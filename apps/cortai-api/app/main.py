@@ -10,6 +10,7 @@ from app.logging import configure_logging
 from app.middleware.audit import AuditLogMiddleware
 from app.middleware.tenant import TenantContextMiddleware
 from app.modules.admin.devices.router import router as admin_devices_router
+from app.modules.admin.properties.router import router as admin_properties_router
 from app.modules.admin.users.router import router as admin_users_router
 
 
@@ -32,6 +33,7 @@ def create_app() -> FastAPI:
     app.include_router(devices_router)
     app.include_router(admin_users_router)
     app.include_router(admin_devices_router)
+    app.include_router(admin_properties_router)
     app.include_router(live_router)
     return app
 
