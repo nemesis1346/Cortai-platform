@@ -58,7 +58,10 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,_rgba(0,196,163,0.16),_transparent_35%),#0b0f1a] p-6">
+    <main
+      className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,_rgba(0,196,163,0.16),_transparent_35%),#0b0f1a] p-6"
+      data-testid="login-page"
+    >
       <div className="w-full max-w-md">
         <div className="mb-5 flex items-start gap-4">
           <div>
@@ -97,7 +100,11 @@ export default function LoginPage() {
               autoComplete="current-password"
               data-testid="login-password"
             />
-            {error ? <p className="text-xs text-cortai-red">{error}</p> : null}
+            {error ? (
+              <p className="text-xs text-cortai-red" data-testid="login-error">
+                {error}
+              </p>
+            ) : null}
             <Button type="submit" disabled={loading} data-testid="login-submit">
               {loading ? t("loading") : t("submit")}
             </Button>

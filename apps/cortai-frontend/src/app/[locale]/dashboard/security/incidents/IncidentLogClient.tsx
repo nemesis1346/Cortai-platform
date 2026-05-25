@@ -229,15 +229,18 @@ export function IncidentLogClient() {
               applyFilters(q, sev);
             }}
             className="flex flex-wrap gap-2"
+            data-testid="incidents-filters"
           >
             <input
               name="search"
               defaultValue={search}
+              data-testid="incidents-search"
               className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-1.5 text-xs outline-none focus:border-cortai-teal"
               placeholder={t("search")}
             />
             <select
               name="severity"
+              data-testid="incidents-severity-filter"
               className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-1.5 text-xs outline-none focus:border-cortai-teal"
               value={severityFilter}
               aria-label={t("severityFilter")}
@@ -248,7 +251,7 @@ export function IncidentLogClient() {
                 <option key={sev} value={sev}>{sev}</option>
               ))}
             </select>
-            <Button type="submit" variant="ghost">
+            <Button type="submit" variant="ghost" data-testid="incidents-apply-filters">
               {t("filter")}
             </Button>
           </form>
@@ -277,6 +280,7 @@ export function IncidentLogClient() {
           <div className="flex items-center gap-2">
             <span>{t("rowsPerPage")}</span>
             <select
+              data-testid="incidents-page-size"
               className="rounded-md border border-cortai-border bg-cortai-bg px-2 py-1 text-xs text-cortai-text outline-none focus:border-cortai-teal"
               value={pageSize}
               onChange={(event) => {
@@ -293,13 +297,13 @@ export function IncidentLogClient() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <span>
+            <span data-testid="incidents-pagination-label">
               {t("page")} {page} {t("of")} {totalPages}
             </span>
-            <Button type="button" variant="ghost" disabled={!canPrev} onClick={() => pushQuery({ page: page - 1 })}>
+            <Button type="button" variant="ghost" data-testid="incidents-prev" disabled={!canPrev} onClick={() => pushQuery({ page: page - 1 })}>
               {t("previous")}
             </Button>
-            <Button type="button" variant="ghost" disabled={!canNext} onClick={() => pushQuery({ page: page + 1 })}>
+            <Button type="button" variant="ghost" data-testid="incidents-next" disabled={!canNext} onClick={() => pushQuery({ page: page + 1 })}>
               {t("next")}
             </Button>
           </div>

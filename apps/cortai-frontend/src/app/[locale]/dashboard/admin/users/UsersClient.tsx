@@ -199,15 +199,18 @@ export function UsersClient() {
               applyFilters(value, role);
             }}
             className="flex gap-2"
+            data-testid="users-filters"
           >
             <input
               name="search"
               defaultValue={search}
+              data-testid="users-search"
               className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-1.5 text-xs outline-none focus:border-cortai-teal"
               placeholder={t("search")}
             />
             <select
               name="role"
+              data-testid="users-role-filter"
               className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-1.5 text-xs outline-none focus:border-cortai-teal"
               value={roleFilter}
               aria-label={t("roleFilter")}
@@ -220,13 +223,14 @@ export function UsersClient() {
                 <option key={role} value={role}>{role}</option>
               ))}
             </select>
-            <Button type="submit" variant="ghost">
+            <Button type="submit" variant="ghost" data-testid="users-apply-filters">
               {t("filter")}
             </Button>
           </form>
         }
       >
         <Table headers={[t("name"), t("email"), t("role"), t("status"), t("actions")]}>
+          {/* data-testid lives on container for stable selection */}
           {users.map((user) => (
             <tr key={user.id} className="hover:bg-white/[0.02]">
               <Td>{user.full_name}</Td>
@@ -239,10 +243,20 @@ export function UsersClient() {
               </Td>
               <Td>
                 <div className="flex gap-2">
-                  <Button variant="ghost" type="button" onClick={() => openEditModal(user)}>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    data-testid={`users-edit-${user.id}`}
+                    onClick={() => openEditModal(user)}
+                  >
                     {t("edit")}
                   </Button>
-                  <Button variant="danger" type="button" onClick={() => void deleteUser(user.id)}>
+                  <Button
+                    variant="danger"
+                    type="button"
+                    data-testid={`users-delete-${user.id}`}
+                    onClick={() => void deleteUser(user.id)}
+                  >
                     {t("delete")}
                   </Button>
                 </div>
@@ -254,6 +268,7 @@ export function UsersClient() {
           <div className="flex items-center gap-2">
             <span>{t("rowsPerPage")}</span>
             <select
+              data-testid="users-page-size"
               className="rounded-md border border-cortai-border bg-cortai-bg px-2 py-1 text-xs text-cortai-text outline-none focus:border-cortai-teal"
               value={pageSize}
               onChange={(event) => {
@@ -270,13 +285,14 @@ export function UsersClient() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <span>
+            <span data-testid="users-pagination-label">
               {t("page")} {page} {t("of")} {totalPages}
             </span>
             <Button
               type="button"
               variant="ghost"
               disabled={!canPrev}
+              data-testid="users-prev"
               onClick={() => pushQuery({ page: page - 1 })}
             >
               {t("previous")}
@@ -285,6 +301,7 @@ export function UsersClient() {
               type="button"
               variant="ghost"
               disabled={!canNext}
+              data-testid="users-next"
               onClick={() => pushQuery({ page: page + 1 })}
             >
               {t("next")}

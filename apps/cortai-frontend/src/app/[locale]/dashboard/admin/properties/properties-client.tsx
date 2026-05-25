@@ -180,7 +180,10 @@ export function PropertiesClient() {
 
   if (!isAdmin) {
     return (
-      <div className="rounded-lg border border-cortai-border bg-cortai-bg2 p-4 text-xs text-cortai-text2">
+      <div
+        className="rounded-lg border border-cortai-border bg-cortai-bg2 p-4 text-xs text-cortai-text2"
+        data-testid="properties-restricted"
+      >
         {navT("adminRestricted")}
       </div>
     );
@@ -212,14 +215,16 @@ export function PropertiesClient() {
               pushQuery({ search: q, page: 1 });
             }}
             className="flex gap-2"
+            data-testid="properties-filters"
           >
             <input
               name="search"
               defaultValue={search}
+              data-testid="properties-search"
               className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-1.5 text-xs outline-none focus:border-cortai-teal"
               placeholder={t("search")}
             />
-            <Button type="submit" variant="ghost">
+            <Button type="submit" variant="ghost" data-testid="properties-apply-filters">
               {t("filter")}
             </Button>
           </form>
@@ -237,10 +242,10 @@ export function PropertiesClient() {
               <Td className="text-[11px] text-cortai-text2">{p.room_count ?? "—"}</Td>
               <Td>
                 <div className="flex gap-2">
-                  <Button variant="ghost" type="button" onClick={() => openEdit(p)}>
+                  <Button variant="ghost" type="button" data-testid={`properties-edit-${p.id}`} onClick={() => openEdit(p)}>
                     {t("edit")}
                   </Button>
-                  <Button variant="danger" type="button" onClick={() => void remove(p.id)}>
+                  <Button variant="danger" type="button" data-testid={`properties-delete-${p.id}`} onClick={() => void remove(p.id)}>
                     {t("delete")}
                   </Button>
                 </div>
@@ -253,6 +258,7 @@ export function PropertiesClient() {
           <div className="flex items-center gap-2">
             <span>{t("rowsPerPage")}</span>
             <select
+              data-testid="properties-page-size"
               className="rounded-md border border-cortai-border bg-cortai-bg px-2 py-1 text-xs text-cortai-text outline-none focus:border-cortai-teal"
               value={pageSize}
               onChange={(event) => {
@@ -269,13 +275,13 @@ export function PropertiesClient() {
           </div>
 
           <div className="ml-auto flex items-center gap-2">
-            <span>
+            <span data-testid="properties-pagination-label">
               {t("page")} {page} {t("of")} {totalPages}
             </span>
-            <Button type="button" variant="ghost" disabled={!canPrev} onClick={() => pushQuery({ page: page - 1 })}>
+            <Button type="button" variant="ghost" data-testid="properties-prev" disabled={!canPrev} onClick={() => pushQuery({ page: page - 1 })}>
               {t("previous")}
             </Button>
-            <Button type="button" variant="ghost" disabled={!canNext} onClick={() => pushQuery({ page: page + 1 })}>
+            <Button type="button" variant="ghost" data-testid="properties-next" disabled={!canNext} onClick={() => pushQuery({ page: page + 1 })}>
               {t("next")}
             </Button>
           </div>
