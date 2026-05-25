@@ -144,7 +144,7 @@ export function Sidebar({ locale }: { locale: string }) {
         href: (l) => `/${l}/dashboard/operations`,
         items: [
           { id: "live", label: t("live"), href: (l) => `/${l}/dashboard/live` },
-          { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/operations/incidents` }
+          { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` }
         ]
       },
       {

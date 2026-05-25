@@ -104,4 +104,31 @@
     "next": "Suivant",
     "rowsPerPage": "Lignes par page"
   }
+  ,
+  "incidents": {
+    "title": "Journal d'incidents",
+    "subtitle": "Incidents opérationnels signalés par le personnel et les systèmes.",
+    "directory": "Incidents",
+    "search": "Rechercher des incidents",
+    "filter": "Filtrer",
+    "severityFilter": "Filtre de gravité",
+    "allSeverities": "Toutes les gravités",
+    "severity": "Gravité",
+    "status": "Statut",
+    "createdAt": "Créé",
+    "titleCol": "Titre",
+    "description": "Description",
+    "propertyId": "ID propriété",
+    "rowsPerPage": "Lignes par page",
+    "page": "Page",
+    "of": "sur",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "newIncident": "Nouvel incident",
+    "create": "Créer l'incident",
+    "saving": "Enregistrement...",
+    "close": "Fermer",
+    "exportCsv": "Exporter CSV",
+    "selectPropertyFirst": "Sélectionnez d'abord une propriété."
+  }
 }

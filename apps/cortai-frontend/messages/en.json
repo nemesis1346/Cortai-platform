@@ -104,4 +104,31 @@
     "next": "Next",
     "rowsPerPage": "Rows per page"
   }
+  ,
+  "incidents": {
+    "title": "Incident Log",
+    "subtitle": "Operational incidents reported by staff and systems.",
+    "directory": "Incidents",
+    "search": "Search incidents",
+    "filter": "Filter",
+    "severityFilter": "Severity filter",
+    "allSeverities": "All severities",
+    "severity": "Severity",
+    "status": "Status",
+    "createdAt": "Created",
+    "titleCol": "Title",
+    "description": "Description",
+    "propertyId": "Property ID",
+    "rowsPerPage": "Rows per page",
+    "page": "Page",
+    "of": "of",
+    "previous": "Previous",
+    "next": "Next",
+    "newIncident": "New incident",
+    "create": "Create incident",
+    "saving": "Saving...",
+    "close": "Close",
+    "exportCsv": "Export CSV",
+    "selectPropertyFirst": "Select a property first."
+  }
 }

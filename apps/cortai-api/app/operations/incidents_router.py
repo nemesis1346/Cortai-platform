@@ -43,6 +43,7 @@ async def list_incidents(
     property_id: uuid.UUID | None = None,
     severity: IncidentSeverity | None = None,
     status: IncidentStatus | None = None,
+    search: str | None = None,
     start: str | None = None,
     end: str | None = None,
 ) -> IncidentList:
@@ -57,6 +58,9 @@ async def list_incidents(
     if status is not None:
         filters.append("status = :status")
         params["status"] = status.value
+    if search:
+        filters.append("(title ilike :search or description ilike :search)")
+        params["search"] = f"%{search.strip()}%"
     if (dt := _parse_dt(start)) is not None:
         filters.append("created_at >= :start")
         params["start"] = dt
@@ -141,6 +145,7 @@ async def export_incidents_csv(
     property_id: uuid.UUID | None = None,
     severity: IncidentSeverity | None = None,
     status: IncidentStatus | None = None,
+    search: str | None = None,
     start: str | None = None,
     end: str | None = None,
 ) -> Response:
@@ -156,6 +161,9 @@ async def export_incidents_csv(
     if status is not None:
         filters.append("status = :status")
         params["status"] = status.value
+    if search:
+        filters.append("(title ilike :search or description ilike :search)")
+        params["search"] = f"%{search.strip()}%"
     if (dt := _parse_dt(start)) is not None:
         filters.append("created_at >= :start")
         params["start"] = dt
