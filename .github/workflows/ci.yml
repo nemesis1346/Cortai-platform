@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python (ruff, mypy, pytest)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Start Postgres (Timescale) via docker compose
+        run: |
+          docker compose up -d postgres
+          for i in {1..60}; do
+            if docker compose exec -T postgres pg_isready -U cortai_app -d cortai; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Postgres did not become ready in time"
+          docker compose logs postgres || true
+          exit 1
+
+      - name: Generate ephemeral JWT keys for tests
+        run: |
+          openssl genrsa -out private.pem 2048
+          openssl rsa -in private.pem -pubout -out public.pem
+          {
+            echo "JWT_PRIVATE_KEY<<'EOF'"
+            cat private.pem
+            echo "EOF"
+            echo "JWT_PUBLIC_KEY<<'EOF'"
+            cat public.pem
+            echo "EOF"
+            echo "JWT_ISSUER=cortai-api"
+            echo "JWT_AUDIENCE=cortai-platform"
+          } >> "$GITHUB_ENV"
+
+      - name: cortai-api ruff
+        working-directory: apps/cortai-api
+        env:
+          DATABASE_URL: postgresql+asyncpg://cortai_app:cortai_app@localhost:5432/cortai
+        run: |
+          ~/.local/bin/uv sync --dev
+          ~/.local/bin/uv run ruff check .
+
+      - name: cortai-api mypy
+        working-directory: apps/cortai-api
+        env:
+          DATABASE_URL: postgresql+asyncpg://cortai_app:cortai_app@localhost:5432/cortai
+        run: ~/.local/bin/uv run mypy .
+
+      - name: cortai-api migrate + pytest
+        working-directory: apps/cortai-api
+        env:
+          DATABASE_URL: postgresql+asyncpg://cortai_app:cortai_app@localhost:5432/cortai
+        run: |
+          ~/.local/bin/uv run alembic upgrade head
+          ~/.local/bin/uv run pytest
+
+      - name: edge-ingest ruff/mypy/pytest
+        working-directory: apps/edge-ingest
+        run: |
+          ~/.local/bin/uv sync --dev
+          ~/.local/bin/uv run ruff check .
+          ~/.local/bin/uv run mypy .
+          ~/.local/bin/uv run pytest
+
+  frontend:
+    name: Frontend (lint, tsc, playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: apps/cortai-frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/cortai-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build
+        run: npm run build
+
+      - name: Start Next.js and run Playwright
+        env:
+          PORT: "3000"
+        run: |
+          npm run start -- -p 3000 &
+          for i in {1..60}; do
+            if curl -fsS "http://127.0.0.1:3000/en/login" >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npx playwright test
+
