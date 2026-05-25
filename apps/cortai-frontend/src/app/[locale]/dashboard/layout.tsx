@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { LocaleToggleLinks } from "@/components/i18n/LocaleToggleLinks";
+import { PropertySwitcher } from "@/components/nav/PropertySwitcher";
 import { Sidebar } from "@/components/nav/Sidebar";
 
 export default async function DashboardLayout({
@@ -21,6 +22,7 @@ export default async function DashboardLayout({
             {t("live")}
           </span>
           <div className="ml-auto flex items-center gap-2 text-xs text-cortai-text2">
+            <PropertySwitcher />
             <LocaleToggleLinks
               items={[
                 { locale: "en", label: t("english") },

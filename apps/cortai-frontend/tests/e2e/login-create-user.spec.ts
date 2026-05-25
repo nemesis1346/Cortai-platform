@@ -49,6 +49,15 @@ test("login and create user happy path", async ({ page }) => {
       })
     });
   });
+
+  await page.route("**/api/properties", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify([
+        { id: "80b6c65b-554b-4ab0-aba0-f42bcd7ee610", name: "Hotel A", slug: "hotel-a" }
+      ])
+    });
+  });
   await page.route("**/api/admin/users**", async (route) => {
     if (route.request().method() === "POST") {
       await route.fulfill({
