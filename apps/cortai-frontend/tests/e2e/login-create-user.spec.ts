@@ -58,6 +58,16 @@ test("login and create user happy path", async ({ page }) => {
       ])
     });
   });
+
+  await page.context().addCookies([
+    {
+      name: "cortai_property_id",
+      value: "80b6c65b-554b-4ab0-aba0-f42bcd7ee610",
+      url: "http://localhost:3000",
+      path: "/",
+      sameSite: "Lax"
+    }
+  ]);
   await page.route("**/api/admin/users**", async (route) => {
     if (route.request().method() === "POST") {
       await route.fulfill({

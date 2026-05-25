@@ -1,6 +1,7 @@
-import { redirect } from "next/navigation";
+import { CommandCenterClient } from "./CommandCenterClient";
 
 export default function OperationsPage({ params }: { params: { locale: string } }) {
-  redirect(`/${params.locale}/dashboard/live`);
+  void params;
+  return <CommandCenterClient />;
 }
 
