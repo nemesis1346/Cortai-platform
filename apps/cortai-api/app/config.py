@@ -12,6 +12,17 @@ class Settings(BaseSettings):
     database_url: str = Field(
         default="postgresql+asyncpg://cortai_app:cortai_app@localhost:5432/cortai"
     )
+    # Optional dependencies used for NFR-OBS-02 health reporting.
+    redis_url: str | None = None
+    mqtt_host: str = "127.0.0.1"
+    mqtt_port: int = 8883
+
+    # Build metadata (best-effort; can be set by deploy/CI).
+    build_sha: str | None = None
+    build_version: str | None = None
+
+    # Health endpoint should be fast for alarms.
+    health_timeout_s: float = Field(default=1.5, ge=0.1, le=10.0)
     jwt_private_key: str = Field(default="")
     jwt_public_key: str = Field(default="")
     jwt_issuer: str = "cortai-api"
