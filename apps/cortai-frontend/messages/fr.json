@@ -35,6 +35,7 @@
     "admin": "Administration",
     "users": "Utilisateurs",
     "devices": "Appareils",
+    "properties": "Propriétés",
     "adminRestricted": "Menu admin",
     "logout": "Se déconnecter",
     "loggingOut": "Déconnexion..."
@@ -130,5 +131,35 @@
     "close": "Fermer",
     "exportCsv": "Exporter CSV",
     "selectPropertyFirst": "Sélectionnez d'abord une propriété."
+  }
+  ,
+  "properties": {
+    "title": "Admin / Propriétés",
+    "subtitle": "Gérez les propriétés de votre organisation.",
+    "registry": "Registre des propriétés",
+    "search": "Rechercher des propriétés",
+    "filter": "Filtrer",
+    "name": "Nom",
+    "slug": "Slug",
+    "status": "Statut",
+    "marsha": "ID MARSHA",
+    "address": "Adresse",
+    "roomCount": "Nombre de chambres",
+    "roomCountMustBeInt": "Le nombre de chambres doit être un entier.",
+    "actions": "Actions",
+    "create": "Créer une propriété",
+    "createProperty": "Créer une propriété",
+    "editProperty": "Modifier la propriété",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "save": "Enregistrer",
+    "update": "Mettre à jour",
+    "saving": "Enregistrement...",
+    "page": "Page",
+    "of": "sur",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "rowsPerPage": "Lignes par page"
   }
 }
