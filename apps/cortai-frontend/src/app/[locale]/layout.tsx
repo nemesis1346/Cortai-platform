@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ToastProvider } from "@/components/ui/Toast";
 import { logger } from "@/lib/logger";
 
 export const metadata: Metadata = {
@@ -18,7 +19,9 @@ export default async function LocaleLayout({
   logger.debug("render_locale_layout");
   return (
     <NextIntlClientProvider messages={messages}>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </AuthProvider>
     </NextIntlClientProvider>
   );
 }
