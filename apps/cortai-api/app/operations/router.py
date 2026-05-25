@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends
 
 from app.auth.dependencies import PrincipalDep
 from app.operations.schemas import OperationsKpis
+from app.operations.incidents_router import router as incidents_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
@@ -44,4 +45,8 @@ async def get_kpis(principal: PrincipalDep) -> OperationsKpis:
         open_incidents=open_incidents,
         hk_progress_pct=hk_progress_pct,
     )
+
+
+# Nest incidents under /api/operations/incidents/*
+router.include_router(incidents_router)
 

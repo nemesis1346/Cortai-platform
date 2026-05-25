@@ -81,6 +81,19 @@ async def _best_effort_before_snapshot(
         )
         m = row.mappings().first()
         return dict(m) if m is not None else None
+    if entity_type == "operations_incident":
+        row = await session.execute(
+            text(
+                """
+                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                from operations.incidents
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": entity_id, "org_id": str(principal.org_id)},
+        )
+        m = row.mappings().first()
+        return dict(m) if m is not None else None
     return None
 
 
@@ -92,6 +105,8 @@ def _entity_type_for_path(path: str) -> str:
         return "admin_device"
     if path.startswith("/api/admin/properties"):
         return "admin_property"
+    if path.startswith("/api/operations/incidents"):
+        return "operations_incident"
     if path.startswith("/api/operations/"):
         return "operations"
     return "unknown"
