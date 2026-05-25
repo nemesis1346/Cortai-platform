@@ -1,9 +1,24 @@
 import { test, expect } from "@playwright/test";
 
 test("login and create user happy path", async ({ page }) => {
+  // The dashboard is protected by middleware that requires `cortai_access_token` cookie.
+  await page.context().addCookies([
+    {
+      name: "cortai_access_token",
+      value: "test-token",
+      url: "http://localhost:3000",
+      path: "/",
+      httpOnly: true,
+      sameSite: "Lax"
+    }
+  ]);
+
   await page.route("**/api/auth/login", async (route) => {
     await route.fulfill({
       contentType: "application/json",
+      headers: {
+        "set-cookie": "cortai_access_token=test-token; Path=/; SameSite=Lax"
+      },
       body: JSON.stringify({
         access_token: "test-token",
         token_type: "bearer",
@@ -16,6 +31,21 @@ test("login and create user happy path", async ({ page }) => {
           role: "IT_ADMIN",
           status: "ACTIVE"
         }
+      })
+    });
+  });
+
+  // AuthProvider loads the current user on mount.
+  await page.route("**/api/auth/me", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: "00000000-0000-0000-0000-000000000001",
+        org_id: "00000000-0000-0000-0000-000000000010",
+        email: "admin@hotel-a.test",
+        full_name: "Admin",
+        role: "IT_ADMIN",
+        status: "ACTIVE"
       })
     });
   });

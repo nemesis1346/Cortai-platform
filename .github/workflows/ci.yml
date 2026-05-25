@@ -121,7 +121,7 @@ jobs:
         env:
           PORT: "3000"
         run: |
-          npm run start -- -p 3000 &
+          node .next/standalone/server.js &
           for i in {1..60}; do
             if curl -fsS "http://127.0.0.1:3000/en/login" >/dev/null; then
               break
