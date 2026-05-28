@@ -84,6 +84,32 @@ jobs:
           ~/.local/bin/uv run mypy .
           ~/.local/bin/uv run pytest
 
+  edge-ingest-load-test:
+    name: Edge ingest load test (NFR-PERF-02)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install Mosquitto broker
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mosquitto
+
+      - name: Run NFR-PERF-02 simulator load test
+        env:
+          MIN_ACHIEVED_MPS: "95"
+        run: ./apps/edge-ingest/scripts/ci_load_test.sh
+
   frontend:
     name: Frontend (lint, tsc, playwright)
     runs-on: ubuntu-latest
