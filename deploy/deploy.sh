@@ -61,6 +61,10 @@ cd /opt/cortai/apps/cortai-api
 uv sync
 uv run alembic upgrade head
 
+# SECURITY: generate Mosquitto ACL from device registry before restarting broker.
+# This binds org/property to device identity at the broker (tenant isolation).
+uv run python -m app.scripts.generate_mosquitto_acl --out /opt/cortai/deploy/mosquitto/aclfile
+
 # edge-ingest
 cd /opt/cortai/apps/edge-ingest
 uv sync

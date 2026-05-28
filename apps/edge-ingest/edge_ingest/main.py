@@ -15,6 +15,7 @@ from paho.mqtt import client as paho_mqtt
 from edge_ingest.config import get_settings
 from edge_ingest.db import (
     connect_pool,
+    fetch_device_org_property_by_device_id,
     fetch_org_id_by_slug,
     fetch_property_id_by_slug,
     set_current_org,
@@ -35,6 +36,7 @@ class _LookupCache:
     def __init__(self) -> None:
         self.org_by_slug: dict[str, str] = {}
         self.property_by_key: dict[tuple[str, str], str] = {}
+        self.device_org_property_by_device_id: dict[str, tuple[str, str | None]] = {}
 
     def get_org(self, slug: str) -> str | None:
         return self.org_by_slug.get(slug)
@@ -47,6 +49,12 @@ class _LookupCache:
 
     def set_property(self, org_id: str, slug: str, property_id: str) -> None:
         self.property_by_key[(org_id, slug)] = property_id
+
+    def get_device_org_property(self, device_id: str) -> tuple[str, str | None] | None:
+        return self.device_org_property_by_device_id.get(device_id)
+
+    def set_device_org_property(self, device_id: str, org_id: str, property_id: str | None) -> None:
+        self.device_org_property_by_device_id[device_id] = (org_id, property_id)
 
 
 def _parse_ts(value: Any) -> datetime:
@@ -292,6 +300,28 @@ async def run() -> None:
                     )
                     continue
 
+                # SECURITY: tenant isolation backstop.
+                # The broker ACL must enforce topic isolation, but edge-ingest also verifies that
+                # the topic's {org}/{property} matches the device's registered org/property.
+                device_key = str(t.device_id)
+                registered = cache.get_device_org_property(device_key)
+                if registered is None:
+                    async with pool.acquire() as conn:
+                        registered = await fetch_device_org_property_by_device_id(
+                            conn, device_id=device_key
+                        )
+                    if registered is None:
+                        logger.warning(
+                            "edge.device_identity_unresolved",
+                            topic=topic,
+                            device_id=device_key,
+                            org=t.org,
+                            property=t.property,
+                        )
+                        stats["rejected"] += 1
+                        continue
+                    cache.set_device_org_property(device_key, registered[0], registered[1])
+
                 org_id = cache.get_org(t.org)
                 if org_id is None:
                     async with pool.acquire() as conn:
@@ -302,6 +332,18 @@ async def run() -> None:
                         continue
                     cache.set_org(t.org, org_id)
 
+                if registered[0] != org_id:
+                    logger.warning(
+                        "edge.topic_org_mismatch",
+                        topic=topic,
+                        device_id=device_key,
+                        topic_org=t.org,
+                        registered_org_id=registered[0],
+                        resolved_topic_org_id=org_id,
+                    )
+                    stats["rejected"] += 1
+                    continue
+
                 property_id = cache.get_property(org_id, t.property)
                 if property_id is None:
                     async with pool.acquire() as conn:
@@ -311,6 +353,19 @@ async def run() -> None:
                         stats["dropped"] += 1
                         continue
                     cache.set_property(org_id, t.property, property_id)
+
+                if registered[1] is not None and registered[1] != property_id:
+                    logger.warning(
+                        "edge.topic_property_mismatch",
+                        topic=topic,
+                        device_id=device_key,
+                        topic_org=t.org,
+                        topic_property=t.property,
+                        registered_property_id=registered[1],
+                        resolved_topic_property_id=property_id,
+                    )
+                    stats["rejected"] += 1
+                    continue
 
                 if settings.perf_mode:
                     # Fast path: batch inserts; optionally skip last-seen updates and notify.

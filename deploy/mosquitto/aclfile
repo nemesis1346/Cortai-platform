@@ -1,22 +1,16 @@
 # Mosquitto ACL file
 #
-# We use mTLS and map the client cert identity to username:
-#   use_identity_as_username true
+# This file is now generated from the devices registry.
+# Do NOT edit it by hand — run:
+#   uv run python -m app.scripts.generate_mosquitto_acl --out deploy/mosquitto/aclfile
 #
-# Convention for this V1 broker:
-# - Client cert CN (or SAN mapped by Mosquitto) should be: device_id
-# - Device is allowed to publish and subscribe only to its own device_id path.
+# SECURITY NOTE:
+# The previous rule (`pattern readwrite cortai/+/+/edge/%u/+`) allowed a device to publish
+# to any org/property as long as device_id matched. That breaks tenant isolation.
 #
-# Topics: cortai/{org}/{property}/edge/{device_id}/{type}
-# Types: detection | telemetry | health | event
+# The generated ACL binds:
+# - `{org}` to the device's org slug
+# - `{property}` to the device's property slug when it is bound to a property
 #
-# NOTE: Mosquitto ACL variable substitution works with `pattern` rules.
-#   %u = username (mapped from client cert identity via use_identity_as_username)
-
-# Ingest service (privileged): can read all device topics.
-user edge-ingest
-topic read cortai/+/+/edge/+/+
-
-# Default rule for device clients: only their own device_id path.
-pattern readwrite cortai/+/+/edge/%u/+
+# (plus a privileged `edge-ingest` user that can subscribe to all device topics).
 

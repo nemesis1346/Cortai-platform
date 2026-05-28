@@ -1,0 +1,1780 @@
+CONFIDENTIAL — COrtai V1.0 SOFTWARE REQUIREMENTS SPECIFICATIONCOrtai V1.0Software Requirements Specification
+CONFIDENTIAL — COrtai V1.0 SOFTWARE REQUIREMENTS SPECIFICATION
+COrtai V1.0
+Software Requirements Specification
+Document ref | CORTAI-SRS-V1-001 · Revision 1.0
+Document ref
+CORTAI-SRS-V1-001 · Revision 1.0
+Date | May 2026
+Date
+May 2026
+Supersedes | (first issue)
+Supersedes
+(first issue)
+Prepared by | Yassine Essahli · COrtai Inc.
+Prepared by
+Yassine Essahli · COrtai Inc.
+Purpose | Software Requirements Specification (IEEE 830-style) for COrtai V1.0 — covering business intent, functional requirements per module, non-functional requirements, external interfaces, data, deployment and acceptance criteria for the TownePlace Suites Marriott Vaughan (TPSV) pilot.
+Purpose
+Software Requirements Specification (IEEE 830-style) for COrtai V1.0 — covering business intent, functional requirements per module, non-functional requirements, external interfaces, data, deployment and acceptance criteria for the TownePlace Suites Marriott Vaughan (TPSV) pilot.
+Target volumes | Pilot: 1 property (TPSV, 122 rooms) · V1.0 scale ceiling: 10 properties / 100 edge devices
+Target volumes
+Pilot: 1 property (TPSV, 122 rooms) · V1.0 scale ceiling: 10 properties / 100 edge devices
+Confidentiality | Confidential — for authorised customer / integrator use only
+Confidentiality
+Confidential — for authorised customer / integrator use only
+Rev 1.0 — Change Summary: First issue. This specification consolidates the business and engineering requirements that COrtai V1.0 must satisfy before going live with the TPSV Marriott pilot. It introduces the distributed-edge ingestion model (MQTT JSON) and the Local Brain (customer-owned RAG over Postgres + pgvector + Bedrock Claude).
+Rev 1.0 — Change Summary: First issue. This specification consolidates the business and engineering requirements that COrtai V1.0 must satisfy before going live with the TPSV Marriott pilot. It introduces the distributed-edge ingestion model (MQTT JSON) and the Local Brain (customer-owned RAG over Postgres + pgvector + Bedrock Claude).
+Section | Type | Summary
+Section
+Type
+Summary
+4 — Business Requirements | New | 15 P0/P1 BRs covering single pane of glass, fleet visibility, Local Brain, MTTR, Marriott-readiness, privacy, WAN resilience, auditability.
+4 — Business Requirements
+New
+15 P0/P1 BRs covering single pane of glass, fleet visibility, Local Brain, MTTR, Marriott-readiness, privacy, WAN resilience, auditability.
+5 — Functional Requirements | New | 11 modules: Operations, Hotel Vision, Housekeeping, Forms, AI Intelligence, Guest Messaging, Sales, HR, Revenue, Administration, Security & Network.
+5 — Functional Requirements
+New
+11 modules: Operations, Hotel Vision, Housekeeping, Forms, AI Intelligence, Guest Messaging, Sales, HR, Revenue, Administration, Security & Network.
+5.2 — Hotel Vision | New | 28 algorithms applied per edge device; multi-camera WebRTC grid; per-camera detection feed; zone presets.
+5.2 — Hotel Vision
+New
+28 algorithms applied per edge device; multi-camera WebRTC grid; per-camera detection feed; zone presets.
+5.12 — Distributed Edge | New | New module: distributed edge devices publish detections, telemetry and health via MQTT JSON; backend ingests, persists, and exposes them to the operator UI in real time — without leaking the hardware model name.
+5.12 — Distributed Edge
+New
+New module: distributed edge devices publish detections, telemetry and health via MQTT JSON; backend ingests, persists, and exposes them to the operator UI in real time — without leaking the hardware model name.
+6 — Non-Functional | New | Performance, availability, scalability, security, privacy, maintainability, usability, observability and compatibility budgets.
+6 — Non-Functional
+New
+Performance, availability, scalability, security, privacy, maintainability, usability, observability and compatibility budgets.
+7 — External Interfaces | New | Edge devices, MQTT brokers, AWS Bedrock, voyage-3, Twilio, WhatsApp, IMAP/SMTP, Marriott MGS, Bonvoy GSS, S3, RDS, FCM, APNS.
+7 — External Interfaces
+New
+Edge devices, MQTT brokers, AWS Bedrock, voyage-3, Twilio, WhatsApp, IMAP/SMTP, Marriott MGS, Bonvoy GSS, S3, RDS, FCM, APNS.
+8 — Data Requirements | New | Multi-tenant RLS, TimescaleDB, retention, audit, pgvector HNSW, backups, right-to-erasure.
+8 — Data Requirements
+New
+Multi-tenant RLS, TimescaleDB, retention, audit, pgvector HNSW, backups, right-to-erasure.
+11 — Acceptance Criteria | New | 9-item Definition of Done plus pilot UAT, pen-test, compliance memo, backup drill, runbooks.
+11 — Acceptance Criteria
+New
+9-item Definition of Done plus pilot UAT, pen-test, compliance memo, backup drill, runbooks.
+1 Introduction
+1.1 Purpose
+This document defines the complete set of business and engineering requirements that COrtai V1.0 must satisfy before going live with the TownePlace Suites Marriott Vaughan (TPSV) pilot. It serves as the shared reference between the engineering team, the pilot operator and external reviewers (security, privacy, brand).
+1.2 Scope
+V1.0 covers all eleven product surfaces required to operate a single Marriott TPSV-class property: hotel operations dashboard, physical security and hotel vision, housekeeping mobile app, staff input forms, AI intelligence, unified guest messaging, sales pipeline, staff management, revenue, administration, and security & network. It additionally specifies the ingestion path from distributed edge devices (MQTT JSON), the multi-tenant data model, the deployment architecture (AWS ca-central-1 with VPN-only access) and the acceptance criteria.
+1.3 Definitions and acronyms
+See §14 — Glossary for business terms. The acronym table below covers the technical shortcuts used throughout this specification.
+Term / Acronym | Meaning | Notes / Requirement
+Term / Acronym
+Meaning
+Notes / Requirement
+Edge device | On-premise inference node running the computer-vision pipelines; one or more units per property. | 
+Edge device
+On-premise inference node running the computer-vision pipelines; one or more units per property.
+Distributed edge | Lightweight, per-camera edge inference nodes co-located with cameras; publish detections via MQTT JSON. | 
+Distributed edge
+Lightweight, per-camera edge inference nodes co-located with cameras; publish detections via MQTT JSON.
+BR | Business Requirement (numbered BR-XX) — what the business must achieve. | 
+BR
+Business Requirement (numbered BR-XX) — what the business must achieve.
+FR | Functional Requirement (numbered FR-XX) — what the system must do. | MANDATORY minimum
+FR
+Functional Requirement (numbered FR-XX) — what the system must do.
+MANDATORY minimum
+NFR | Non-Functional Requirement (numbered NFR-XX) — quality attributes. | MANDATORY for NVMe SKU
+NFR
+Non-Functional Requirement (numbered NFR-XX) — quality attributes.
+MANDATORY for NVMe SKU
+SRS | Software Requirements Specification (this document). | MANDATORY · A/B OTA partition layout required.
+SRS
+Software Requirements Specification (this document).
+MANDATORY · A/B OTA partition layout required.
+RLS | Row-Level Security — Postgres mechanism enforcing per-tenant isolation. | [OPTIONAL per SKU] · Long-term AI model and
+RLS
+Row-Level Security — Postgres mechanism enforcing per-tenant isolation.
+[OPTIONAL per SKU] · Long-term AI model and
+PMS | Property Management System | 
+PMS
+Property Management System
+GSS | Guest Satisfaction Survey (Marriott Bonvoy post-stay survey). | 
+GSS
+Guest Satisfaction Survey (Marriott Bonvoy post-stay survey).
+PPE | Personal Protective Equipment (gloves, hairnet, gown for F&B compliance). | 
+PPE
+Personal Protective Equipment (gloves, hairnet, gown for F&B compliance).
+RAG | Retrieval-Augmented Generation (LLM grounded on retrieved context). | 
+RAG
+Retrieval-Augmented Generation (LLM grounded on retrieved context).
+P0 / P1 / P2 | Priority levels — P0 must, P1 should, P2 nice-to-have. | 
+P0 / P1 / P2
+Priority levels — P0 must, P1 should, P2 nice-to-have.
+DoD | Definition of Done — measurable acceptance for a sprint or release. | 
+DoD
+Definition of Done — measurable acceptance for a sprint or release.
+2 Overall Description
+2.1 Product perspective
+COrtai is a vertical hotel operations platform combining edge computer vision, IoT sensing, network security and an AI assistant into a single multi-tenant SaaS, with Marriott TownePlace Suites Vaughan as the first pilot property.
+2.2 Product functions (high level)
+• Real-time monitoring of cameras and IoT sensors with AI-powered analytics.
+• Centralised dashboard for hotel managers and front desk staff.
+• Mobile application for housekeeping, maintenance and security staff.
+• AI assistant (RAG over the hotel's own data) for natural-language operational questions.
+• Unified guest messaging across SMS, WhatsApp, Email and Web Chat.
+• Sales pipeline with SLA-tracked inquiry handling.
+• Staff management with scheduling and certifications.
+• Revenue dashboards and night audit.
+• Multi-tenant administration for the service provider.
+• Direct ingestion from distributed edge devices via MQTT JSON, with end-to-end persistence and real-time display in the operator UI.
+2.3 Operating environment
+• Cloud: AWS ca-central-1 (data residency Canada).
+• Edge: an edge device per camera cluster and/or distributed edge devices co-located with cameras, plus an optional aggregator per hotel.
+• Network: site-to-site VPN between each hotel and the AWS VPC.
+• Browsers: Chromium 118+, Firefox 120+, Safari 17+ (latest two majors).
+• Mobile: Android 10+ (API 29), iOS 16+.
+• OS server: Ubuntu 22.04 LTS.
+2.4 Design and implementation constraints
+• Single EC2 t3.medium for V1.0 — services must collectively fit in 4 GB RAM with 1.5 GB headroom.
+• RDS PostgreSQL 17.6 db.t3.small — schema must remain compatible with TimescaleDB extension availability.
+• VPN-only access — no public-internet endpoints.
+• Port 80 closed at security-group level — TLS via DNS-01 only.
+• Canonical Postgres schema (18 SQL files) is the source of truth; new tables go through migration review.
+• Bedrock Claude (claude-sonnet-4-20250514) is the pinned LLM — no model swap without explicit deployment ticket.
+• voyage-3 embeddings are pinned; the vector(1536) column type forbids dimension changes.
+• All UI strings must support EN + FR (Canadian audience).
+• All guest-facing communication must comply with PHIPA / PIPEDA.
+2.5 Assumptions and dependencies
+• Network Engineering provides timely TLS certificates, DNS records, VPN provisioning and RDS parameter-group changes.
+• The edge-device vendor provides firmware updates and SDK support for the duration of the pilot.
+• Marriott provides read access to MGS API and Bonvoy GSS for the pilot property.
+• Twilio account, WhatsApp Cloud API account, and AWS Bedrock model access are funded by the service provider.
+• TPSV property management staff are available for UAT during sprint demos.
+3 Stakeholders & User Classes
+Each user class has a distinct view of the platform with role-based permissions enforced by Postgres RLS and JWT scopes. Fleet-level operations apply to the entire edge-device estate; per-property operations are RLS-scoped to the user's authorised property.
+Role | Primary surface | AI access
+Role
+Primary surface
+AI access
+Service Provider Admin | Cross-org dashboard, fleet view of all edge devices, deploy controls | Full
+Service Provider Admin
+Cross-org dashboard, fleet view of all edge devices, deploy controls
+Full
+Hotel General Manager | Command Center, Cortai Intel, Revenue dashboards | Full
+Hotel General Manager
+Command Center, Cortai Intel, Revenue dashboards
+Full
+Front Desk Agent | Front Desk, Guest Services, Guest Messaging, Room Monitor | Limited (FAQ)
+Front Desk Agent
+Front Desk, Guest Services, Guest Messaging, Room Monitor
+Limited (FAQ)
+Housekeeping Supervisor | Housekeeping dashboard, schedule, room status | Limited
+Housekeeping Supervisor
+Housekeeping dashboard, schedule, room status
+Limited
+Room Attendant (HK Mobile) | Mobile app — own task list | None
+Room Attendant (HK Mobile)
+Mobile app — own task list
+None
+Maintenance Technician | Mobile app — work orders, building systems | Building Q&A
+Maintenance Technician
+Mobile app — work orders, building systems
+Building Q&A
+Security Officer | Hotel Vision, Incident Log, alerts | Incident summary
+Security Officer
+Hotel Vision, Incident Log, alerts
+Incident summary
+F&B Manager | F&B dashboard, station depletion, breakfast rush | F&B insights
+F&B Manager
+F&B dashboard, station depletion, breakfast rush
+F&B insights
+Sales Manager | Sales pipeline, RFP inbox, templates | Drafting assistance
+Sales Manager
+Sales pipeline, RFP inbox, templates
+Drafting assistance
+Revenue Manager | Revenue dashboard, night audit, GSS | Revenue Q&A
+Revenue Manager
+Revenue dashboard, night audit, GSS
+Revenue Q&A
+HR Manager | Staff Management, scheduling, open positions | HR Q&A
+HR Manager
+Staff Management, scheduling, open positions
+HR Q&A
+IT / System Admin | Settings, integrations, licenses | None
+IT / System Admin
+Settings, integrations, licenses
+None
+Guest (Web Chat) | Web Chat widget | Guided chatbot only
+Guest (Web Chat)
+Web Chat widget
+Guided chatbot only
+4 Business Requirements (BR)
+Business requirements describe what the hotel operator wants to achieve — independent of the technology used. Each BR is met by one or more functional requirements (FR) in §5 and one or more non-functional requirements (NFR) in §6. The traceability is summarised in §15.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+BR-01 | P0 | Single pane of glass for hotel operationsReplace the four to six separate apps the typical Marriott TPSV manager uses today (camera VMS, HK app, guest messaging, sales CRM, building systems, GSS) with a single dashboard.Acceptance: Manager can complete the morning routine (review overnight incidents, check arrivals, check HK status, check pending RFPs) in under 15 minutes from one screen.
+BR-01
+P0
+Single pane of glass for hotel operations
+Replace the four to six separate apps the typical Marriott TPSV manager uses today (camera VMS, HK app, guest messaging, sales CRM, building systems, GSS) with a single dashboard.
+Acceptance: Manager can complete the morning routine (review overnight incidents, check arrivals, check HK status, check pending RFPs) in under 15 minutes from one screen.
+BR-02 | P0 | Real-time visibility on all propertiesThe service-provider admin must be able to see the live status of every edge device, every camera and every property in the fleet without changing context.Acceptance: Fleet view loads under 3 s for up to 10 properties / 100 edge devices and shows red / yellow / green health per device.
+BR-02
+P0
+Real-time visibility on all properties
+The service-provider admin must be able to see the live status of every edge device, every camera and every property in the fleet without changing context.
+Acceptance: Fleet view loads under 3 s for up to 10 properties / 100 edge devices and shows red / yellow / green health per device.
+BR-03 | P0 | Customer-owned intelligence (Local Brain)Hotel operational data, the AI assistant's vector index and conversation history must remain inside the customer's tenant database. No third-party reseller may receive raw data.Acceptance: Audit shows: pgvector index lives in the customer's Postgres; LLM inference uses Bedrock direct; no data is sent to any third-party reseller.
+BR-03
+P0
+Customer-owned intelligence (Local Brain)
+Hotel operational data, the AI assistant's vector index and conversation history must remain inside the customer's tenant database. No third-party reseller may receive raw data.
+Acceptance: Audit shows: pgvector index lives in the customer's Postgres; LLM inference uses Bedrock direct; no data is sent to any third-party reseller.
+BR-04 | P0 | Cut housekeeping cycle timeReduce average room cleaning task close-out time by 20 % vs. baseline measured during week 1 of pilot, by replacing paper checklists with the mobile app.Acceptance: Week 8 measurement on TPSV vs. week 1 baseline — recorded in pilot report.
+BR-04
+P0
+Cut housekeeping cycle time
+Reduce average room cleaning task close-out time by 20 % vs. baseline measured during week 1 of pilot, by replacing paper checklists with the mobile app.
+Acceptance: Week 8 measurement on TPSV vs. week 1 baseline — recorded in pilot report.
+BR-05 | P0 | Reduce mean time to incident responseWhen a security or safety incident is detected (intrusion, vandalism, after-hours pool, child unattended), the right staff must be paged within 60 seconds end-to-end.Acceptance: Synthetic test: trigger a simulated intrusion event, verify the on-duty security officer's mobile shows the alert in <60 s (95th percentile).
+BR-05
+P0
+Reduce mean time to incident response
+When a security or safety incident is detected (intrusion, vandalism, after-hours pool, child unattended), the right staff must be paged within 60 seconds end-to-end.
+Acceptance: Synthetic test: trigger a simulated intrusion event, verify the on-duty security officer's mobile shows the alert in <60 s (95th percentile).
+BR-06 | P0 | Capture every guest interaction in one inboxAll inbound guest messages (SMS, WhatsApp, Email, Web Chat) land in a unified inbox accessible to front desk, with guest history attached.Acceptance: Front desk can answer any of the four channels from the same UI; conversation thread shows last 90 days regardless of channel.
+BR-06
+P0
+Capture every guest interaction in one inbox
+All inbound guest messages (SMS, WhatsApp, Email, Web Chat) land in a unified inbox accessible to front desk, with guest history attached.
+Acceptance: Front desk can answer any of the four channels from the same UI; conversation thread shows last 90 days regardless of channel.
+BR-07 | P0 | AI assistant grounded on hotel dataManager can ask Cortai Intel free-form operational questions and get cited answers.Acceptance: Every answer carries citations to the underlying KB document, detection record or operational table. No ungrounded hallucinations in evaluation set.
+BR-07
+P0
+AI assistant grounded on hotel data
+Manager can ask Cortai Intel free-form operational questions and get cited answers.
+Acceptance: Every answer carries citations to the underlying KB document, detection record or operational table. No ungrounded hallucinations in evaluation set.
+BR-08 | P0 | Multi-tenant isolationHotel A's staff must never see Hotel B's data, even by URL manipulation or token replay.Acceptance: Pen-test attempt: with hotel A's JWT, calling APIs with hotel B's IDs returns 404, never 200. RLS policies cover 100 % of tenant tables.
+BR-08
+P0
+Multi-tenant isolation
+Hotel A's staff must never see Hotel B's data, even by URL manipulation or token replay.
+Acceptance: Pen-test attempt: with hotel A's JWT, calling APIs with hotel B's IDs returns 404, never 200. RLS policies cover 100 % of tenant tables.
+BR-09 | P0 | Marriott-readinessThe data model maps to MARSHA property IDs, room types, Bonvoy member IDs and brand standards.Acceptance: Pilot property has its MARSHA pms_property_id populated; all rooms map to Marriott room codes; 5 brand standards are enforced via forms.
+BR-09
+P0
+Marriott-readiness
+The data model maps to MARSHA property IDs, room types, Bonvoy member IDs and brand standards.
+Acceptance: Pilot property has its MARSHA pms_property_id populated; all rooms map to Marriott room codes; 5 brand standards are enforced via forms.
+BR-10 | P1 | Compliance with Canadian privacy lawPlatform must comply with PHIPA (health information) and PIPEDA (personal information) including data residency, encryption at rest and right to erasure.Acceptance: Compliance memo signed off by external counsel before go-live; data residency = ca-central-1; encryption AES-256; erasure job documented.
+BR-10
+P1
+Compliance with Canadian privacy law
+Platform must comply with PHIPA (health information) and PIPEDA (personal information) including data residency, encryption at rest and right to erasure.
+Acceptance: Compliance memo signed off by external counsel before go-live; data residency = ca-central-1; encryption AES-256; erasure job documented.
+BR-11 | P1 | Improve guest satisfaction (Bonvoy GSS)GSS scores at TPSV pilot must improve by ≥ 0.2 points after 90 days vs. baseline.Acceptance: Measured at 90 days post go-live against the prior 12-month rolling average.
+BR-11
+P1
+Improve guest satisfaction (Bonvoy GSS)
+GSS scores at TPSV pilot must improve by ≥ 0.2 points after 90 days vs. baseline.
+Acceptance: Measured at 90 days post go-live against the prior 12-month rolling average.
+BR-12 | P1 | Reduce energy spendHVAC and lighting savings of ≥ 5 % vs. baseline by automated set-point control based on occupancy and time-of-day rules.Acceptance: 90-day post-go-live energy consumption vs. prior-year same-month baseline, normalised by occupancy.
+BR-12
+P1
+Reduce energy spend
+HVAC and lighting savings of ≥ 5 % vs. baseline by automated set-point control based on occupancy and time-of-day rules.
+Acceptance: 90-day post-go-live energy consumption vs. prior-year same-month baseline, normalised by occupancy.
+BR-13 | P1 | Operational scale to 10 hotels with no architecture changeOnboarding the 10th hotel must require only data entry (new org row + property rows), not a code or infra change.Acceptance: Documented runbook for hotel onboarding; tested by onboarding 2 dummy properties end-to-end during sprint 4.
+BR-13
+P1
+Operational scale to 10 hotels with no architecture change
+Onboarding the 10th hotel must require only data entry (new org row + property rows), not a code or infra change.
+Acceptance: Documented runbook for hotel onboarding; tested by onboarding 2 dummy properties end-to-end during sprint 4.
+BR-14 | P0 | Resilience to WAN outageWhen the hotel's WAN is down, edge inference and critical alerting must continue to function locally.Acceptance: Disconnect WAN from hotel; edge-device detections continue, alerts queue locally and sync within 60 s of WAN restoration.
+BR-14
+P0
+Resilience to WAN outage
+When the hotel's WAN is down, edge inference and critical alerting must continue to function locally.
+Acceptance: Disconnect WAN from hotel; edge-device detections continue, alerts queue locally and sync within 60 s of WAN restoration.
+BR-15 | P0 | Auditable decisionsEvery AI assistant turn, every alert, every data mutation must be recorded with who / what / when / why for at least 12 months.Acceptance: Audit trail covers 100 % of mutations; retention policy 12 months minimum; queryable by operator without engineering help.
+BR-15
+P0
+Auditable decisions
+Every AI assistant turn, every alert, every data mutation must be recorded with who / what / when / why for at least 12 months.
+Acceptance: Audit trail covers 100 % of mutations; retention policy 12 months minimum; queryable by operator without engineering help.
+5 Functional Requirements per Module (FR)
+Each module section below contains: a business-context paragraph (what the stakeholders are trying to do), followed by the numbered functional requirements (ID, priority, requirement, description, acceptance criteria).
+5.1 Hotel Operations & Command Center
+The Command Center is the home screen for hotel managers. It aggregates live KPIs (occupancy, arrivals, departures, revenue snapshot, open work orders, HK progress, F&B status) and lets the manager drill down to any module without changing apps.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+OPS-01 | P0 | Command Center dashboardLive KPI dashboard for the General Manager combining occupancy, arrivals/departures, revenue today, open incidents, HK status, F&B status.Acceptance: Page loads under 2 s on first paint; KPIs refresh via WebSocket within 5 s of underlying data change.
+OPS-01
+P0
+Command Center dashboard
+Live KPI dashboard for the General Manager combining occupancy, arrivals/departures, revenue today, open incidents, HK status, F&B status.
+Acceptance: Page loads under 2 s on first paint; KPIs refresh via WebSocket within 5 s of underlying data change.
+OPS-02 | P0 | Property switcherService-provider admins and multi-property managers can switch between properties without re-logging in.Acceptance: Switcher dropdown lists only the user's authorised properties; switching takes <1 s.
+OPS-02
+P0
+Property switcher
+Service-provider admins and multi-property managers can switch between properties without re-logging in.
+Acceptance: Switcher dropdown lists only the user's authorised properties; switching takes <1 s.
+OPS-03 | P0 | Front Desk dashboardFront Desk view with arrivals queue, room status, pending guest requests, in-house guest count.Acceptance: Dashboard surfaces arrivals 24 h ahead; room status updates within 10 s of HK mobile action.
+OPS-03
+P0
+Front Desk dashboard
+Front Desk view with arrivals queue, room status, pending guest requests, in-house guest count.
+Acceptance: Dashboard surfaces arrivals 24 h ahead; room status updates within 10 s of HK mobile action.
+OPS-04 | P0 | Room Monitor live tile gridPer-property grid of all rooms colored by status (occupied, available, dirty, clean, inspected, OOO).Acceptance: Grid handles 122 rooms (TPSV) at 60 fps; color updates within 5 s of state change.
+OPS-04
+P0
+Room Monitor live tile grid
+Per-property grid of all rooms colored by status (occupied, available, dirty, clean, inspected, OOO).
+Acceptance: Grid handles 122 rooms (TPSV) at 60 fps; color updates within 5 s of state change.
+OPS-05 | P0 | Guest Services request logTrack guest service requests (extra towels, late checkout, restaurant booking) with SLA timers.Acceptance: Each request has create / assign / complete timestamps; SLA breach turns red on the dashboard.
+OPS-05
+P0
+Guest Services request log
+Track guest service requests (extra towels, late checkout, restaurant booking) with SLA timers.
+Acceptance: Each request has create / assign / complete timestamps; SLA breach turns red on the dashboard.
+OPS-06 | P1 | Pool & Spa occupancyReal-time occupancy from camera analytics, capacity threshold alerts.Acceptance: Counter updates within 5 s of detection; alert fires when count exceeds configured cap.
+OPS-06
+P1
+Pool & Spa occupancy
+Real-time occupancy from camera analytics, capacity threshold alerts.
+Acceptance: Counter updates within 5 s of detection; alert fires when count exceeds configured cap.
+OPS-07 | P1 | Fitness Center occupancySame pattern as Pool & Spa for the gym.Acceptance: Same as above.
+OPS-07
+P1
+Fitness Center occupancy
+Same pattern as Pool & Spa for the gym.
+Acceptance: Same as above.
+OPS-08 | P1 | Meetings & Events boardToday's meetings/banquets with room, head-count, F&B requirements, signage assignments.Acceptance: Event-detail click opens setup / strike checklist; signage status visible per room.
+OPS-08
+P1
+Meetings & Events board
+Today's meetings/banquets with room, head-count, F&B requirements, signage assignments.
+Acceptance: Event-detail click opens setup / strike checklist; signage status visible per room.
+OPS-09 | P0 | Incident LogChronological log of all security / safety incidents with severity, status, assigned officer.Acceptance: Filterable by severity / date / property; bulk-exportable to CSV.
+OPS-09
+P0
+Incident Log
+Chronological log of all security / safety incidents with severity, status, assigned officer.
+Acceptance: Filterable by severity / date / property; bulk-exportable to CSV.
+OPS-10 | P1 | Shift Handoff formOutgoing shift creates a handoff note for the incoming shift, with mandatory fields (open issues, VIP arrivals, anomalies).Acceptance: Handoff is locked at shift end; incoming shift sees notification at login.
+OPS-10
+P1
+Shift Handoff form
+Outgoing shift creates a handoff note for the incoming shift, with mandatory fields (open issues, VIP arrivals, anomalies).
+Acceptance: Handoff is locked at shift end; incoming shift sees notification at login.
+OPS-11 | P0 | HVAC overviewPer-zone temperature / setpoint readings; alerts on excursion.Acceptance: Readings refresh every 60 s from MQTT; alert <60 s after threshold cross.
+OPS-11
+P0
+HVAC overview
+Per-zone temperature / setpoint readings; alerts on excursion.
+Acceptance: Readings refresh every 60 s from MQTT; alert <60 s after threshold cross.
+OPS-12 | P1 | IoT Sensors panelList of all IoT sensors (door, occupancy, water leak, etc.) with last-seen timestamp and battery level (where applicable).Acceptance: Stale sensor (no reading in 5 min for non-battery, 24 h for battery) flagged red.
+OPS-12
+P1
+IoT Sensors panel
+List of all IoT sensors (door, occupancy, water leak, etc.) with last-seen timestamp and battery level (where applicable).
+Acceptance: Stale sensor (no reading in 5 min for non-battery, 24 h for battery) flagged red.
+5.2 Physical Security & Hotel Vision
+Hotel Vision turns each edge device into a real-time analytics engine. It must handle the 28 algorithms in the platform's algorithm library (corridor loitering, tailgating, PPE, fall, smoke, pool capacity, unattended luggage, etc.) and surface them to the operator with the right zone, time-of-day rules and escalation.
+▶ NEW: All Hotel-Vision analytics are computed on the edge device; only the JSON detection stream (id, bbox, class, confidence, track id) leaves the edge — never raw video. Live WebRTC playback is direct browser-to-camera inside the property VPN.
+▶ NEW: All Hotel-Vision analytics are computed on the edge device; only the JSON detection stream (id, bbox, class, confidence, track id) leaves the edge — never raw video. Live WebRTC playback is direct browser-to-camera inside the property VPN.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+HV-01 | P0 | Live multi-camera grid1×1, 2×2, 2×3 and 3×3 grid layouts; each tile shows the live WebRTC stream with bounding-box overlay.Acceptance: Grid up to 9 cameras simultaneously; <100 ms latency end-to-end inside VPN.
+HV-01
+P0
+Live multi-camera grid
+1×1, 2×2, 2×3 and 3×3 grid layouts; each tile shows the live WebRTC stream with bounding-box overlay.
+Acceptance: Grid up to 9 cameras simultaneously; <100 ms latency end-to-end inside VPN.
+HV-02 | P0 | Per-camera detection feedJSON stream of detections (id, bbox, class, confidence) with persistent track IDs across frames.Acceptance: Track ID stable across consecutive frames at 25+ FPS; ByteTrack accuracy ≥90 % MOTA on internal eval set.
+HV-02
+P0
+Per-camera detection feed
+JSON stream of detections (id, bbox, class, confidence) with persistent track IDs across frames.
+Acceptance: Track ID stable across consecutive frames at 25+ FPS; ByteTrack accuracy ≥90 % MOTA on internal eval set.
+HV-03 | P0 | Algorithm catalog with parametersLibrary of 28 algorithms; each has a JSON parameter schema (thresholds, zones, schedules).Acceptance: All 28 algorithms registered in DB with parameter schema; UI dynamically renders parameter form.
+HV-03
+P0
+Algorithm catalog with parameters
+Library of 28 algorithms; each has a JSON parameter schema (thresholds, zones, schedules).
+Acceptance: All 28 algorithms registered in DB with parameter schema; UI dynamically renders parameter form.
+HV-04 | P0 | Algorithm assignment per cameraOperator can enable / disable algorithms per camera with parameters, applied in real time.Acceptance: Change takes effect on the edge device within 5 s; failure to apply rolls back automatically.
+HV-04
+P0
+Algorithm assignment per camera
+Operator can enable / disable algorithms per camera with parameters, applied in real time.
+Acceptance: Change takes effect on the edge device within 5 s; failure to apply rolls back automatically.
+HV-05 | P0 | Zone presetsPredefined templates (Lobby, Corridor, Elevator, Pool) bulk-apply algorithm + parameters.Acceptance: Apply preset to N cameras in one action; logged to audit.
+HV-05
+P0
+Zone presets
+Predefined templates (Lobby, Corridor, Elevator, Pool) bulk-apply algorithm + parameters.
+Acceptance: Apply preset to N cameras in one action; logged to audit.
+HV-06 | P0 | Person detection (YOLOv8)Detect persons at ≥30 FPS per camera at 1080p with confidence scores.Acceptance: Validated on internal eval set: precision ≥95 %, recall ≥90 % at 0.5 IoU.
+HV-06
+P0
+Person detection (YOLOv8)
+Detect persons at ≥30 FPS per camera at 1080p with confidence scores.
+Acceptance: Validated on internal eval set: precision ≥95 %, recall ≥90 % at 0.5 IoU.
+HV-07 | P0 | Tracking with persistent IDsByteTrack assigns IDs that survive 1-2 s of occlusion.Acceptance: Track loss <5 % over 2-min eval clips.
+HV-07
+P0
+Tracking with persistent IDs
+ByteTrack assigns IDs that survive 1-2 s of occlusion.
+Acceptance: Track loss <5 % over 2-min eval clips.
+HV-08 | P0 | Loitering detectionConfigurable dwell threshold per zone; events written when threshold crossed.Acceptance: Zone in lobby with 5-min threshold; person standing for 5 min triggers exactly one event, not duplicates.
+HV-08
+P0
+Loitering detection
+Configurable dwell threshold per zone; events written when threshold crossed.
+Acceptance: Zone in lobby with 5-min threshold; person standing for 5 min triggers exactly one event, not duplicates.
+HV-09 | P0 | Tailgating detectionDetect 2+ persons through a door with 1 access credential.Acceptance: Lab simulation: 1 person opens door, 2nd follows within 3 s — event fires.
+HV-09
+P0
+Tailgating detection
+Detect 2+ persons through a door with 1 access credential.
+Acceptance: Lab simulation: 1 person opens door, 2nd follows within 3 s — event fires.
+HV-10 | P1 | Unattended luggageStationary object > 5 min in public space, no associated person.Acceptance: Detection cited in object class and location; tested on staged scenes.
+HV-10
+P1
+Unattended luggage
+Stationary object > 5 min in public space, no associated person.
+Acceptance: Detection cited in object class and location; tested on staged scenes.
+HV-11 | P1 | PPE compliance (F&B)Detect missing gloves / hairnet on staff in F&B zones.Acceptance: Per-class accuracy ≥85 % on internal eval clips.
+HV-11
+P1
+PPE compliance (F&B)
+Detect missing gloves / hairnet on staff in F&B zones.
+Acceptance: Per-class accuracy ≥85 % on internal eval clips.
+HV-12 | P0 | Pool capacityCount persons in pool zone vs. configured cap.Acceptance: Counter accurate within ±2 at peak (10–15 persons).
+HV-12
+P0
+Pool capacity
+Count persons in pool zone vs. configured cap.
+Acceptance: Counter accurate within ±2 at peak (10–15 persons).
+HV-13 | P1 | Child unattendedDetect person with height <1.3 m without an adult-class person within 5 m radius.Acceptance: Tested with synthetic + real scenes; alerts after 60 s.
+HV-13
+P1
+Child unattended
+Detect person with height <1.3 m without an adult-class person within 5 m radius.
+Acceptance: Tested with synthetic + real scenes; alerts after 60 s.
+HV-14 | P0 | After-hours intrusionAlert when motion in restricted zone outside operating hours.Acceptance: Per-zone schedule; alert fires within 10 s of detection.
+HV-14
+P0
+After-hours intrusion
+Alert when motion in restricted zone outside operating hours.
+Acceptance: Per-zone schedule; alert fires within 10 s of detection.
+HV-15 | P0 | WebRTC video player in browserDirect in-VPN P2P video display with <100 ms latency.Acceptance: Tested from manager desktop on VPN to TPSV camera; latency budget met.
+HV-15
+P0
+WebRTC video player in browser
+Direct in-VPN P2P video display with <100 ms latency.
+Acceptance: Tested from manager desktop on VPN to TPSV camera; latency budget met.
+HV-16 | P0 | Bounding-box overlay renderingBrowser canvas overlay synchronised to video frame for detection visualisation.Acceptance: Overlay drift <30 ms vs. video; verified by stopwatch test.
+HV-16
+P0
+Bounding-box overlay rendering
+Browser canvas overlay synchronised to video frame for detection visualisation.
+Acceptance: Overlay drift <30 ms vs. video; verified by stopwatch test.
+HV-17 | P1 | Heatmap of zone occupancyAggregated heatmap over selectable time window (last hour / day / week).Acceptance: Heatmap renders in under 1 s for 1-hour window.
+HV-17
+P1
+Heatmap of zone occupancy
+Aggregated heatmap over selectable time window (last hour / day / week).
+Acceptance: Heatmap renders in under 1 s for 1-hour window.
+HV-18 | P1 | Access Control integrationRead door open / close events; correlate with camera detections.Acceptance: Tailgating algorithm uses access-control event as the gate; 90 % correlation accuracy.
+HV-18
+P1
+Access Control integration
+Read door open / close events; correlate with camera detections.
+Acceptance: Tailgating algorithm uses access-control event as the gate; 90 % correlation accuracy.
+5.3 Housekeeping & Mobile App
+Housekeeping is the highest-volume daily task in any hotel. Room attendants currently use paper sheets or generic apps. The COrtai mobile app digitises the workflow with offline support, BLE in-zone confirmation, photo upload and a strict cleaning checklist per room type.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+HK-01 | P0 | Mobile login with JWTRoom attendant logs in once per shift; JWT refresh handles long shifts without re-login.Acceptance: Token TTL 12 h; refresh transparent; biometric unlock supported.
+HK-01
+P0
+Mobile login with JWT
+Room attendant logs in once per shift; JWT refresh handles long shifts without re-login.
+Acceptance: Token TTL 12 h; refresh transparent; biometric unlock supported.
+HK-02 | P0 | Daily task list per attendantPer-attendant ordered list of rooms to clean today, with priority flags (early checkout, VIP, DND).Acceptance: Task list loads <2 s; supports offline view of cached tasks.
+HK-02
+P0
+Daily task list per attendant
+Per-attendant ordered list of rooms to clean today, with priority flags (early checkout, VIP, DND).
+Acceptance: Task list loads <2 s; supports offline view of cached tasks.
+HK-03 | P0 | Room status updateTap to change status: dirty → cleaning → clean → inspected → ready.Acceptance: Update propagates to dashboard within 5 s; offline updates queue and sync on reconnection.
+HK-03
+P0
+Room status update
+Tap to change status: dirty → cleaning → clean → inspected → ready.
+Acceptance: Update propagates to dashboard within 5 s; offline updates queue and sync on reconnection.
+HK-04 | P0 | Cleaning checklist per room typeConfigurable per-room-type checklist (suite, standard, accessible) with required items.Acceptance: All items must be checked before status can move to 'clean'; admin configurable.
+HK-04
+P0
+Cleaning checklist per room type
+Configurable per-room-type checklist (suite, standard, accessible) with required items.
+Acceptance: All items must be checked before status can move to 'clean'; admin configurable.
+HK-05 | P0 | Photo upload for issuesAttendant can attach photos when reporting damage or missing amenities.Acceptance: Photos stored in S3 with metadata (room, attendant, timestamp); thumbnail in dashboard.
+HK-05
+P0
+Photo upload for issues
+Attendant can attach photos when reporting damage or missing amenities.
+Acceptance: Photos stored in S3 with metadata (room, attendant, timestamp); thumbnail in dashboard.
+HK-06 | P0 | BLE in-zone confirmationWhen the attendant claims to be in room X, the mobile app must confirm BLE proximity to the in-room beacon (or floor beacon).Acceptance: Mismatch logged; supervisor alerted on persistent mismatches.
+HK-06
+P0
+BLE in-zone confirmation
+When the attendant claims to be in room X, the mobile app must confirm BLE proximity to the in-room beacon (or floor beacon).
+Acceptance: Mismatch logged; supervisor alerted on persistent mismatches.
+HK-07 | P1 | Lost & found intakeAttendant logs found item with description, photo, room.Acceptance: Entry visible to front desk in <30 s; matched to guest at checkout.
+HK-07
+P1
+Lost & found intake
+Attendant logs found item with description, photo, room.
+Acceptance: Entry visible to front desk in <30 s; matched to guest at checkout.
+HK-08 | P1 | Maintenance request from HKAttendant can raise a work order from the room (e.g., HVAC issue, broken fixture).Acceptance: Work order auto-assigned to maintenance queue; status visible on attendant's task list.
+HK-08
+P1
+Maintenance request from HK
+Attendant can raise a work order from the room (e.g., HVAC issue, broken fixture).
+Acceptance: Work order auto-assigned to maintenance queue; status visible on attendant's task list.
+HK-09 | P0 | Time tracking per taskStart / stop timestamps automatic when attendant changes status; computed cleaning time per room.Acceptance: Time-per-room report visible to HK supervisor.
+HK-09
+P0
+Time tracking per task
+Start / stop timestamps automatic when attendant changes status; computed cleaning time per room.
+Acceptance: Time-per-room report visible to HK supervisor.
+HK-10 | P0 | Floor-completion view (supervisor)Supervisor dashboard: per-floor progress (X of Y rooms done) live.Acceptance: Updates within 10 s of any attendant status change.
+HK-10
+P0
+Floor-completion view (supervisor)
+Supervisor dashboard: per-floor progress (X of Y rooms done) live.
+Acceptance: Updates within 10 s of any attendant status change.
+HK-11 | P1 | PTT integrationTap-to-talk button calls supervisor; uses the existing Android PTT module.Acceptance: Voice connects in <1 s; works over hotel Wi-Fi and VPN.
+HK-11
+P1
+PTT integration
+Tap-to-talk button calls supervisor; uses the existing Android PTT module.
+Acceptance: Voice connects in <1 s; works over hotel Wi-Fi and VPN.
+HK-12 | P1 | Push notifications for re-assignmentsIf a room is reassigned, the affected attendants receive a push.Acceptance: FCM / APNS push delivered within 10 s 95th percentile.
+HK-12
+P1
+Push notifications for re-assignments
+If a room is reassigned, the affected attendants receive a push.
+Acceptance: FCM / APNS push delivered within 10 s 95th percentile.
+5.4 Staff Input Forms
+Nine standard form types replace paper logs: incident reports, maintenance requests, lost & found, safety hazards, guest complaints, training sign-offs, brand-standard checks, shift handoffs, and a generic catch-all. Forms are JSON-schema-driven and renderable on both web and mobile.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+FF-01 | P0 | Form schema engineForm definitions are JSON schema rows in DB; UI renders them dynamically.Acceptance: Add a new form type without code change; renders on web + mobile.
+FF-01
+P0
+Form schema engine
+Form definitions are JSON schema rows in DB; UI renders them dynamically.
+Acceptance: Add a new form type without code change; renders on web + mobile.
+FF-02 | P0 | Mandatory and optional fieldsSchema marks fields required / optional with type validation.Acceptance: Submit fails with field-level errors when a required field is empty.
+FF-02
+P0
+Mandatory and optional fields
+Schema marks fields required / optional with type validation.
+Acceptance: Submit fails with field-level errors when a required field is empty.
+FF-03 | P0 | Photo and signature fieldsSome fields accept photo upload or canvas signature.Acceptance: Photos stored in S3; signatures stored as PNG.
+FF-03
+P0
+Photo and signature fields
+Some fields accept photo upload or canvas signature.
+Acceptance: Photos stored in S3; signatures stored as PNG.
+FF-04 | P0 | Submission auditEvery submission has user, timestamp, form version, IP and device id.Acceptance: Visible in audit log; immutable after submission.
+FF-04
+P0
+Submission audit
+Every submission has user, timestamp, form version, IP and device id.
+Acceptance: Visible in audit log; immutable after submission.
+FF-05 | P1 | Workflow on submissionForms can trigger downstream actions (auto-create incident, notify supervisor, push to compliance log).Acceptance: Trigger configurable per form type; tested for incident-report form.
+FF-05
+P1
+Workflow on submission
+Forms can trigger downstream actions (auto-create incident, notify supervisor, push to compliance log).
+Acceptance: Trigger configurable per form type; tested for incident-report form.
+FF-06 | P1 | Form analyticsCounts and trend per form type by week / month.Acceptance: Visible in Admin → Reports.
+FF-06
+P1
+Form analytics
+Counts and trend per form type by week / month.
+Acceptance: Visible in Admin → Reports.
+FF-07 | P0 | Mobile form supportAll forms render and submit from the mobile app.Acceptance: Tested on Android 10 and iOS 16.
+FF-07
+P0
+Mobile form support
+All forms render and submit from the mobile app.
+Acceptance: Tested on Android 10 and iOS 16.
+5.5 AI Intelligence (Cortai Intel · Daily Tasks · Guest Intel)
+Three AI surfaces leverage the Local Brain (pgvector + Bedrock Claude). Cortai Intel is conversational Q&A. Daily Tasks is a generated to-do list per role. Guest Intel is a one-paragraph guest summary surfaced to front desk on check-in.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+AI-01 | P0 | RAG question answeringUser asks a free-form question; system retrieves relevant chunks from ai.knowledge_base_documents and operational data, calls Bedrock Claude, returns a cited answer.Acceptance: Cited sources displayed under every answer; F1 ≥0.7 on internal QA eval set of 50 questions.
+AI-01
+P0
+RAG question answering
+User asks a free-form question; system retrieves relevant chunks from ai.knowledge_base_documents and operational data, calls Bedrock Claude, returns a cited answer.
+Acceptance: Cited sources displayed under every answer; F1 ≥0.7 on internal QA eval set of 50 questions.
+AI-02 | P0 | Streaming responses (SSE)Tokens stream to the browser as they are produced.Acceptance: First token <2 s 95th percentile; full response <8 s for typical queries.
+AI-02
+P0
+Streaming responses (SSE)
+Tokens stream to the browser as they are produced.
+Acceptance: First token <2 s 95th percentile; full response <8 s for typical queries.
+AI-03 | P0 | Tool catalogClaude can invoke registered SQL-backed tools to fetch live data (occupancy, recent incidents, GSS, etc.).Acceptance: 20+ tools registered by V1.0; per-tool RBAC and rate limit enforced.
+AI-03
+P0
+Tool catalog
+Claude can invoke registered SQL-backed tools to fetch live data (occupancy, recent incidents, GSS, etc.).
+Acceptance: 20+ tools registered by V1.0; per-tool RBAC and rate limit enforced.
+AI-04 | P0 | Conversation historyMulti-turn conversations persisted in ai.llm_conversations + ai.llm_messages.Acceptance: User can resume an earlier conversation; history shows full transcript.
+AI-04
+P0
+Conversation history
+Multi-turn conversations persisted in ai.llm_conversations + ai.llm_messages.
+Acceptance: User can resume an earlier conversation; history shows full transcript.
+AI-05 | P0 | Citation auditEvery assistant turn carries retrieved_doc_ids[] for full traceability.Acceptance: Audit page lists for any answer the exact KB document IDs used.
+AI-05
+P0
+Citation audit
+Every assistant turn carries retrieved_doc_ids[] for full traceability.
+Acceptance: Audit page lists for any answer the exact KB document IDs used.
+AI-06 | P0 | Daily Task List generatorNightly batch produces per-role task list for the next day using ai.ai_recommendations.Acceptance: Generated by 6 AM local time; surfaced on Command Center and Mobile.
+AI-06
+P0
+Daily Task List generator
+Nightly batch produces per-role task list for the next day using ai.ai_recommendations.
+Acceptance: Generated by 6 AM local time; surfaced on Command Center and Mobile.
+AI-07 | P1 | Guest Intel summaryOn check-in, front desk sees a one-paragraph LLM-generated summary of the guest (Bonvoy tier, last stay, preferences, special requests).Acceptance: Summary <100 words; available within 1 s of arrival event.
+AI-07
+P1
+Guest Intel summary
+On check-in, front desk sees a one-paragraph LLM-generated summary of the guest (Bonvoy tier, last stay, preferences, special requests).
+Acceptance: Summary <100 words; available within 1 s of arrival event.
+AI-08 | P1 | Demand ForecastWeekly forecast of arrivals per day for revenue planning, using historical reservation data.Acceptance: MAPE <15 % on validation.
+AI-08
+P1
+Demand Forecast
+Weekly forecast of arrivals per day for revenue planning, using historical reservation data.
+Acceptance: MAPE <15 % on validation.
+AI-09 | P0 | Prompt template versioningai.prompt_templates supports active / canary / deprecated lifecycle for A/B prompt testing.Acceptance: Switch active prompt with no service restart; canary applied to 10 % of traffic.
+AI-09
+P0
+Prompt template versioning
+ai.prompt_templates supports active / canary / deprecated lifecycle for A/B prompt testing.
+Acceptance: Switch active prompt with no service restart; canary applied to 10 % of traffic.
+AI-10 | P0 | PII redaction in logsGuest names and identifying information are redacted from ai.llm_messages.content_* on write.Acceptance: Verified via regex audit on 1000 stored messages — zero PII leaks.
+AI-10
+P0
+PII redaction in logs
+Guest names and identifying information are redacted from ai.llm_messages.content_* on write.
+Acceptance: Verified via regex audit on 1000 stored messages — zero PII leaks.
+AI-11 | P1 | Cost tracking per conversationEach turn records prompt / completion tokens and computed USD cost.Acceptance: Cost dashboard per property and per user role.
+AI-11
+P1
+Cost tracking per conversation
+Each turn records prompt / completion tokens and computed USD cost.
+Acceptance: Cost dashboard per property and per user role.
+5.6 Guest Messaging (SMS · WhatsApp · Email · Web Chat)
+Guests reach the hotel through whichever channel they prefer. The unified inbox lets front desk respond from one screen with full guest context (reservation, Bonvoy tier, prior incidents) attached to every thread.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+GM-01 | P0 | Twilio SMS integrationInbound SMS to property number → conversation thread.Acceptance: Round-trip latency <5 s; tested with Twilio test number.
+GM-01
+P0
+Twilio SMS integration
+Inbound SMS to property number → conversation thread.
+Acceptance: Round-trip latency <5 s; tested with Twilio test number.
+GM-02 | P0 | WhatsApp Cloud APIInbound and outbound WhatsApp messages.Acceptance: Tested on Meta Business sandbox; opt-in flow documented.
+GM-02
+P0
+WhatsApp Cloud API
+Inbound and outbound WhatsApp messages.
+Acceptance: Tested on Meta Business sandbox; opt-in flow documented.
+GM-03 | P0 | Email channel (IMAP / SMTP)Property email inbox parsed; replies sent from same address.Acceptance: Threading by Message-ID; HTML and plaintext supported.
+GM-03
+P0
+Email channel (IMAP / SMTP)
+Property email inbox parsed; replies sent from same address.
+Acceptance: Threading by Message-ID; HTML and plaintext supported.
+GM-04 | P0 | Web Chat widgetEmbeddable widget on hotel website; routes to inbox.Acceptance: Widget loads <1 s; supports anonymous and authenticated guests.
+GM-04
+P0
+Web Chat widget
+Embeddable widget on hotel website; routes to inbox.
+Acceptance: Widget loads <1 s; supports anonymous and authenticated guests.
+GM-05 | P0 | Unified inbox UIAll channels in one queue with channel-icon badge.Acceptance: Sort, filter, assign, status (open / pending / closed).
+GM-05
+P0
+Unified inbox UI
+All channels in one queue with channel-icon badge.
+Acceptance: Sort, filter, assign, status (open / pending / closed).
+GM-06 | P0 | Guest context panelRight pane shows guest's reservation, last stay, Bonvoy tier, prior incidents.Acceptance: Loads when conversation is opened; <2 s.
+GM-06
+P0
+Guest context panel
+Right pane shows guest's reservation, last stay, Bonvoy tier, prior incidents.
+Acceptance: Loads when conversation is opened; <2 s.
+GM-07 | P1 | Canned responsesReusable response templates with variables (guest name, room number).Acceptance: Library editable by manager; per-template usage stats.
+GM-07
+P1
+Canned responses
+Reusable response templates with variables (guest name, room number).
+Acceptance: Library editable by manager; per-template usage stats.
+GM-08 | P1 | Auto-reply outside hoursConfigurable auto-reply when conversation arrives outside front desk hours.Acceptance: Reply sent within 30 s of inbound message; tagged as auto.
+GM-08
+P1
+Auto-reply outside hours
+Configurable auto-reply when conversation arrives outside front desk hours.
+Acceptance: Reply sent within 30 s of inbound message; tagged as auto.
+GM-09 | P1 | AI draft suggestionCortai Intel suggests a draft response; agent reviews and sends.Acceptance: Draft generated <2 s; agent edit tracked.
+GM-09
+P1
+AI draft suggestion
+Cortai Intel suggests a draft response; agent reviews and sends.
+Acceptance: Draft generated <2 s; agent edit tracked.
+GM-10 | P0 | Conversation exportGDPR / PIPEDA right-of-access — full conversation export per guest.Acceptance: Generated as PDF or JSON within 24 h of request.
+GM-10
+P0
+Conversation export
+GDPR / PIPEDA right-of-access — full conversation export per guest.
+Acceptance: Generated as PDF or JSON within 24 h of request.
+5.7 Sales & Pipeline
+Sales managers handle group bookings, RFPs, corporate accounts, weddings and banquets. The pipeline tracks leads from inquiry to contract with SLA timers and template-based proposal generation.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+SA-01 | P0 | Sales inboxInbound RFPs from email, web form, Cvent, etc.Acceptance: All inbound surface in one queue with source tag.
+SA-01
+P0
+Sales inbox
+Inbound RFPs from email, web form, Cvent, etc.
+Acceptance: All inbound surface in one queue with source tag.
+SA-02 | P0 | Pipeline stagesConfigurable stages (lead → qualified → proposal → contract → won / lost).Acceptance: Drag-and-drop stage change; logged to audit.
+SA-02
+P0
+Pipeline stages
+Configurable stages (lead → qualified → proposal → contract → won / lost).
+Acceptance: Drag-and-drop stage change; logged to audit.
+SA-03 | P0 | SLA timers per stageEach stage has a target SLA; breach turns red.Acceptance: Configurable per property; alert to sales manager on breach.
+SA-03
+P0
+SLA timers per stage
+Each stage has a target SLA; breach turns red.
+Acceptance: Configurable per property; alert to sales manager on breach.
+SA-04 | P0 | Deal recordDetailed view of company, contact, dates, room block, F&B, AV, total value.Acceptance: All Marriott RFP fields supported.
+SA-04
+P0
+Deal record
+Detailed view of company, contact, dates, room block, F&B, AV, total value.
+Acceptance: All Marriott RFP fields supported.
+SA-05 | P1 | Templates libraryReusable proposal and contract templates with variable substitution.Acceptance: PDF generation tested for 3 standard templates.
+SA-05
+P1
+Templates library
+Reusable proposal and contract templates with variable substitution.
+Acceptance: PDF generation tested for 3 standard templates.
+SA-06 | P1 | Pipeline analyticsConversion rate, average deal size, time-in-stage by salesperson and segment.Acceptance: Dashboard refreshes daily; exportable.
+SA-06
+P1
+Pipeline analytics
+Conversion rate, average deal size, time-in-stage by salesperson and segment.
+Acceptance: Dashboard refreshes daily; exportable.
+SA-07 | P1 | Marriott RFP integrationRead RFPs from MGS / Cvent if available.Acceptance: Reads tested in sandbox; fallback to email parsing.
+SA-07
+P1
+Marriott RFP integration
+Read RFPs from MGS / Cvent if available.
+Acceptance: Reads tested in sandbox; fallback to email parsing.
+5.8 Staff Management (HR)
+HR managers handle hiring, scheduling, certifications and labour cost. The hospitality industry has high turnover and complex shift patterns; the module must enforce certifications and detect conflicts before they reach the operator.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+HR-01 | P0 | Staff directoryAll employees with roles, departments, contact, photo.Acceptance: Searchable; private fields visible only to HR role.
+HR-01
+P0
+Staff directory
+All employees with roles, departments, contact, photo.
+Acceptance: Searchable; private fields visible only to HR role.
+HR-02 | P0 | Shift schedulingWeekly schedule per department, drag-and-drop assignment.Acceptance: Conflict detection (double-booking, certification expired) before save.
+HR-02
+P0
+Shift scheduling
+Weekly schedule per department, drag-and-drop assignment.
+Acceptance: Conflict detection (double-booking, certification expired) before save.
+HR-03 | P0 | Time clock integrationMobile clock-in / clock-out with BLE proximity confirmation.Acceptance: Time accurate to ±1 min; tied to active shift.
+HR-03
+P0
+Time clock integration
+Mobile clock-in / clock-out with BLE proximity confirmation.
+Acceptance: Time accurate to ±1 min; tied to active shift.
+HR-04 | P1 | CertificationsTrack required certifications (food handler, first aid, fire warden) with expiry alerts.Acceptance: Alert HR 30 days before expiry; block scheduling if expired.
+HR-04
+P1
+Certifications
+Track required certifications (food handler, first aid, fire warden) with expiry alerts.
+Acceptance: Alert HR 30 days before expiry; block scheduling if expired.
+HR-05 | P1 | Open positionsVacancy list with description, status (open, screening, hired).Acceptance: Visible on dashboard; integrate with Marriott careers feed.
+HR-05
+P1
+Open positions
+Vacancy list with description, status (open, screening, hired).
+Acceptance: Visible on dashboard; integrate with Marriott careers feed.
+HR-06 | P1 | Labor cost analyticsActual vs. budgeted labour cost per day / department.Acceptance: Daily roll-up; visible to GM and HR.
+HR-06
+P1
+Labor cost analytics
+Actual vs. budgeted labour cost per day / department.
+Acceptance: Daily roll-up; visible to GM and HR.
+5.9 Revenue & Insights
+Revenue managers optimise pricing, monitor competitor rates, run night audit and review GSS feedback.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+RV-01 | P0 | Daily revenue dashboardToday's revenue by category (room, F&B, parking, ancillary).Acceptance: Refreshes hourly from PMS feed; YoY comparison.
+RV-01
+P0
+Daily revenue dashboard
+Today's revenue by category (room, F&B, parking, ancillary).
+Acceptance: Refreshes hourly from PMS feed; YoY comparison.
+RV-02 | P0 | Night Audit basicAutomated end-of-day reconciliation report.Acceptance: Generated 02:00 local; emailed to GM and Revenue Manager.
+RV-02
+P0
+Night Audit basic
+Automated end-of-day reconciliation report.
+Acceptance: Generated 02:00 local; emailed to GM and Revenue Manager.
+RV-03 | P1 | Bonvoy GSS feedPulls latest GSS scores from Marriott; surfaces themes.Acceptance: Refreshed daily; theme tagging via LLM.
+RV-03
+P1
+Bonvoy GSS feed
+Pulls latest GSS scores from Marriott; surfaces themes.
+Acceptance: Refreshed daily; theme tagging via LLM.
+RV-04 | P1 | Competitor rate intelScrape selected OTA rates for comp-set hotels.Acceptance: Refreshed daily; chart vs. own rate.
+RV-04
+P1
+Competitor rate intel
+Scrape selected OTA rates for comp-set hotels.
+Acceptance: Refreshed daily; chart vs. own rate.
+RV-05 | P2 | Brand standards monitoringVerify brand standards via forms + camera analytics.Acceptance: Compliance score per category; weekly trend.
+RV-05
+P2
+Brand standards monitoring
+Verify brand standards via forms + camera analytics.
+Acceptance: Compliance score per category; weekly trend.
+5.10 Administration & Settings
+The Administration surface is split between the service-provider admin (cross-org) and per-property admins (each hotel's IT manager). Service-provider concerns: tenant onboarding, fleet-level edge-device deploy, feature flags. Property concerns: integrations, BOH displays, signage, licenses.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+AD-01 | P0 | Tenant (organisation) managementCRUD for organisations and properties; service-provider role only.Acceptance: RLS prevents non-SP users from listing.
+AD-01
+P0
+Tenant (organisation) management
+CRUD for organisations and properties; service-provider role only.
+Acceptance: RLS prevents non-SP users from listing.
+AD-02 | P0 | User management with RBACPer-property user CRUD; role assignment.Acceptance: Roles: GM, Front Desk, HK Sup, HK Att, Maint, Sec, F&B, Sales, Rev, HR, IT.
+AD-02
+P0
+User management with RBAC
+Per-property user CRUD; role assignment.
+Acceptance: Roles: GM, Front Desk, HK Sup, HK Att, Maint, Sec, F&B, Sales, Rev, HR, IT.
+AD-03 | P0 | Feature flagsPer-tenant feature toggles for staged rollout.Acceptance: Toggling does not require service restart.
+AD-03
+P0
+Feature flags
+Per-tenant feature toggles for staged rollout.
+Acceptance: Toggling does not require service restart.
+AD-04 | P0 | Integration settingsConnect Twilio, WhatsApp, Marriott MGS, Bonvoy, Bedrock — configurable credentials.Acceptance: Credentials stored encrypted; never echoed back to UI.
+AD-04
+P0
+Integration settings
+Connect Twilio, WhatsApp, Marriott MGS, Bonvoy, Bedrock — configurable credentials.
+Acceptance: Credentials stored encrypted; never echoed back to UI.
+AD-05 | P1 | BOH Display configurationConfigure back-of-house display screens (kitchen, banquets, HK).Acceptance: Auto-refresh every 30 s; large-font kiosk mode.
+AD-05
+P1
+BOH Display configuration
+Configure back-of-house display screens (kitchen, banquets, HK).
+Acceptance: Auto-refresh every 30 s; large-font kiosk mode.
+AD-06 | P1 | Building Maintenance logBuilding systems registry (HVAC, boiler, elevator) with service history.Acceptance: Linked to maintenance work orders.
+AD-06
+P1
+Building Maintenance log
+Building systems registry (HVAC, boiler, elevator) with service history.
+Acceptance: Linked to maintenance work orders.
+AD-07 | P1 | Energy panelAggregate energy consumption from utility feed and HVAC.Acceptance: Daily kWh chart; cost projection.
+AD-07
+P1
+Energy panel
+Aggregate energy consumption from utility feed and HVAC.
+Acceptance: Daily kWh chart; cost projection.
+AD-08 | P1 | Licenses trackingTrack building licenses, fire-safety certs, food-service permits with expiry.Acceptance: Alert 90 days before expiry.
+AD-08
+P1
+Licenses tracking
+Track building licenses, fire-safety certs, food-service permits with expiry.
+Acceptance: Alert 90 days before expiry.
+AD-09 | P1 | Digital Signage CMSSchedule content for in-property displays (lobby, F&B, elevators).Acceptance: Content updates push within 60 s.
+AD-09
+P1
+Digital Signage CMS
+Schedule content for in-property displays (lobby, F&B, elevators).
+Acceptance: Content updates push within 60 s.
+5.11 Security & Network
+Basic network and DLP monitoring for the hotel's IT infrastructure. V1.0 is read-only / observational; full enforcement is out of scope.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+SN-01 | P1 | Network device inventoryList of switches, APs, firewall, with status (up / down).Acceptance: Refreshes every 5 min from SNMP.
+SN-01
+P1
+Network device inventory
+List of switches, APs, firewall, with status (up / down).
+Acceptance: Refreshes every 5 min from SNMP.
+SN-02 | P2 | DLP event logRead-only log of data-loss-prevention events from external feed.Acceptance: Adapter pluggable.
+SN-02
+P2
+DLP event log
+Read-only log of data-loss-prevention events from external feed.
+Acceptance: Adapter pluggable.
+SN-03 | P2 | Threat dashboardAggregate threats from network sensors.Acceptance: Same — adapter pluggable.
+SN-03
+P2
+Threat dashboard
+Aggregate threats from network sensors.
+Acceptance: Same — adapter pluggable.
+SN-04 | P2 | SD-WAN statusVPN tunnel health per hotel.Acceptance: Per-hotel green / yellow / red.
+SN-04
+P2
+SD-WAN status
+VPN tunnel health per hotel.
+Acceptance: Per-hotel green / yellow / red.
+5.12 Distributed Edge Ingestion (MQTT JSON)
+Beyond the central edge device per camera cluster, the platform must ingest data from a fleet of distributed edge devices co-located with individual cameras and IoT sensors. These distributed nodes publish their detection results, telemetry and health directly via MQTT JSON. Both the backend and the operator UI must be able to retrieve those payloads, persist them in the database, and surface them in real time, without exposing the underlying hardware model name to operators or end-users.
+▶ NEW: Single ingestion contract across all edge classes. Both the main edge device and the distributed edge devices publish to the same MQTT broker, with the same JSON schema (envelope: device_id, ts, type, payload). The backend treats every edge node as a peer; the UI shows logical camera / zone bindings only — never the hardware model. This keeps the platform vendor-agnostic and lets the fleet be re-hardware-d without code change.
+▶ NEW: Single ingestion contract across all edge classes. Both the main edge device and the distributed edge devices publish to the same MQTT broker, with the same JSON schema (envelope: device_id, ts, type, payload). The backend treats every edge node as a peer; the UI shows logical camera / zone bindings only — never the hardware model. This keeps the platform vendor-agnostic and lets the fleet be re-hardware-d without code change.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+DE-01 | P0 | MQTT broker on the operator networkOperate a managed MQTT broker (Mosquitto + auth) on the property network. All edge devices (main + distributed) authenticate via mTLS client certificate and publish to topic cortai/{org}/{property}/edge/{device_id}/{type}.Acceptance: Broker handles ≥10 k msg/s sustained; client cert rotation runbook documented; tested with 100 simulated devices.
+DE-01
+P0
+MQTT broker on the operator network
+Operate a managed MQTT broker (Mosquitto + auth) on the property network. All edge devices (main + distributed) authenticate via mTLS client certificate and publish to topic cortai/{org}/{property}/edge/{device_id}/{type}.
+Acceptance: Broker handles ≥10 k msg/s sustained; client cert rotation runbook documented; tested with 100 simulated devices.
+DE-02 | P0 | Standard JSON envelopeEvery published payload follows: { device_id, ts, type ∈ {detection, telemetry, health, event}, schema_version, payload: {...} }. Schema validated server-side; malformed messages dropped with a counter increment.Acceptance: JSON Schema Draft 2020-12 stored in repo; ingest worker rejects invalid messages with structured log entry.
+DE-02
+P0
+Standard JSON envelope
+Every published payload follows: { device_id, ts, type ∈ {detection, telemetry, health, event}, schema_version, payload: {...} }. Schema validated server-side; malformed messages dropped with a counter increment.
+Acceptance: JSON Schema Draft 2020-12 stored in repo; ingest worker rejects invalid messages with structured log entry.
+DE-03 | P0 | Backend ingestion serviceA dedicated edge-ingest service subscribes to the broker, deserialises each message, validates RLS context, persists to the correct hypertable, and forwards to the live-update bus (WebSocket).Acceptance: Each message persisted in <100 ms 95th percentile under nominal load; back-pressure handled via Redis stream when DB lags.
+DE-03
+P0
+Backend ingestion service
+A dedicated edge-ingest service subscribes to the broker, deserialises each message, validates RLS context, persists to the correct hypertable, and forwards to the live-update bus (WebSocket).
+Acceptance: Each message persisted in <100 ms 95th percentile under nominal load; back-pressure handled via Redis stream when DB lags.
+DE-04 | P0 | Persistence in the time-series schemaDetection payloads stored in iot.camera_detections (TimescaleDB hypertable); telemetry in iot.sensor_readings; health in iot.device_health; events in iot.edge_events. All tables RLS-tenant-scoped.Acceptance: Retention policy applied (90 d hot, 12 m cold archive); RLS coverage = 100 %; verified by static-analysis script in CI.
+DE-04
+P0
+Persistence in the time-series schema
+Detection payloads stored in iot.camera_detections (TimescaleDB hypertable); telemetry in iot.sensor_readings; health in iot.device_health; events in iot.edge_events. All tables RLS-tenant-scoped.
+Acceptance: Retention policy applied (90 d hot, 12 m cold archive); RLS coverage = 100 %; verified by static-analysis script in CI.
+DE-05 | P0 | Real-time delivery to the operator UIFrontend subscribes via WebSocket (channel cortai.live.{property}) and receives each ingested message with <500 ms end-to-end latency from broker arrival.Acceptance: Synthetic test: publish to broker, observe message in browser DevTools network panel < 500 ms 95th percentile.
+DE-05
+P0
+Real-time delivery to the operator UI
+Frontend subscribes via WebSocket (channel cortai.live.{property}) and receives each ingested message with <500 ms end-to-end latency from broker arrival.
+Acceptance: Synthetic test: publish to broker, observe message in browser DevTools network panel < 500 ms 95th percentile.
+DE-06 | P0 | Logical binding — hide hardware identityOperator UI shows camera / zone / sensor logical names only; never the hardware model, vendor or device class. Hardware identity is stored in the platform.devices table and visible only to the IT/Admin role.Acceptance: UI audit: zero occurrences of hardware brand / SKU strings in operator-facing screens; permission test confirms hidden from non-admin roles.
+DE-06
+P0
+Logical binding — hide hardware identity
+Operator UI shows camera / zone / sensor logical names only; never the hardware model, vendor or device class. Hardware identity is stored in the platform.devices table and visible only to the IT/Admin role.
+Acceptance: UI audit: zero occurrences of hardware brand / SKU strings in operator-facing screens; permission test confirms hidden from non-admin roles.
+DE-07 | P0 | Vendor-agnostic device registryplatform.devices(device_id, type ∈ {edge_main, edge_distributed, sensor, gateway}, capabilities[]) — backend and UI key off type + capabilities, never off vendor / model.Acceptance: Switching a distributed-edge unit from vendor A to vendor B requires only a row update; no code change; tested with two synthetic device classes.
+DE-07
+P0
+Vendor-agnostic device registry
+platform.devices(device_id, type ∈ {edge_main, edge_distributed, sensor, gateway}, capabilities[]) — backend and UI key off type + capabilities, never off vendor / model.
+Acceptance: Switching a distributed-edge unit from vendor A to vendor B requires only a row update; no code change; tested with two synthetic device classes.
+DE-08 | P0 | Health and last-seen trackingEvery edge device publishes a heartbeat every 30 s. Service marks a device offline after 90 s of silence and raises an alert.Acceptance: Tested by disconnecting a device; UI status flips to red within 95 s; alert raised.
+DE-08
+P0
+Health and last-seen tracking
+Every edge device publishes a heartbeat every 30 s. Service marks a device offline after 90 s of silence and raises an alert.
+Acceptance: Tested by disconnecting a device; UI status flips to red within 95 s; alert raised.
+DE-09 | P1 | Local buffering at the edgeWhen the broker or WAN is unreachable, the edge device buffers up to 1 h of messages on local storage and replays them in order on reconnection.Acceptance: Disconnect-and-reconnect test: no message loss for 60-minute outage; replay completes within 2 min.
+DE-09
+P1
+Local buffering at the edge
+When the broker or WAN is unreachable, the edge device buffers up to 1 h of messages on local storage and replays them in order on reconnection.
+Acceptance: Disconnect-and-reconnect test: no message loss for 60-minute outage; replay completes within 2 min.
+DE-10 | P1 | Fleet provisioning workflowAdmin enrols a new edge device by registering its certificate fingerprint and assigning it to a property + logical bindings (cameras / zones).Acceptance: Provisioning runbook tested end-to-end; new device starts publishing within 5 min of enrolment.
+DE-10
+P1
+Fleet provisioning workflow
+Admin enrols a new edge device by registering its certificate fingerprint and assigning it to a property + logical bindings (cameras / zones).
+Acceptance: Provisioning runbook tested end-to-end; new device starts publishing within 5 min of enrolment.
+DE-11 | P0 | Audit trail of edge eventsEvery ingested event is also appended to audit.edge_event_log with raw envelope, device_id, ts, and ingest worker id.Acceptance: Spot-check on 100 random events: all reproducible from audit log.
+DE-11
+P0
+Audit trail of edge events
+Every ingested event is also appended to audit.edge_event_log with raw envelope, device_id, ts, and ingest worker id.
+Acceptance: Spot-check on 100 random events: all reproducible from audit log.
+DE-12 | P0 | Backend retrieval APIREST endpoints GET /edge/devices, GET /edge/detections, GET /edge/telemetry, GET /edge/health (RLS-scoped). Frontend uses these for historical views; live updates use WebSocket.Acceptance: OpenAPI 3.1 documented; auth + RLS enforced; tested with synthetic data.
+DE-12
+P0
+Backend retrieval API
+REST endpoints GET /edge/devices, GET /edge/detections, GET /edge/telemetry, GET /edge/health (RLS-scoped). Frontend uses these for historical views; live updates use WebSocket.
+Acceptance: OpenAPI 3.1 documented; auth + RLS enforced; tested with synthetic data.
+DE-13 | P1 | Sensitivity classifier on payload typeDetections that carry raw face crops, audio snippets or other potentially sensitive blobs are flagged sensitive=true in the envelope and routed to a separate, more restricted store.Acceptance: Audit: zero face crops in iot.camera_detections; restricted-store access limited to GM + IT roles.
+DE-13
+P1
+Sensitivity classifier on payload type
+Detections that carry raw face crops, audio snippets or other potentially sensitive blobs are flagged sensitive=true in the envelope and routed to a separate, more restricted store.
+Acceptance: Audit: zero face crops in iot.camera_detections; restricted-store access limited to GM + IT roles.
+6 Non-Functional Requirements (NFR)
+Quality attributes the system must satisfy at the V1.0 scale (10 hotels / 100 edge devices).
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+NFR-PERF-01 | P0 | API latencyGET endpoints respond <300 ms 95th percentile under nominal load (10 dashboards, 100 detections/sec).Acceptance: Load test results in CI.
+NFR-PERF-01
+P0
+API latency
+GET endpoints respond <300 ms 95th percentile under nominal load (10 dashboards, 100 detections/sec).
+Acceptance: Load test results in CI.
+NFR-PERF-02 | P0 | Detection ingestion throughputedge-ingest + ingest-worker handle 20 k msg/sec sustained without backpressure.Acceptance: Synthetic load test with 100 simulated edge devices.
+NFR-PERF-02
+P0
+Detection ingestion throughput
+edge-ingest + ingest-worker handle 20 k msg/sec sustained without backpressure.
+Acceptance: Synthetic load test with 100 simulated edge devices.
+NFR-PERF-03 | P0 | DB write throughputRDS sustains 200 batched INSERTs/sec with batch size 100 rows.Acceptance: Performance test report.
+NFR-PERF-03
+P0
+DB write throughput
+RDS sustains 200 batched INSERTs/sec with batch size 100 rows.
+Acceptance: Performance test report.
+NFR-PERF-04 | P0 | Dashboard live-update latencyDetection event reaches dashboard <500 ms 95th percentile.Acceptance: End-to-end test.
+NFR-PERF-04
+P0
+Dashboard live-update latency
+Detection event reaches dashboard <500 ms 95th percentile.
+Acceptance: End-to-end test.
+NFR-PERF-05 | P0 | Cortai Intel first-token latency<2 s 95th percentile for typical questions.Acceptance: Eval harness.
+NFR-PERF-05
+P0
+Cortai Intel first-token latency
+<2 s 95th percentile for typical questions.
+Acceptance: Eval harness.
+NFR-PERF-06 | P1 | WebRTC video latency<100 ms glass-to-glass on VPN.Acceptance: Stopwatch test.
+NFR-PERF-06
+P1
+WebRTC video latency
+<100 ms glass-to-glass on VPN.
+Acceptance: Stopwatch test.
+NFR-AVAIL-01 | P0 | Service availability≥99.5 % monthly availability for the cloud tier.Acceptance: SLA tracked monthly.
+NFR-AVAIL-01
+P0
+Service availability
+≥99.5 % monthly availability for the cloud tier.
+Acceptance: SLA tracked monthly.
+NFR-AVAIL-02 | P0 | Edge autonomyEdge-device inference and local alerting continue when WAN down.Acceptance: Disconnect test.
+NFR-AVAIL-02
+P0
+Edge autonomy
+Edge-device inference and local alerting continue when WAN down.
+Acceptance: Disconnect test.
+NFR-SCAL-01 | P0 | Vertical scaleResize EC2 from t3.medium → c6i.xlarge with <5 min downtime.Acceptance: Documented runbook.
+NFR-SCAL-01
+P0
+Vertical scale
+Resize EC2 from t3.medium → c6i.xlarge with <5 min downtime.
+Acceptance: Documented runbook.
+NFR-SCAL-02 | P1 | Horizontal scale pathEach service can be moved to its own EC2 in <2 days.Acceptance: Architecture doc + extracted PoC for one service.
+NFR-SCAL-02
+P1
+Horizontal scale path
+Each service can be moved to its own EC2 in <2 days.
+Acceptance: Architecture doc + extracted PoC for one service.
+NFR-SEC-01 | P0 | TLS everywhereAll in-VPN traffic uses TLS 1.3 minimum.Acceptance: Wireshark verification.
+NFR-SEC-01
+P0
+TLS everywhere
+All in-VPN traffic uses TLS 1.3 minimum.
+Acceptance: Wireshark verification.
+NFR-SEC-02 | P0 | AuthenticationJWT with RSA-256 signing, 12-hour TTL, refresh tokens.Acceptance: Token validation tests.
+NFR-SEC-02
+P0
+Authentication
+JWT with RSA-256 signing, 12-hour TTL, refresh tokens.
+Acceptance: Token validation tests.
+NFR-SEC-03 | P0 | AuthorisationRLS on every multi-tenant table; coverage = 100 %.Acceptance: Static analysis report.
+NFR-SEC-03
+P0
+Authorisation
+RLS on every multi-tenant table; coverage = 100 %.
+Acceptance: Static analysis report.
+NFR-SEC-04 | P0 | Secrets managementDB credentials, API keys never in code or env files; loaded from AWS SSM Parameter Store.Acceptance: Repo scan.
+NFR-SEC-04
+P0
+Secrets management
+DB credentials, API keys never in code or env files; loaded from AWS SSM Parameter Store.
+Acceptance: Repo scan.
+NFR-SEC-05 | P0 | Audit logEvery mutation logged with user, timestamp, before / after to audit.change_log.Acceptance: Spot-check on 100 random mutations.
+NFR-SEC-05
+P0
+Audit log
+Every mutation logged with user, timestamp, before / after to audit.change_log.
+Acceptance: Spot-check on 100 random mutations.
+NFR-SEC-06 | P1 | Vulnerability scanningContainer / binary images scanned with Trivy in CI; high CVEs block merge.Acceptance: CI policy.
+NFR-SEC-06
+P1
+Vulnerability scanning
+Container / binary images scanned with Trivy in CI; high CVEs block merge.
+Acceptance: CI policy.
+NFR-PRIV-01 | P0 | Data residencyAll customer data stays in ca-central-1.Acceptance: Architecture review.
+NFR-PRIV-01
+P0
+Data residency
+All customer data stays in ca-central-1.
+Acceptance: Architecture review.
+NFR-PRIV-02 | P0 | Encryption at restRDS, EBS, S3 use AES-256 encryption.Acceptance: AWS console verification.
+NFR-PRIV-02
+P0
+Encryption at rest
+RDS, EBS, S3 use AES-256 encryption.
+Acceptance: AWS console verification.
+NFR-PRIV-03 | P0 | Right to erasureTenant-scoped delete job removes guest's PII within 30 days of request.Acceptance: Tested with synthetic guest.
+NFR-PRIV-03
+P0
+Right to erasure
+Tenant-scoped delete job removes guest's PII within 30 days of request.
+Acceptance: Tested with synthetic guest.
+NFR-PRIV-04 | P0 | PII redaction in LLM logsNames and identifiers redacted before write to ai.llm_messages.content_*.Acceptance: Regex audit.
+NFR-PRIV-04
+P0
+PII redaction in LLM logs
+Names and identifiers redacted before write to ai.llm_messages.content_*.
+Acceptance: Regex audit.
+NFR-MAINT-01 | P0 | Code qualityLinting (Ruff, golangci-lint) passes; mypy / strict TS in CI.Acceptance: CI badges in README.
+NFR-MAINT-01
+P0
+Code quality
+Linting (Ruff, golangci-lint) passes; mypy / strict TS in CI.
+Acceptance: CI badges in README.
+NFR-MAINT-02 | P0 | Unit test coverage≥80 % lines for cortai-api modules; ≥70 % for Go services.Acceptance: Coverage report in CI.
+NFR-MAINT-02
+P0
+Unit test coverage
+≥80 % lines for cortai-api modules; ≥70 % for Go services.
+Acceptance: Coverage report in CI.
+NFR-MAINT-03 | P0 | Integration testsEnd-to-end tests for ≥10 critical user journeys.Acceptance: Run nightly in CI.
+NFR-MAINT-03
+P0
+Integration tests
+End-to-end tests for ≥10 critical user journeys.
+Acceptance: Run nightly in CI.
+NFR-MAINT-04 | P1 | API documentationFastAPI auto-generated OpenAPI 3.1 served at /docs.Acceptance: Manual verification.
+NFR-MAINT-04
+P1
+API documentation
+FastAPI auto-generated OpenAPI 3.1 served at /docs.
+Acceptance: Manual verification.
+NFR-USAB-01 | P0 | LocalisationAll user-facing strings in EN + FR.Acceptance: i18n key audit; no hardcoded strings.
+NFR-USAB-01
+P0
+Localisation
+All user-facing strings in EN + FR.
+Acceptance: i18n key audit; no hardcoded strings.
+NFR-USAB-02 | P0 | Mobile responsivenessWeb app usable on tablet (1024×768) and large phone (480 px wide).Acceptance: Responsive breakpoints.
+NFR-USAB-02
+P0
+Mobile responsiveness
+Web app usable on tablet (1024×768) and large phone (480 px wide).
+Acceptance: Responsive breakpoints.
+NFR-USAB-03 | P1 | AccessibilityWCAG 2.1 AA for primary screens.Acceptance: Lighthouse audit ≥85.
+NFR-USAB-03
+P1
+Accessibility
+WCAG 2.1 AA for primary screens.
+Acceptance: Lighthouse audit ≥85.
+NFR-OBS-01 | P0 | Application logsStructured JSON logs to stdout; captured to file with daily rotation.Acceptance: Log format documented.
+NFR-OBS-01
+P0
+Application logs
+Structured JSON logs to stdout; captured to file with daily rotation.
+Acceptance: Log format documented.
+NFR-OBS-02 | P0 | Health endpoints/health on every service returns version + dependency status.Acceptance: Manual + curl test.
+NFR-OBS-02
+P0
+Health endpoints
+/health on every service returns version + dependency status.
+Acceptance: Manual + curl test.
+NFR-OBS-03 | P0 | CloudWatch basic alarmsCPU, memory, disk, RDS connections alarms wired to email.Acceptance: AWS console verification.
+NFR-OBS-03
+P0
+CloudWatch basic alarms
+CPU, memory, disk, RDS connections alarms wired to email.
+Acceptance: AWS console verification.
+NFR-COMP-01 | P0 | Browser supportChromium 118+, Firefox 120+, Safari 17+.Acceptance: Compatibility matrix.
+NFR-COMP-01
+P0
+Browser support
+Chromium 118+, Firefox 120+, Safari 17+.
+Acceptance: Compatibility matrix.
+NFR-COMP-02 | P0 | Mobile OS supportAndroid 10+, iOS 16+.Acceptance: Tested on physical devices.
+NFR-COMP-02
+P0
+Mobile OS support
+Android 10+, iOS 16+.
+Acceptance: Tested on physical devices.
+7 External Interface Requirements
+Interfaces between the platform and external systems.
+Interface | Direction | Notes
+Interface
+Direction
+Notes
+Edge device (main, per cluster) | Inbound to cloud | WSS over TCP/443 with mTLS + MQTT JSON envelope on local broker — detections, events, health.
+Edge device (main, per cluster)
+Inbound to cloud
+WSS over TCP/443 with mTLS + MQTT JSON envelope on local broker — detections, events, health.
+Distributed edge devices (per camera) | Inbound | MQTT over TCP/8883 with mTLS to local broker; same JSON envelope as main edge.
+Distributed edge devices (per camera)
+Inbound
+MQTT over TCP/8883 with mTLS to local broker; same JSON envelope as main edge.
+Edge SDK | Internal to edge | NPU inference engine and model runtime loaded at boot — vendor-agnostic API.
+Edge SDK
+Internal to edge
+NPU inference engine and model runtime loaded at boot — vendor-agnostic API.
+BLE gateways | Inbound | MQTT over TCP/1883 (LAN), bridged via edge-ingest — beacon RSSI for positioning.
+BLE gateways
+Inbound
+MQTT over TCP/1883 (LAN), bridged via edge-ingest — beacon RSSI for positioning.
+IoT sensors (door, occupancy, HVAC) | Inbound | MQTT, Z-Wave or BACnet (depending on sensor); bridged to MQTT at the edge.
+IoT sensors (door, occupancy, HVAC)
+Inbound
+MQTT, Z-Wave or BACnet (depending on sensor); bridged to MQTT at the edge.
+AWS Bedrock (Claude) | Outbound | HTTPS, AWS SigV4 — claude-sonnet-4-20250514 pinned.
+AWS Bedrock (Claude)
+Outbound
+HTTPS, AWS SigV4 — claude-sonnet-4-20250514 pinned.
+voyage-3 embeddings | Outbound | HTTPS, API key — 1536-dim embeddings.
+voyage-3 embeddings
+Outbound
+HTTPS, API key — 1536-dim embeddings.
+Twilio | Both | HTTPS, account credentials — SMS in / out.
+Twilio
+Both
+HTTPS, account credentials — SMS in / out.
+WhatsApp Cloud API | Both | HTTPS, Bearer token — conversations.
+WhatsApp Cloud API
+Both
+HTTPS, Bearer token — conversations.
+IMAP / SMTP | Both | TLS-encrypted — property email.
+IMAP / SMTP
+Both
+TLS-encrypted — property email.
+Marriott MGS / MARSHA | Outbound (read) | HTTPS, OAuth2 client_credentials — property and reservation data.
+Marriott MGS / MARSHA
+Outbound (read)
+HTTPS, OAuth2 client_credentials — property and reservation data.
+Bonvoy GSS feed | Outbound (read) | HTTPS or SFTP — survey scores.
+Bonvoy GSS feed
+Outbound (read)
+HTTPS or SFTP — survey scores.
+S3 | Both | AWS SDK, IAM role — clips, KB documents, signage assets.
+S3
+Both
+AWS SDK, IAM role — clips, KB documents, signage assets.
+RDS PostgreSQL | Outbound | PostgreSQL wire protocol over TCP/5432 — VPC private.
+RDS PostgreSQL
+Outbound
+PostgreSQL wire protocol over TCP/5432 — VPC private.
+FCM (Firebase Cloud Messaging) | Outbound | HTTPS, server key — Android push.
+FCM (Firebase Cloud Messaging)
+Outbound
+HTTPS, server key — Android push.
+APNS (Apple Push Notification) | Outbound | HTTP/2, certificate — iOS push.
+APNS (Apple Push Notification)
+Outbound
+HTTP/2, certificate — iOS push.
+8 Data Requirements
+Data is governed by the canonical Postgres schema (8 schemas, ~30 tables, RLS on all tenant tables). The requirements below extend and constrain that schema for V1.0 — including the new tables that back the distributed-edge ingestion path.
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+DAT-01 | P0 | Multi-tenancy via RLSEvery tenant table has a USING (org_id = platform.current_org_id()) policy.Acceptance: Coverage = 100 %; static analysis script in CI.
+DAT-01
+P0
+Multi-tenancy via RLS
+Every tenant table has a USING (org_id = platform.current_org_id()) policy.
+Acceptance: Coverage = 100 %; static analysis script in CI.
+DAT-02 | P0 | TimescaleDB hypertablesiot.camera_detections, iot.sensor_readings, iot.staff_positions, iot.edge_events, iot.device_health are hypertables.Acceptance: create_hypertable executed; chunk_time_interval = 1 day.
+DAT-02
+P0
+TimescaleDB hypertables
+iot.camera_detections, iot.sensor_readings, iot.staff_positions, iot.edge_events, iot.device_health are hypertables.
+Acceptance: create_hypertable executed; chunk_time_interval = 1 day.
+DAT-03 | P0 | Continuous aggregatesHourly and daily roll-ups for camera_detections power analytics dashboards.Acceptance: Materialised view configured; refresh policy 1 hour.
+DAT-03
+P0
+Continuous aggregates
+Hourly and daily roll-ups for camera_detections power analytics dashboards.
+Acceptance: Materialised view configured; refresh policy 1 hour.
+DAT-04 | P0 | 90-day retention on hot detection dataDetections older than 90 days dropped from hot hypertable.Acceptance: Retention policy applied; tested with synthetic old data.
+DAT-04
+P0
+90-day retention on hot detection data
+Detections older than 90 days dropped from hot hypertable.
+Acceptance: Retention policy applied; tested with synthetic old data.
+DAT-05 | P0 | Audit log retentionaudit.change_log + audit.edge_event_log retained 12 months minimum.Acceptance: Backup policy enforces minimum retention.
+DAT-05
+P0
+Audit log retention
+audit.change_log + audit.edge_event_log retained 12 months minimum.
+Acceptance: Backup policy enforces minimum retention.
+DAT-06 | P0 | LLM conversation retentionai.llm_messages retained 12 months minimum (audit), then redacted.Acceptance: Lifecycle job documented.
+DAT-06
+P0
+LLM conversation retention
+ai.llm_messages retained 12 months minimum (audit), then redacted.
+Acceptance: Lifecycle job documented.
+DAT-07 | P0 | pgvector index parametersai.vector_embeddings uses HNSW with m=16, ef_construction=64.Acceptance: Index DDL in 08_ai.sql.
+DAT-07
+P0
+pgvector index parameters
+ai.vector_embeddings uses HNSW with m=16, ef_construction=64.
+Acceptance: Index DDL in 08_ai.sql.
+DAT-08 | P0 | BackupsAutomated daily RDS snapshot, 7-day retention.Acceptance: AWS Console verification.
+DAT-08
+P0
+Backups
+Automated daily RDS snapshot, 7-day retention.
+Acceptance: AWS Console verification.
+DAT-09 | P1 | Cross-region snapshotWeekly snapshot copied to ca-west-1.Acceptance: S3 inventory shows weekly copy.
+DAT-09
+P1
+Cross-region snapshot
+Weekly snapshot copied to ca-west-1.
+Acceptance: S3 inventory shows weekly copy.
+DAT-10 | P0 | Migration disciplineEvery schema change goes through Alembic migration with up + down SQL.Acceptance: Repository: zero raw ALTER on prod.
+DAT-10
+P0
+Migration discipline
+Every schema change goes through Alembic migration with up + down SQL.
+Acceptance: Repository: zero raw ALTER on prod.
+DAT-11 | P0 | Right-to-erasureJob removes guest PII while preserving aggregated, anonymised analytics.Acceptance: Tested with synthetic guest deletion.
+DAT-11
+P0
+Right-to-erasure
+Job removes guest PII while preserving aggregated, anonymised analytics.
+Acceptance: Tested with synthetic guest deletion.
+DAT-12 | P1 | Data export per tenantTenant admin can export all org data as a CSV bundle.Acceptance: Generated within 24 h of request.
+DAT-12
+P1
+Data export per tenant
+Tenant admin can export all org data as a CSV bundle.
+Acceptance: Generated within 24 h of request.
+DAT-13 | P0 | Device registryplatform.devices stores device_id, type, capabilities, certificate fingerprint, logical bindings — vendor-agnostic.Acceptance: Schema review.
+DAT-13
+P0
+Device registry
+platform.devices stores device_id, type, capabilities, certificate fingerprint, logical bindings — vendor-agnostic.
+Acceptance: Schema review.
+9 Quality & Engineering Requirements
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+ENG-01 | P0 | Single repo (monorepo)All apps + infra in one Git repo with apps/ deploy/ migrations/ folders.Acceptance: Repo follows declared structure.
+ENG-01
+P0
+Single repo (monorepo)
+All apps + infra in one Git repo with apps/ deploy/ migrations/ folders.
+Acceptance: Repo follows declared structure.
+ENG-02 | P0 | PR review mandatoryNo direct push to main; ≥1 reviewer for any merge.Acceptance: Branch protection rules enabled.
+ENG-02
+P0
+PR review mandatory
+No direct push to main; ≥1 reviewer for any merge.
+Acceptance: Branch protection rules enabled.
+ENG-03 | P0 | CI per PRLint, type-check, test on every push.Acceptance: GitHub Actions green check required to merge.
+ENG-03
+P0
+CI per PR
+Lint, type-check, test on every push.
+Acceptance: GitHub Actions green check required to merge.
+ENG-04 | P0 | Atomic deploysArgoCD or systemd reload — no half-deploy.Acceptance: Deploy script tested.
+ENG-04
+P0
+Atomic deploys
+ArgoCD or systemd reload — no half-deploy.
+Acceptance: Deploy script tested.
+ENG-05 | P0 | VersioningSemantic versioning for app + API breaking changes.Acceptance: CHANGELOG maintained.
+ENG-05
+P0
+Versioning
+Semantic versioning for app + API breaking changes.
+Acceptance: CHANGELOG maintained.
+ENG-06 | P0 | Migration safetyAll migrations tested on a staging RDS before prod.Acceptance: Staging environment exists.
+ENG-06
+P0
+Migration safety
+All migrations tested on a staging RDS before prod.
+Acceptance: Staging environment exists.
+ENG-07 | P1 | ADR for major decisionsArchitectural Decision Records for choices that affect more than one module.Acceptance: ≥10 ADRs by V1.0.
+ENG-07
+P1
+ADR for major decisions
+Architectural Decision Records for choices that affect more than one module.
+Acceptance: ≥10 ADRs by V1.0.
+ENG-08 | P0 | Secrets in AWS SSMAll credentials in Parameter Store; pulled at boot.Acceptance: Audit: zero secrets in repo.
+ENG-08
+P0
+Secrets in AWS SSM
+All credentials in Parameter Store; pulled at boot.
+Acceptance: Audit: zero secrets in repo.
+ENG-09 | P0 | Local dev paritydocker-compose.yml runs the full stack locally.Acceptance: Tested on the engineering team's macOS.
+ENG-09
+P0
+Local dev parity
+docker-compose.yml runs the full stack locally.
+Acceptance: Tested on the engineering team's macOS.
+ENG-10 | P0 | Schema as source of truthThe canonical Postgres schema is the source of truth; FastAPI models follow it.Acceptance: ORM types match schema.
+ENG-10
+P0
+Schema as source of truth
+The canonical Postgres schema is the source of truth; FastAPI models follow it.
+Acceptance: ORM types match schema.
+ENG-11 | P1 | Performance budgetEach PR must not regress p95 latency more than 10 % on the 10 critical endpoints.Acceptance: Bench in CI.
+ENG-11
+P1
+Performance budget
+Each PR must not regress p95 latency more than 10 % on the 10 critical endpoints.
+Acceptance: Bench in CI.
+ENG-12 | P1 | Feature flagsRisky features behind LaunchDarkly-style flags evaluated in admin-service.Acceptance: Flag toggle without restart.
+ENG-12
+P1
+Feature flags
+Risky features behind LaunchDarkly-style flags evaluated in admin-service.
+Acceptance: Flag toggle without restart.
+10 Deployment & Operations Requirements
+ID | Prio | Requirement
+ID
+Prio
+Requirement
+DEP-01 | P0 | Staging environmentA second EC2 t3.small + RDS db.t3.micro mirror prod for staging.Acceptance: Staging URL distinct from prod; same schema.
+DEP-01
+P0
+Staging environment
+A second EC2 t3.small + RDS db.t3.micro mirror prod for staging.
+Acceptance: Staging URL distinct from prod; same schema.
+DEP-02 | P0 | Deployment runbookStep-by-step doc to deploy from blank EC2 to running stack in <4 hours.Acceptance: Tested by ≥2 engineers.
+DEP-02
+P0
+Deployment runbook
+Step-by-step doc to deploy from blank EC2 to running stack in <4 hours.
+Acceptance: Tested by ≥2 engineers.
+DEP-03 | P0 | Rollback planEach deploy has a documented rollback (previous binary, previous migration down).Acceptance: Documented per service.
+DEP-03
+P0
+Rollback plan
+Each deploy has a documented rollback (previous binary, previous migration down).
+Acceptance: Documented per service.
+DEP-04 | P0 | Backup verificationQuarterly restore drill from RDS snapshot.Acceptance: Run report archived.
+DEP-04
+P0
+Backup verification
+Quarterly restore drill from RDS snapshot.
+Acceptance: Run report archived.
+DEP-05 | P0 | Incident responseOn-call rotation with 30-min response SLA for P0 incidents.Acceptance: PagerDuty or equivalent.
+DEP-05
+P0
+Incident response
+On-call rotation with 30-min response SLA for P0 incidents.
+Acceptance: PagerDuty or equivalent.
+DEP-06 | P0 | Pilot UATTPS Vaughan management runs 2-week UAT before go-live.Acceptance: Sign-off form.
+DEP-06
+P0
+Pilot UAT
+TPS Vaughan management runs 2-week UAT before go-live.
+Acceptance: Sign-off form.
+DEP-07 | P1 | Blue / green for cortai-apiTraffic-shift deployment to avoid downtime.Acceptance: Caddy reverse-proxy split tested.
+DEP-07
+P1
+Blue / green for cortai-api
+Traffic-shift deployment to avoid downtime.
+Acceptance: Caddy reverse-proxy split tested.
+DEP-08 | P0 | DNS TTLAll cortai subdomains have TTL ≤ 5 min during pilot.Acceptance: Route 53 verified.
+DEP-08
+P0
+DNS TTL
+All cortai subdomains have TTL ≤ 5 min during pilot.
+Acceptance: Route 53 verified.
+11 Acceptance Criteria & V1.0 Definition of Done
+V1.0 is considered done when every P0 BR and every P0 FR is verified, plus the following platform-wide acceptance items:
+• All 9 services running on the EC2 with systemd; survive a reboot without manual intervention.
+• End-to-end demo: manager logs in, navigates to Command Center, asks Cortai Intel a question with cited answer, opens Live Camera Grid, an attendant updates a room status from the mobile app.
+• Distributed-edge demo: a freshly enrolled distributed edge device begins publishing detections that surface in the operator UI within 5 min of enrolment.
+• Pilot UAT: TPSV General Manager and 2 staff members exercise the platform for 5 working days; ≥90 % of P0 user journeys pass.
+• Compliance memo signed by counsel covering PHIPA / PIPEDA.
+• Pen-test report: no high-severity findings open.
+• Backup-and-restore drill executed with all data recovered.
+• Documentation: runbook, on-call playbook, API docs, user manual (EN + FR) committed to repo.
+• Pricing plan and contract templates ready for the Marriott pitch.
+• Trust artifacts: SBOM signed, Trivy scan clean, code-review log archived.
+• Cost dashboard: monthly cost on track within 110 % of forecast.
+12 Constraints, Assumptions, Risks
+ID | Risk | Mitigation
+ID
+Risk
+Mitigation
+RISK-01 | TimescaleDB not available on RDS without parameter group change | Confirm with Network Engineering in week 1; fall back to native partitioning + pg_partman if blocked.
+RISK-01
+TimescaleDB not available on RDS without parameter group change
+Confirm with Network Engineering in week 1; fall back to native partitioning + pg_partman if blocked.
+RISK-02 | Marriott MGS / Bonvoy API access delayed | Mock with synthetic data; document the integration as a follow-up sprint.
+RISK-02
+Marriott MGS / Bonvoy API access delayed
+Mock with synthetic data; document the integration as a follow-up sprint.
+RISK-03 | EC2 t3.medium too small under real load | Resize to t3.large in 5 min; staging tested at scale.
+RISK-03
+EC2 t3.medium too small under real load
+Resize to t3.large in 5 min; staging tested at scale.
+RISK-04 | Hotel WAN unstable | Edge aggregator + local broker buffer documented; tested under WAN cuts.
+RISK-04
+Hotel WAN unstable
+Edge aggregator + local broker buffer documented; tested under WAN cuts.
+RISK-05 | Bedrock Claude rate limited | Redis cache for repeated questions; budget alarms.
+RISK-05
+Bedrock Claude rate limited
+Redis cache for repeated questions; budget alarms.
+RISK-06 | Site-to-site VPN provisioning slow | Network Engineering ownership confirmed; standard runbook delivered week 2.
+RISK-06
+Site-to-site VPN provisioning slow
+Network Engineering ownership confirmed; standard runbook delivered week 2.
+RISK-07 | Staff resistance to mobile app | Pre-launch training sessions; designed simple by default.
+RISK-07
+Staff resistance to mobile app
+Pre-launch training sessions; designed simple by default.
+RISK-08 | PII regulator flags an issue | Privacy review with external counsel before go-live.
+RISK-08
+PII regulator flags an issue
+Privacy review with external counsel before go-live.
+RISK-09 | Marriott brand-standards audit fails | Run brand-standards monitoring module in shadow mode for 30 days.
+RISK-09
+Marriott brand-standards audit fails
+Run brand-standards monitoring module in shadow mode for 30 days.
+RISK-10 | Key engineer attrition | Pair programming, ADRs, on-boarding docs.
+RISK-10
+Key engineer attrition
+Pair programming, ADRs, on-boarding docs.
+RISK-11 | Distributed-edge hardware vendor change mid-pilot | Vendor-agnostic device registry (DE-07) absorbs the change with a row update.
+RISK-11
+Distributed-edge hardware vendor change mid-pilot
+Vendor-agnostic device registry (DE-07) absorbs the change with a row update.
+13 Compliance Matrix (PHIPA / PIPEDA / Marriott)
+Mapping each compliance obligation to the technical control that satisfies it.
+Obligation | Source | Control
+Obligation
+Source
+Control
+Data residency in Canada | PIPEDA, PHIPA | AWS ca-central-1 only; no cross-border transfer.
+Data residency in Canada
+PIPEDA, PHIPA
+AWS ca-central-1 only; no cross-border transfer.
+Encryption at rest | PHIPA | RDS, EBS, S3 with AES-256.
+Encryption at rest
+PHIPA
+RDS, EBS, S3 with AES-256.
+Encryption in transit | PHIPA, PIPEDA | TLS 1.3, mTLS for edge.
+Encryption in transit
+PHIPA, PIPEDA
+TLS 1.3, mTLS for edge.
+Access control | PIPEDA | RBAC + RLS, JWT scopes.
+Access control
+PIPEDA
+RBAC + RLS, JWT scopes.
+Audit log | PIPEDA, Marriott data security | audit.change_log + audit.edge_event_log + ai.llm_messages.
+Audit log
+PIPEDA, Marriott data security
+audit.change_log + audit.edge_event_log + ai.llm_messages.
+Right to access (Section 8) | PIPEDA | Per-tenant export job (DAT-12).
+Right to access (Section 8)
+PIPEDA
+Per-tenant export job (DAT-12).
+Right to erasure (Section 8.3) | PIPEDA | Tenant-scoped delete job (NFR-PRIV-03).
+Right to erasure (Section 8.3)
+PIPEDA
+Tenant-scoped delete job (NFR-PRIV-03).
+Breach notification | PIPEDA Section 10.1 | Documented incident-response runbook.
+Breach notification
+PIPEDA Section 10.1
+Documented incident-response runbook.
+Bonvoy data handling | Marriott Data Privacy | Read-only ingestion of GSS, no resale.
+Bonvoy data handling
+Marriott Data Privacy
+Read-only ingestion of GSS, no resale.
+MARSHA property mapping | Marriott brand | platform.properties.pms_property_id.
+MARSHA property mapping
+Marriott brand
+platform.properties.pms_property_id.
+Brand standards monitoring | Marriott brand standards manual | forms-service rules + camera analytics.
+Brand standards monitoring
+Marriott brand standards manual
+forms-service rules + camera analytics.
+Penetration test | Insurance + Marriott | External pen-test before go-live.
+Penetration test
+Insurance + Marriott
+External pen-test before go-live.
+14 Glossary
+Business and technical terms used throughout this specification (see also §1.3 for acronyms).
+Term | Definition | Notes / Requirement
+Term
+Definition
+Notes / Requirement
+Bonvoy | Marriott's loyalty program; member tier impacts arrival treatment. | 
+Bonvoy
+Marriott's loyalty program; member tier impacts arrival treatment.
+Brand standard | Marriott-mandated operational rule ( minimum room cleanliness, towel folding). | 
+Brand standard
+Marriott-mandated operational rule ( minimum room cleanliness, towel folding).
+Comp set | Comparable competitor hotel set used in revenue analysis. | 
+Comp set
+Comparable competitor hotel set used in revenue analysis.
+Cortai Intel | The product name of the in-platform AI assistant. | 
+Cortai Intel
+The product name of the in-platform AI assistant.
+Distributed edge | Lightweight per-camera edge inference node — vendor-agnostic in spec. | MANDATORY for NVMe SKU
+Distributed edge
+Lightweight per-camera edge inference node — vendor-agnostic in spec.
+MANDATORY for NVMe SKU
+DND | Do Not Disturb status on a guest room. | MANDATORY · A/B OTA partition layout required.
+DND
+Do Not Disturb status on a guest room.
+MANDATORY · A/B OTA partition layout required.
+Edge device | On-premise inference node running the computer-vision pipelines. | [OPTIONAL per SKU] · Long-term AI model and bitstream storage
+Edge device
+On-premise inference node running the computer-vision pipelines.
+[OPTIONAL per SKU] · Long-term AI model and bitstream storage
+GSS | Guest Satisfaction Survey, post-stay Bonvoy survey. | 
+GSS
+Guest Satisfaction Survey, post-stay Bonvoy survey.
+Hotel Vision | The product name for the camera + AI surface. | 
+Hotel Vision
+The product name for the camera + AI surface.
+Local Brain | Architectural pitch — customer-owned LLM context, no third-party reseller. | ATECC608B on I²C bus 1 — unchanged
+Local Brain
+Architectural pitch — customer-owned LLM context, no third-party reseller.
+ATECC608B on I²C bus 1 — unchanged
+MARSHA | Marriott's reservation system identifier for properties. | 
+MARSHA
+Marriott's reservation system identifier for properties.
+MGS | Marriott Guest Services API. | 
+MGS
+Marriott Guest Services API.
+OOO | Out-of-Order — room not available due to maintenance. | 
+OOO
+Out-of-Order — room not available due to maintenance.
+RFP | Request for Proposal — group sales lead. | 
+RFP
+Request for Proposal — group sales lead.
+TPSV | TownePlace Suites Vaughan, the pilot property. | 
+TPSV
+TownePlace Suites Vaughan, the pilot property.
+15 Requirements Traceability Matrix (summary)
+Each business requirement is satisfied by one or more functional requirements. Below is the high-level mapping; the detailed mapping is maintained in the engineering wiki.
+BR | Satisfied by FRs | Notes / Requirement
+BR
+Satisfied by FRs
+Notes / Requirement
+BR-01 Single pane of glass | OPS-01 to OPS-12 | 
+BR-01 Single pane of glass
+OPS-01 to OPS-12
+BR-02 Real-time fleet visibility | OPS-02, AD-01, AD-02, DE-08, NFR-PERF-01, NFR-PERF-04 | 
+BR-02 Real-time fleet visibility
+OPS-02, AD-01, AD-02, DE-08, NFR-PERF-01, NFR-PERF-04
+BR-03 Local Brain | AI-01 to AI-11, NFR-PRIV-01 to NFR-PRIV-04, DAT-07 | 
+BR-03 Local Brain
+AI-01 to AI-11, NFR-PRIV-01 to NFR-PRIV-04, DAT-07
+BR-04 Cut HK cycle time | HK-01 to HK-12 | MANDATORY minimum
+BR-04 Cut HK cycle time
+HK-01 to HK-12
+MANDATORY minimum
+BR-05 MTTR for incidents | HV-08 to HV-14, OPS-09, DE-05, NFR-PERF-04 | MANDATORY for NVMe SKU
+BR-05 MTTR for incidents
+HV-08 to HV-14, OPS-09, DE-05, NFR-PERF-04
+MANDATORY for NVMe SKU
+BR-06 Unified inbox | GM-01 to GM-10 | MANDATORY · A/B OTA partition layout required.
+BR-06 Unified inbox
+GM-01 to GM-10
+MANDATORY · A/B OTA partition layout required.
+BR-07 AI assistant grounded | AI-01, AI-04, AI-05 | [OPTIONAL per SKU] · Long-term AI model
+BR-07 AI assistant grounded
+AI-01, AI-04, AI-05
+[OPTIONAL per SKU] · Long-term AI model
+BR-08 Multi-tenant isolation | DAT-01, NFR-SEC-03, AD-01, AD-02 | MANDATORY ·
+BR-08 Multi-tenant isolation
+DAT-01, NFR-SEC-03, AD-01, AD-02
+MANDATORY ·
+BR-09 Marriott-readiness | OPS-10, RV-03, AD-04, FF-04 | 
+BR-09 Marriott-readiness
+OPS-10, RV-03, AD-04, FF-04
+BR-10 Privacy compliance | NFR-PRIV-01 to NFR-PRIV-04, DAT-11, see §13 | ATECC608B on I²C bus 1 — unchanged
+BR-10 Privacy compliance
+NFR-PRIV-01 to NFR-PRIV-04, DAT-11, see §13
+ATECC608B on I²C bus 1 — unchanged
+BR-11 GSS uplift | RV-03, AI-07, OPS-05 | 
+BR-11 GSS uplift
+RV-03, AI-07, OPS-05
+BR-12 Energy savings | OPS-11, AD-07 | 
+BR-12 Energy savings
+OPS-11, AD-07
+BR-13 Scale to 10 hotels | AD-01, AD-02, AD-03, NFR-SCAL-01, NFR-SCAL-02 | 
+BR-13 Scale to 10 hotels
+AD-01, AD-02, AD-03, NFR-SCAL-01, NFR-SCAL-02
+BR-14 WAN-outage resilience | Edge architecture, DE-09, HK-03 offline | 
+BR-14 WAN-outage resilience
+Edge architecture, DE-09, HK-03 offline
+BR-15 Auditable decisions | AI-05, DE-11, NFR-SEC-05, DAT-05, DAT-06 | 
+BR-15 Auditable decisions
+AI-05, DE-11, NFR-SEC-05, DAT-05, DAT-06

@@ -27,13 +27,36 @@ Recommended permissions:
 
 We set `use_identity_as_username true`. With mTLS enabled, Mosquitto maps the client cert identity to `username`.
 
-ACLs use `%u` (username) to restrict topics:
+ACLs use the device registry to restrict topics.
 
-- `topic readwrite cortai/+/+/edge/%u/+`
+### Why we *don’t* use wildcards for tenant isolation
 
-So a device with cert identity `edge-0007` can only use:
+The old rule:
+
+- `pattern readwrite cortai/+/+/edge/%u/+`
+
+…only pinned the `{device_id}` segment. `{org}` and `{property}` were wildcards, so any device that could
+authenticate as `edge-0007` could publish into *any* org’s namespace:
 
 - `cortai/*/*/edge/edge-0007/*`
+
+That breaks multi-tenant isolation at the broker.
+
+### Current approach (generated per-device ACL)
+
+During deploy we generate `deploy/mosquitto/aclfile` from `platform.devices`:
+
+- Devices are pinned to their **org slug** in the topic.
+- If a device is bound to a `property_id`, it is also pinned to that **property slug**.
+
+Generation command:
+
+```bash
+cd apps/cortai-api
+uv run python -m app.scripts.generate_mosquitto_acl --out deploy/mosquitto/aclfile
+```
+
+The deploy script runs this automatically before restarting `cortai-mqtt`.
 
 ## Local test (from a machine with mosquitto-clients)
 

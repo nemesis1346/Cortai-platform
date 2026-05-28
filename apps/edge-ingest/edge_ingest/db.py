@@ -30,3 +30,28 @@ async def set_current_org(conn: asyncpg.Connection, org_id: str) -> None:
     # Mirrors cortai-api. IMPORTANT: `is_local=true` only applies within the current transaction.
     await conn.execute("select set_config('app.current_org_id', $1, true)", org_id)
 
+
+async def fetch_device_org_property_by_device_id(
+    conn: asyncpg.Connection, *, device_id: str
+) -> tuple[str, str | None] | None:
+    """
+    Return (org_id, property_id) for a globally-unique device_id.
+
+    Security note: if the same `device_id` exists in multiple orgs, the identity is ambiguous.
+    In that case we return None and the caller should reject/drop the message.
+    """
+    rows = await conn.fetch(
+        """
+        select org_id::text as org_id, property_id::text as property_id
+        from platform.devices
+        where device_id = $1
+        """,
+        device_id,
+    )
+    if not rows:
+        return None
+    if len(rows) > 1:
+        return None
+    row = rows[0]
+    return str(row["org_id"]), (str(row["property_id"]) if row["property_id"] is not None else None)
+
