@@ -7,6 +7,18 @@ resolution-markers = [
 ]
 
 [[package]]
+name = "aiomqtt"
+version = "2.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "paho-mqtt" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1c/93/d8aae771d12ab974112868e46921215668f1d612a739e11a8b59b4ce9e33/aiomqtt-2.0.1.tar.gz", hash = "sha256:60f6451c8ab7235cfb392b1b0cab398e9bc6040f4b140628c0615371abcde15f", size = 16940, upload-time = "2024-03-13T22:10:16.522Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c8/ce/e2353bb4f2d4232981e5aff348c0bf8e2ca1e3abaff4278960952e603825/aiomqtt-2.0.1-py3-none-any.whl", hash = "sha256:7c26a867212366ae0841571e6c2d06cebc00c2de029475b920c2cd7396aeacea", size = 16028, upload-time = "2024-03-13T22:10:14.809Z" },
+]
+
+[[package]]
 name = "annotated-types"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -53,17 +65,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/dd/51/5b840c4df7334104cecffa28f23904fe81ca89ca223d2450e288de39fd3c/ast_serialize-0.5.0-cp39-abi3-win32.whl", hash = "sha256:143a4ef63285a075871908fda3672dc21864b83a8ec3ee12304aa3e4c5387b9a", size = 1068311, upload-time = "2026-05-17T17:48:25.027Z" },
     { url = "https://files.pythonhosted.org/packages/41/11/ca5672c7d491825bc4cd6702dea106a6b60d928707712ec257c7833ae476/ast_serialize-0.5.0-cp39-abi3-win_amd64.whl", hash = "sha256:cf25572c526add400f26a4750dc6ce0c3bb93fc1f75e7ae0cad4ce4f2cd5c590", size = 1108931, upload-time = "2026-05-17T17:48:26.591Z" },
     { url = "https://files.pythonhosted.org/packages/45/19/cc8bd127d28a43da249aa955cfd164cf8fd534e79e42cea96c4854d72fd0/ast_serialize-0.5.0-cp39-abi3-win_arm64.whl", hash = "sha256:92a31c9c20d25a076edaeec76b128a3535d74a24f340b9a8a7e96c9b86dc9642", size = 1081181, upload-time = "2026-05-17T17:48:28.122Z" },
-]
-
-[[package]]
-name = "asyncio-mqtt"
-version = "0.16.2"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "paho-mqtt" },
-]
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/64/c8a8c2ed51f3c1f4b8d2f244424d3bad3fbd4333eb01589c6b00a6dd2c04/asyncio_mqtt-0.16.2-py3-none-any.whl", hash = "sha256:fe70ea2c648b248779a7ff3d9218262cdd739083743dfaa7c0d52ba458a8ad71", size = 17380, upload-time = "2023-06-26T19:46:48.342Z" },
 ]
 
 [[package]]
@@ -129,7 +130,7 @@ name = "edge-ingest"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "asyncio-mqtt" },
+    { name = "aiomqtt" },
     { name = "asyncpg" },
     { name = "jsonschema" },
     { name = "paho-mqtt" },
@@ -147,7 +148,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "asyncio-mqtt", specifier = ">=0.16.2" },
+    { name = "aiomqtt", specifier = ">=2.0.1" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "jsonschema", specifier = ">=4.23.0" },
     { name = "paho-mqtt", specifier = "<2" },

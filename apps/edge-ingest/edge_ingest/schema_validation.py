@@ -6,8 +6,8 @@ from pathlib import Path
 from typing import Any
 
 import structlog
-from jsonschema import Draft202012Validator
-from jsonschema.validators import validator_for
+from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
+from jsonschema.validators import validator_for  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 

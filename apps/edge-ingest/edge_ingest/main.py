@@ -7,10 +7,10 @@ import time
 from datetime import UTC, datetime
 from typing import Any
 
-import asyncpg
+import asyncpg  # type: ignore[import-untyped]
 import structlog
-from asyncio_mqtt import Client, MqttError
-from paho.mqtt import client as paho_mqtt
+from aiomqtt import Client, MqttError
+from paho.mqtt import client as paho_mqtt  # type: ignore[import-untyped]
 
 from edge_ingest.config import get_settings
 from edge_ingest.db import (
@@ -117,11 +117,12 @@ async def _persist_message(
                 org_id,
                 message["device_id"],
             )
+        insert_sql = f"""
+        insert into {table} (org_id, property_id, device_id, ts, schema_version, payload)
+        values ($1, $2, $3, $4, $5, $6::jsonb)
+        """  # noqa: S608
         await conn.execute(
-            f"""
-            insert into {table} (org_id, property_id, device_id, ts, schema_version, payload)
-            values ($1, $2, $3, $4, $5, $6::jsonb)
-            """,
+            insert_sql,
             org_id,
             property_id,
             message["device_id"],
@@ -132,7 +133,7 @@ async def _persist_message(
 
         if enable_live_notify:
             # Publish a live event for DE-05 via Postgres NOTIFY.
-            # Channel naming is fixed (`cortai_live`) and messages are filtered by property_id downstream.
+            # Channel naming is fixed and downstream filters by property_id.
             live_event = {
                 "type": "edge_message",
                 "org_id": org_id,
@@ -164,7 +165,11 @@ async def run() -> None:
     if not settings.mqtt_client_cert or not settings.mqtt_client_key:
         raise RuntimeError("MQTT_CLIENT_CERT and MQTT_CLIENT_KEY are required")
 
-    ssl_ctx = _ssl_context(settings.mqtt_ca_file, settings.mqtt_client_cert, settings.mqtt_client_key)
+    ssl_ctx = _ssl_context(
+        settings.mqtt_ca_file,
+        settings.mqtt_client_cert,
+        settings.mqtt_client_key,
+    )
 
     pool = await connect_pool(
         settings.database_url,
@@ -172,9 +177,19 @@ async def run() -> None:
         max_size=settings.db_pool_max_size,
     )
     cache = _LookupCache()
-    q_max = settings.ingest_queue_maxsize if settings.ingest_queue_maxsize > 0 else settings.ingest_workers * 4
+    q_max = (
+        settings.ingest_queue_maxsize
+        if settings.ingest_queue_maxsize > 0
+        else settings.ingest_workers * 4
+    )
     queue: asyncio.Queue[tuple[str, int, bytes]] = asyncio.Queue(maxsize=q_max)
-    stats: dict[str, int] = {"received": 0, "persisted": 0, "rejected": 0, "dropped": 0, "errors": 0}
+    stats: dict[str, int] = {
+        "received": 0,
+        "persisted": 0,
+        "rejected": 0,
+        "dropped": 0,
+        "errors": 0,
+    }
 
     async def _stats_logger() -> None:
         last = time.monotonic()
@@ -223,7 +238,14 @@ async def run() -> None:
                     table_name=table.split(".", 1)[1],
                     schema_name=table.split(".", 1)[0],
                     records=buf,
-                    columns=["org_id", "property_id", "device_id", "ts", "schema_version", "payload"],
+                    columns=[
+                        "org_id",
+                        "property_id",
+                        "device_id",
+                        "ts",
+                        "schema_version",
+                        "payload",
+                    ],
                 )
         stats["persisted"] += len(buf)
         buf = []
@@ -244,7 +266,10 @@ async def run() -> None:
 
         while True:
             try:
-                topic, broker_received_at_ms, payload_bytes = await asyncio.wait_for(queue.get(), timeout=0.05)
+                topic, broker_received_at_ms, payload_bytes = await asyncio.wait_for(
+                    queue.get(),
+                    timeout=0.05,
+                )
             except TimeoutError:
                 # Periodic flush on idle.
                 if settings.perf_mode:
@@ -267,7 +292,12 @@ async def run() -> None:
                     else:
                         payload = json.loads(payload_bytes.decode("utf-8"))
                 except Exception as e:  # noqa: BLE001
-                    logger.warning("edge.message.invalid_json", topic=topic, error=str(e), worker_id=worker_id)
+                    logger.warning(
+                        "edge.message.invalid_json",
+                        topic=topic,
+                        error=str(e),
+                        worker_id=worker_id,
+                    )
                     stats["errors"] += 1
                     continue
 
@@ -347,9 +377,18 @@ async def run() -> None:
                 property_id = cache.get_property(org_id, t.property)
                 if property_id is None:
                     async with pool.acquire() as conn:
-                        property_id = await fetch_property_id_by_slug(conn, org_id=org_id, property_slug=t.property)
+                        property_id = await fetch_property_id_by_slug(
+                            conn,
+                            org_id=org_id,
+                            property_slug=t.property,
+                        )
                     if property_id is None:
-                        logger.warning("edge.unknown_property", org=t.org, property=t.property, topic=topic)
+                        logger.warning(
+                            "edge.unknown_property",
+                            org=t.org,
+                            property=t.property,
+                            topic=topic,
+                        )
                         stats["dropped"] += 1
                         continue
                     cache.set_property(org_id, t.property, property_id)
@@ -374,7 +413,7 @@ async def run() -> None:
                         stats["dropped"] += 1
                         continue
                     try:
-                        # In perf mode, use broker/server receive time to avoid expensive RFC3339 parsing
+                        # In perf mode, use receive time to avoid expensive RFC3339 parsing.
                         # and to reflect ingestion timing under load.
                         ts = datetime.fromtimestamp(broker_received_at_ms / 1000.0, tz=UTC)
                         row = (
@@ -406,13 +445,21 @@ async def run() -> None:
                             org_id=org_id,
                             property_id=property_id,
                             topic_type=t.msg_type,
-                            message={**payload, "_broker_received_at_ms": broker_received_at_ms},
+                            message={
+                                **payload,
+                                "_broker_received_at_ms": broker_received_at_ms,
+                            },
                             enable_live_notify=settings.enable_live_notify,
                             enable_device_last_seen=settings.enable_device_last_seen,
                         )
                         stats["persisted"] += 1
             except Exception as e:  # noqa: BLE001
-                logger.exception("edge.message.processing_failed", topic=topic, error=str(e), worker_id=worker_id)
+                logger.exception(
+                    "edge.message.processing_failed",
+                    topic=topic,
+                    error=str(e),
+                    worker_id=worker_id,
+                )
                 stats["errors"] += 1
             finally:
                 queue.task_done()
@@ -432,41 +479,47 @@ async def run() -> None:
             hostname=settings.mqtt_host,
             port=settings.mqtt_port,
             tls_context=ssl_ctx,
-            client_id=settings.mqtt_client_id,
+            identifier=settings.mqtt_client_id,
             # NOTE: `protocol` here is the MQTT protocol version (paho-mqtt),
             # not an SSL/TLS protocol constant.
             protocol=paho_mqtt.MQTTv311,
         ) as client:
-            async with client.filtered_messages(settings.mqtt_topic) as messages:
-                await client.subscribe(settings.mqtt_topic, qos=settings.mqtt_sub_qos)
-                logger.info(
-                    "edge_ingest.subscribed",
-                    host=settings.mqtt_host,
-                    port=settings.mqtt_port,
-                    topic=settings.mqtt_topic,
-                    qos=settings.mqtt_sub_qos,
-                )
+            await client.subscribe(settings.mqtt_topic, qos=settings.mqtt_sub_qos)
+            logger.info(
+                "edge_ingest.subscribed",
+                host=settings.mqtt_host,
+                port=settings.mqtt_port,
+                topic=settings.mqtt_topic,
+                qos=settings.mqtt_sub_qos,
+            )
 
-                async for msg in messages:
+            async for msg in client.messages:
+                try:
+                    broker_received_at_ms = int(datetime.now(UTC).timestamp() * 1000)
+                    stats["received"] += 1
+                    payload = msg.payload
+                    if not isinstance(payload, bytes):
+                        payload = str(payload).encode("utf-8")
                     try:
-                        broker_received_at_ms = int(datetime.now(UTC).timestamp() * 1000)
-                        stats["received"] += 1
-                        try:
-                            queue.put_nowait((msg.topic, broker_received_at_ms, msg.payload))
-                        except asyncio.QueueFull:
-                            # Critical: never block the MQTT receive loop (broker will start dropping).
-                            stats["dropped"] += 1
-                    except Exception as e:  # noqa: BLE001
-                        # Don't crash the service on a single bad message / transient DB error.
-                        logger.exception("edge.message.processing_failed", topic=msg.topic, error=str(e))
-                        stats["errors"] += 1
+                        queue.put_nowait((str(msg.topic), broker_received_at_ms, payload))
+                    except asyncio.QueueFull:
+                        # Never block the MQTT receive loop; broker will start dropping.
+                        stats["dropped"] += 1
+                except Exception as e:  # noqa: BLE001
+                    # Don't crash the service on a single bad message / transient DB error.
+                    logger.exception(
+                        "edge.message.processing_failed",
+                        topic=msg.topic,
+                        error=str(e),
+                    )
+                    stats["errors"] += 1
     except MqttError as e:
         logger.error("edge_ingest.mqtt_error", error=str(e))
         raise
     finally:
         try:
             stats_task.cancel()
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110
             pass
         for w in workers:
             w.cancel()

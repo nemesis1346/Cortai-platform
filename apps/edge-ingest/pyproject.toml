@@ -9,7 +9,7 @@ dependencies = [
   "paho-mqtt<2",
   "pydantic-settings>=2.5.2",
   "structlog>=24.4.0",
-  "asyncio-mqtt>=0.16.2"
+  "aiomqtt>=2.0.1",
 ]
 
 [dependency-groups]

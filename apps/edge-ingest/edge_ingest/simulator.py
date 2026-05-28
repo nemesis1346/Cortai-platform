@@ -11,11 +11,11 @@ import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import structlog
-from asyncio_mqtt import Client
-from paho.mqtt import client as paho_mqtt
+from aiomqtt import Client
+from paho.mqtt import client as paho_mqtt  # type: ignore[import-untyped]
 
 logger = structlog.get_logger(__name__)
 
@@ -58,13 +58,16 @@ def _envelope(*, device_id: str, msg_type: str, schema_version: str) -> dict[str
     if msg_type == "detection":
         payload = {
             "kind": "person",
-            "score": round(random.uniform(0.5, 0.99), 3),
-            "zone": random.choice(["lobby", "pool", "garage", "hall"]),
+            "score": round(random.uniform(0.5, 0.99), 3),  # noqa: S311
+            "zone": random.choice(["lobby", "pool", "garage", "hall"]),  # noqa: S311
         }
     elif msg_type == "telemetry":
-        payload = {"temp_c": round(random.uniform(18.0, 32.0), 2), "humidity": random.randint(25, 70)}
+        payload = {
+            "temp_c": round(random.uniform(18.0, 32.0), 2),  # noqa: S311
+            "humidity": random.randint(25, 70),  # noqa: S311
+        }
     elif msg_type == "health":
-        payload = {"kind": "heartbeat", "uptime_s": random.randint(10, 100_000)}
+        payload = {"kind": "heartbeat", "uptime_s": random.randint(10, 100_000)}  # noqa: S311
     else:  # event
         payload = {"kind": "edge_event", "message": "synthetic"}
 
@@ -77,7 +80,12 @@ def _envelope(*, device_id: str, msg_type: str, schema_version: str) -> dict[str
     }
 
 
-def _ssl_context(*, ca_file: str, client_cert: str | None, client_key: str | None) -> ssl.SSLContext:
+def _ssl_context(
+    *,
+    ca_file: str,
+    client_cert: str | None,
+    client_key: str | None,
+) -> ssl.SSLContext:
     ctx = ssl.create_default_context(ssl.Purpose.SERVER_AUTH, cafile=ca_file)
     if client_cert and client_key:
         ctx.load_cert_chain(certfile=client_cert, keyfile=client_key)
@@ -86,7 +94,12 @@ def _ssl_context(*, ca_file: str, client_cert: str | None, client_key: str | Non
     return ctx
 
 
-async def _publisher_task(cfg: SimConfig, *, connection_idx: int, device_ids: list[str]) -> tuple[int, float]:
+async def _publisher_task(
+    cfg: SimConfig,
+    *,
+    connection_idx: int,
+    device_ids: list[str],
+) -> tuple[int, float]:
     tls_ctx: ssl.SSLContext | None = None
     if not cfg.insecure_no_tls:
         if not cfg.ca_file:
@@ -99,7 +112,6 @@ async def _publisher_task(cfg: SimConfig, *, connection_idx: int, device_ids: li
     #
     # CI note: measure achieved_mps over the publish window only (exclude connect/setup time),
     # otherwise short tests flake on slower runners.
-    start = time.monotonic()
     per_conn_rate = cfg.rate / max(cfg.connections, 1)
     interval = 1.0 / per_conn_rate if per_conn_rate > 0 else 0.0
 
@@ -109,7 +121,7 @@ async def _publisher_task(cfg: SimConfig, *, connection_idx: int, device_ids: li
         hostname=cfg.host,
         port=cfg.port,
         tls_context=tls_ctx,
-        client_id=f"cortai-sim-{int(time.time() * 1000)}-{os.getpid()}-{connection_idx}",
+        identifier=f"cortai-sim-{int(time.time() * 1000)}-{os.getpid()}-{connection_idx}",
         protocol=paho_mqtt.MQTTv311,
     ) as client:
         publish_start = time.monotonic()
@@ -136,9 +148,13 @@ async def _publisher_task(cfg: SimConfig, *, connection_idx: int, device_ids: li
                 await asyncio.sleep(min(0.05, next_send - now))
                 continue
 
-            device_id = random.choice(device_ids)
-            msg_type = random.choice(cfg.types)
-            env = _envelope(device_id=device_id, msg_type=msg_type, schema_version=cfg.schema_version)
+            device_id = random.choice(device_ids)  # noqa: S311
+            msg_type = random.choice(cfg.types)  # noqa: S311
+            env = _envelope(
+                device_id=device_id,
+                msg_type=msg_type,
+                schema_version=cfg.schema_version,
+            )
             topic = _topic(org=cfg.org, prop=cfg.property, device_id=device_id, msg_type=msg_type)
             payload = json.dumps(env).encode("utf-8")
 
@@ -178,7 +194,7 @@ def _publisher_paho(cfg: SimConfig, *, device_ids: list[str]) -> tuple[int, floa
     """
     High-throughput backend.
 
-    `asyncio-mqtt` is great for correctness, but it still waits on internal confirmations
+    `aiomqtt` is great for correctness, but it still waits on internal confirmations
     and can time out even at QoS0 under high rates. For NFR-PERF-02 load, paho in
     loop_start + fire-and-forget publish is the simplest way to generate sustained load.
     """
@@ -200,7 +216,6 @@ def _publisher_paho(cfg: SimConfig, *, device_ids: list[str]) -> tuple[int, floa
             ca_file=cfg.ca_file, client_cert=cfg.client_cert, client_key=cfg.client_key
         )
 
-    start = time.monotonic()
     interval = 1.0 / cfg.rate if cfg.rate > 0 else 0.0
     sent = 0
 
@@ -238,7 +253,7 @@ def _publisher_paho(cfg: SimConfig, *, device_ids: list[str]) -> tuple[int, floa
         # Allow unlimited queueing by default; this is a load generator.
         try:
             client.max_queued_messages_set(0)
-        except Exception:  # noqa: BLE001
+        except Exception:  # noqa: BLE001, S110
             pass
 
         logger.info(
@@ -265,16 +280,22 @@ def _publisher_paho(cfg: SimConfig, *, device_ids: list[str]) -> tuple[int, floa
                 time.sleep(min(0.01, next_send - now))
                 continue
 
-            device_id = random.choice(device_ids)
-            msg_type = random.choice(cfg.types)
-            env = _envelope(device_id=device_id, msg_type=msg_type, schema_version=cfg.schema_version)
+            device_id = random.choice(device_ids)  # noqa: S311
+            msg_type = random.choice(cfg.types)  # noqa: S311
+            env = _envelope(
+                device_id=device_id,
+                msg_type=msg_type,
+                schema_version=cfg.schema_version,
+            )
             topic = _topic(org=cfg.org, prop=cfg.property, device_id=device_id, msg_type=msg_type)
             payload = json.dumps(env).encode("utf-8")
 
             # Fire-and-forget publish; rc is immediate local result.
             info = client.publish(topic, payload, qos=cfg.qos)
             if info.rc != 0:
-                raise RuntimeError(f"publish failed rc={info.rc} (likely disconnected/backpressure)")
+                raise RuntimeError(
+                    f"publish failed rc={info.rc} (likely disconnected/backpressure)"
+                )
             sent += 1
             next_send += interval
         publish_end = time.monotonic()
@@ -309,7 +330,12 @@ def _parse_args(argv: list[str] | None = None) -> SimConfig:
         default=1,
         help="Starting index for generated device ids (default: 1).",
     )
-    p.add_argument("--rate", type=float, default=100.0, help="Messages per second total (across all devices).")
+    p.add_argument(
+        "--rate",
+        type=float,
+        default=100.0,
+        help="Messages per second total (across all devices).",
+    )
     p.add_argument("--duration-s", type=float, default=30.0)
     p.add_argument("--schema-version", default="1.0")
     p.add_argument(
@@ -321,8 +347,11 @@ def _parse_args(argv: list[str] | None = None) -> SimConfig:
     p.add_argument(
         "--backend",
         default="paho",
-        choices=["paho", "asyncio-mqtt"],
-        help="Publish backend; use paho for high-throughput load generation.",
+        choices=["paho", "aiomqtt", "asyncio-mqtt"],
+        help=(
+            "Publish backend; use paho for high-throughput load generation. "
+            "`asyncio-mqtt` is an alias for aiomqtt."
+        ),
     )
     p.add_argument(
         "--connections",
@@ -380,7 +409,9 @@ def _parse_args(argv: list[str] | None = None) -> SimConfig:
         connections=int(args.connections),
         publish_timeout_s=float(args.publish_timeout_s),
         backend=str(args.backend),
-        min_achieved_mps=float(args.min_achieved_mps) if args.min_achieved_mps is not None else None,
+        min_achieved_mps=(
+            float(args.min_achieved_mps) if args.min_achieved_mps is not None else None
+        ),
     )
 
 
@@ -401,25 +432,31 @@ def main(argv: list[str] | None = None) -> None:
     for i, did in enumerate(device_ids):
         shards[i % len(shards)].append(did)
 
-    async def _run_asyncio_mqtt() -> None:
-        tasks = [_publisher_task(cfg, connection_idx=i, device_ids=shards[i]) for i in range(len(shards))]
+    async def _run_aiomqtt() -> None:
+        tasks = [
+            _publisher_task(cfg, connection_idx=i, device_ids=shards[i])
+            for i in range(len(shards))
+        ]
         start = time.monotonic()
-        results = await asyncio.gather(*tasks, return_exceptions=True)
+        results = cast(
+            list[tuple[int, float] | BaseException],
+            await asyncio.gather(*tasks, return_exceptions=True),
+        )
         elapsed = time.monotonic() - start
 
         total_sent = 0
         failures = 0
         for r in results:
-            if isinstance(r, Exception):
+            if isinstance(r, BaseException):
                 failures += 1
                 logger.error("sim.connection_failed", error=str(r))
                 continue
-            s, _conn_elapsed = r
-            total_sent += s
+            sent, _conn_elapsed = r
+            total_sent += sent
 
         logger.info(
             "sim.total",
-            backend="asyncio-mqtt",
+            backend="aiomqtt",
             connections=cfg.connections,
             total_sent=total_sent,
             failures=failures,
@@ -433,7 +470,7 @@ def main(argv: list[str] | None = None) -> None:
                 f"achieved_mps {achieved:.2f} < min_achieved_mps {cfg.min_achieved_mps:.2f}"
             )
 
-    asyncio.run(_run_asyncio_mqtt())
+    asyncio.run(_run_aiomqtt())
 
 
 if __name__ == "__main__":

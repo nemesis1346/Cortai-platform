@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import asyncpg
+import asyncpg  # type: ignore[import-untyped]
 
 
 async def connect_pool(

@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    # In production we rely on systemd `EnvironmentFile=` to load `/opt/cortai/apps/edge-ingest/.env`
+    # Production uses systemd `EnvironmentFile=` to load `/opt/cortai/apps/edge-ingest/.env`.
     # and do NOT re-read the .env file from Python (avoids permission/race issues).
     model_config = SettingsConfigDict(extra="ignore")
 
