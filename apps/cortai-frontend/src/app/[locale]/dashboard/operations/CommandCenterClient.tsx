@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -65,6 +66,7 @@ function KpiTile({
 }
 
 export function CommandCenterClient() {
+  const t = useTranslations("operations");
   const { user } = useAuth();
   const [kpis, setKpis] = useState<OperationsKpis | null>(null);
   const [loading, setLoading] = useState(true);
@@ -133,20 +135,21 @@ export function CommandCenterClient() {
   if (!propertyId) {
     return (
       <div className="rounded-lg border border-cortai-border bg-cortai-bg2 p-4">
-        <h1 className="text-lg font-semibold">Command Center</h1>
+        <h1 className="text-lg font-semibold">{t("title")}</h1>
         <p className="mt-1 text-xs text-cortai-text2">
-          Select a property to view KPIs.
+          {t("selectPropertyToViewKpis")}
         </p>
       </div>
     );
   }
 
+  const dash = t("kpis.dash");
   return (
     <div className="grid gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Command Center</h1>
-          <p className="text-xs text-cortai-text2">KPIs auto-refresh within 5 seconds.</p>
+          <h1 className="text-lg font-semibold">{t("title")}</h1>
+          <p className="text-xs text-cortai-text2">{t("autoRefreshNote")}</p>
         </div>
         <div className="ml-auto flex items-center gap-2 text-xs text-cortai-text2">
           <button
@@ -154,7 +157,7 @@ export function CommandCenterClient() {
             className="rounded-md border border-cortai-border bg-cortai-bg px-2.5 py-1.5 text-xs text-cortai-text2 hover:border-cortai-teal/25 hover:bg-cortai-teal/10 hover:text-cortai-teal"
             onClick={() => void refresh()}
           >
-            Refresh
+            {t("refresh")}
           </button>
         </div>
       </div>
@@ -167,34 +170,34 @@ export function CommandCenterClient() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <KpiTile
-          label="Occupancy"
-          value={kpis ? `${kpis.occupancy_pct.toFixed(0)}%` : loading ? "—" : "—"}
-          sub="Today"
+          label={t("kpis.occupancy")}
+          value={kpis ? `${kpis.occupancy_pct.toFixed(0)}%` : loading ? dash : dash}
+          sub={t("kpis.today")}
         />
         <KpiTile
-          label="Arrivals"
-          value={kpis ? String(kpis.arrivals_today) : loading ? "—" : "—"}
-          sub="Today"
+          label={t("kpis.arrivals")}
+          value={kpis ? String(kpis.arrivals_today) : loading ? dash : dash}
+          sub={t("kpis.today")}
         />
         <KpiTile
-          label="Departures"
-          value={kpis ? String(kpis.departures_today) : loading ? "—" : "—"}
-          sub="Today"
+          label={t("kpis.departures")}
+          value={kpis ? String(kpis.departures_today) : loading ? dash : dash}
+          sub={t("kpis.today")}
         />
         <KpiTile
-          label="Revenue"
-          value={kpis ? fmtMoney(kpis.revenue_today) : loading ? "—" : "—"}
-          sub="Today"
+          label={t("kpis.revenue")}
+          value={kpis ? fmtMoney(kpis.revenue_today) : loading ? dash : dash}
+          sub={t("kpis.today")}
         />
         <KpiTile
-          label="Open incidents"
-          value={kpis ? String(kpis.open_incidents) : loading ? "—" : "—"}
-          sub="Operations"
+          label={t("kpis.openIncidents")}
+          value={kpis ? String(kpis.open_incidents) : loading ? dash : dash}
+          sub={t("kpis.operations")}
         />
         <KpiTile
-          label="Housekeeping"
-          value={kpis ? `${kpis.hk_progress_pct.toFixed(0)}%` : loading ? "—" : "—"}
-          sub="Progress"
+          label={t("kpis.housekeeping")}
+          value={kpis ? `${kpis.hk_progress_pct.toFixed(0)}%` : loading ? dash : dash}
+          sub={t("kpis.progress")}
         />
       </div>
     </div>

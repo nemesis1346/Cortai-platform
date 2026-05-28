@@ -41,6 +41,46 @@
     "logout": "Log out",
     "loggingOut": "Logging out..."
   },
+  "operations": {
+    "title": "Command Center",
+    "selectPropertyToViewKpis": "Select a property to view KPIs.",
+    "autoRefreshNote": "KPIs auto-refresh within 5 seconds.",
+    "refresh": "Refresh",
+    "kpis": {
+      "occupancy": "Occupancy",
+      "arrivals": "Arrivals",
+      "departures": "Departures",
+      "revenue": "Revenue",
+      "openIncidents": "Open incidents",
+      "housekeeping": "Housekeeping",
+      "today": "Today",
+      "operations": "Operations",
+      "progress": "Progress",
+      "dash": "—"
+    }
+  },
+  "edgeLive": {
+    "title": "Edge Live",
+    "selectPropertyToViewDevices": "Select a property to view devices.",
+    "websocketStatusLine": "WebSocket: {status} · target <500ms",
+    "errors": {
+      "websocket": "WebSocket error"
+    },
+    "status": {
+      "online": "ONLINE",
+      "stale": "STALE",
+      "offline": "OFFLINE"
+    },
+    "labels": {
+      "p50": "p50 {ms}ms",
+      "p50Dash": "p50 —",
+      "lastSeen": "last_seen: {ago}",
+      "offline": "offline: {ago}",
+      "rate": "rate: {rate}/s",
+      "last10Detections": "last 10 detections",
+      "dash": "—"
+    }
+  },
   "devices": {
     "title": "Admin / Devices",
     "subtitle": "Vendor-agnostic device registry (type + capabilities).",

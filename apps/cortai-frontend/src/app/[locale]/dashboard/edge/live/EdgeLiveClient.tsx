@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
 
@@ -84,13 +85,15 @@ function percentile(values: number[], p: number) {
 }
 
 function StatusBadge({ state }: { state: "ok" | "warn" | "bad" }) {
+  const t = useTranslations("edgeLive");
   const styles =
     state === "ok"
       ? "border-cortai-green/25 bg-cortai-green/10 text-cortai-green"
       : state === "warn"
         ? "border-cortai-amber/25 bg-cortai-amber/10 text-cortai-amber"
         : "border-cortai-red/25 bg-cortai-red/10 text-cortai-red";
-  const label = state === "ok" ? "ONLINE" : state === "warn" ? "STALE" : "OFFLINE";
+  const label =
+    state === "ok" ? t("status.online") : state === "warn" ? t("status.stale") : t("status.offline");
   return <span className={`rounded-pill border px-2 py-0.5 text-[10px] font-semibold ${styles}`}>{label}</span>;
 }
 
@@ -105,6 +108,7 @@ function DetectionLine({ msg }: { msg: LiveMsg }) {
 }
 
 export function EdgeLiveClient() {
+  const t = useTranslations("edgeLive");
   const { user } = useAuth();
   const [devices, setDevices] = useState<DevicePublic[]>([]);
   const [cards, setCards] = useState<Record<string, DeviceCardState>>({});
@@ -178,6 +182,8 @@ export function EdgeLiveClient() {
     };
     ws.onerror = () => {
       setWsStatus("error");
+      // Don't call `t()` in an effect: it creates a stable lint dependency and
+      // error payloads should remain language-neutral.
       setError("websocket_error");
     };
     ws.onclose = () => {
@@ -244,8 +250,8 @@ export function EdgeLiveClient() {
   if (!propertyId) {
     return (
       <div className="rounded-lg border border-cortai-border bg-cortai-bg2 p-4">
-        <h1 className="text-lg font-semibold">Edge Live</h1>
-        <p className="mt-1 text-xs text-cortai-text2">Select a property to view devices.</p>
+        <h1 className="text-lg font-semibold">{t("title")}</h1>
+        <p className="mt-1 text-xs text-cortai-text2">{t("selectPropertyToViewDevices")}</p>
       </div>
     );
   }
@@ -254,12 +260,16 @@ export function EdgeLiveClient() {
     <div className="grid gap-4" data-testid="edge-live-page">
       <div className="flex flex-wrap items-center gap-3">
         <div>
-          <h1 className="text-lg font-semibold">Edge Live</h1>
+          <h1 className="text-lg font-semibold">{t("title")}</h1>
           <p className="text-xs text-cortai-text2">
-            WebSocket: {wsStatus} · target &lt;500ms
+            {t("websocketStatusLine", { status: wsStatus })}
           </p>
         </div>
-        {error ? <div className="ml-auto text-xs text-cortai-red">{error}</div> : null}
+        {error ? (
+          <div className="ml-auto text-xs text-cortai-red">
+            {error === "websocket_error" ? t("errors.websocket") : error}
+          </div>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
@@ -270,6 +280,7 @@ export function EdgeLiveClient() {
           const offlineSince = c?.offline_since ?? d.offline_since;
           const stale = !offline && lastSeen ? Date.now() - new Date(lastSeen).getTime() > 60_000 : false;
           const status: "ok" | "warn" | "bad" = offline ? "bad" : stale ? "warn" : "ok";
+          const labelsDash = t("labels.dash");
 
           return (
             <div key={d.device_id} className="rounded-lg border border-cortai-border bg-cortai-bg2 p-3">
@@ -278,23 +289,27 @@ export function EdgeLiveClient() {
                 <div className="ml-auto flex items-center gap-2">
                   <StatusBadge state={status} />
                   <span className="text-[11px] text-cortai-text3">
-                    {c?.p50LatencyMs !== null ? `p50 ${Math.round(c.p50LatencyMs)}ms` : "p50 —"}
+                    {c?.p50LatencyMs !== null
+                      ? t("labels.p50", { ms: Math.round(c.p50LatencyMs) })
+                      : t("labels.p50Dash")}
                   </span>
                 </div>
               </div>
               <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-cortai-text2">
-                <span>last_seen: {fmtAgo(lastSeen)}</span>
-                {offlineSince ? <span className="text-cortai-red">offline: {fmtAgo(offlineSince)}</span> : null}
-                <span>rate: {(c?.msgRate ?? 0).toFixed(1)}/s</span>
+                <span>{t("labels.lastSeen", { ago: fmtAgo(lastSeen) })}</span>
+                {offlineSince ? (
+                  <span className="text-cortai-red">{t("labels.offline", { ago: fmtAgo(offlineSince) })}</span>
+                ) : null}
+                <span>{t("labels.rate", { rate: (c?.msgRate ?? 0).toFixed(1) })}</span>
               </div>
 
               <div className="mt-3">
                 <div className="mb-1 text-[10px] font-bold uppercase tracking-[0.12em] text-cortai-text3">
-                  last 10 detections
+                  {t("labels.last10Detections")}
                 </div>
                 <div className="grid gap-1">
                   {(c?.lastDetections ?? []).length === 0 ? (
-                    <div className="text-[11px] text-cortai-text3">—</div>
+                    <div className="text-[11px] text-cortai-text3">{labelsDash}</div>
                   ) : (
                     (c?.lastDetections ?? []).map((m, idx) => <DetectionLine key={idx} msg={m} />)
                   )}

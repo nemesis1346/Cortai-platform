@@ -41,6 +41,46 @@
     "logout": "Se déconnecter",
     "loggingOut": "Déconnexion..."
   },
+  "operations": {
+    "title": "Centre de commande",
+    "selectPropertyToViewKpis": "Sélectionnez une propriété pour voir les KPI.",
+    "autoRefreshNote": "Les KPI s’actualisent automatiquement en moins de 5 secondes.",
+    "refresh": "Actualiser",
+    "kpis": {
+      "occupancy": "Occupation",
+      "arrivals": "Arrivées",
+      "departures": "Départs",
+      "revenue": "Revenus",
+      "openIncidents": "Incidents ouverts",
+      "housekeeping": "Entretien",
+      "today": "Aujourd’hui",
+      "operations": "Opérations",
+      "progress": "Progression",
+      "dash": "—"
+    }
+  },
+  "edgeLive": {
+    "title": "Edge en direct",
+    "selectPropertyToViewDevices": "Sélectionnez une propriété pour voir les appareils.",
+    "websocketStatusLine": "WebSocket : {status} · cible <500 ms",
+    "errors": {
+      "websocket": "Erreur WebSocket"
+    },
+    "status": {
+      "online": "EN LIGNE",
+      "stale": "PÉRIMÉ",
+      "offline": "HORS LIGNE"
+    },
+    "labels": {
+      "p50": "p50 {ms} ms",
+      "p50Dash": "p50 —",
+      "lastSeen": "dernière activité : {ago}",
+      "offline": "hors ligne : {ago}",
+      "rate": "taux : {rate}/s",
+      "last10Detections": "10 dernières détections",
+      "dash": "—"
+    }
+  },
   "devices": {
     "title": "Admin / Appareils",
     "subtitle": "Registre d'appareils agnostique au fournisseur (type + capacités).",
