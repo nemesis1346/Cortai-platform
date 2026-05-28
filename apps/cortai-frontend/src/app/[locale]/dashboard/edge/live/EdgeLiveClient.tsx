@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Badge } from "@/components/ui/Badge";
 
 type DevicePublic = {
   id: string;
@@ -86,15 +87,9 @@ function percentile(values: number[], p: number) {
 
 function StatusBadge({ state }: { state: "ok" | "warn" | "bad" }) {
   const t = useTranslations("edgeLive");
-  const styles =
-    state === "ok"
-      ? "border-cortai-green/25 bg-cortai-green/10 text-cortai-green"
-      : state === "warn"
-        ? "border-cortai-amber/25 bg-cortai-amber/10 text-cortai-amber"
-        : "border-cortai-red/25 bg-cortai-red/10 text-cortai-red";
-  const label =
-    state === "ok" ? t("status.online") : state === "warn" ? t("status.stale") : t("status.offline");
-  return <span className={`rounded-pill border px-2 py-0.5 text-[10px] font-semibold ${styles}`}>{label}</span>;
+  const tone = state === "ok" ? "green" : state === "warn" ? "amber" : "red";
+  const label = state === "ok" ? t("status.online") : state === "warn" ? t("status.stale") : t("status.offline");
+  return <Badge tone={tone}>{label}</Badge>;
 }
 
 function DetectionLine({ msg }: { msg: LiveMsg }) {

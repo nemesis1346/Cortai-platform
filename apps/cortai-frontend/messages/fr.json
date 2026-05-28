@@ -171,7 +171,17 @@
     "saving": "Enregistrement...",
     "close": "Fermer",
     "exportCsv": "Exporter CSV",
-    "selectPropertyFirst": "Sélectionnez d'abord une propriété."
+    "selectPropertyFirst": "Sélectionnez d'abord une propriété.",
+    "toast": {
+      "created": {
+        "title": "Incident créé",
+        "description": "Votre incident a été créé avec succès."
+      },
+      "failed": {
+        "title": "Impossible de créer l'incident",
+        "description": "Veuillez réessayer."
+      }
+    }
   }
   ,
   "properties": {

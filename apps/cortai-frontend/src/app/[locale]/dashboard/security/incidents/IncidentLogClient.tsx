@@ -7,10 +7,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Table, Td } from "@/components/ui/Table";
+import { useToast } from "@/components/ui/Toast";
 import { apiFetch } from "@/lib/api";
 
 type IncidentSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -58,17 +60,6 @@ function fmtDate(value: string) {
   return d.toLocaleString();
 }
 
-function Badge({ children, tone = "teal" }: { children: React.ReactNode; tone?: "teal" | "amber" | "red" | "blue" | "green" }) {
-  const styles = {
-    teal: "border-cortai-teal/25 bg-cortai-teal/10 text-cortai-teal",
-    green: "border-cortai-green/25 bg-cortai-green/10 text-cortai-green",
-    amber: "border-cortai-amber/25 bg-cortai-amber/10 text-cortai-amber",
-    red: "border-cortai-red/25 bg-cortai-red/10 text-cortai-red",
-    blue: "border-cortai-blue/25 bg-cortai-blue/10 text-cortai-blue"
-  };
-  return <span className={`rounded-pill border px-2 py-0.5 text-[10px] font-semibold ${styles[tone]}`}>{children}</span>;
-}
-
 function severityTone(sev: IncidentSeverity) {
   if (sev === "CRITICAL") return "red";
   if (sev === "HIGH") return "amber";
@@ -87,6 +78,7 @@ export function IncidentLogClient() {
   const router = useRouter();
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
+  const { notify } = useToast();
 
   const propertyId = useMemo(() => getCookie("cortai_property_id") ?? "", []);
 
@@ -196,7 +188,21 @@ export function IncidentLogClient() {
       });
       setOpen(false);
       form.reset({ severity: "MEDIUM", status: "OPEN", title: "", description: "" });
+      notify({
+        title: t("toast.created.title"),
+        description: t("toast.created.description"),
+        tone: "success",
+        "data-testid": "incidents-toast-created"
+      });
       await load(effective.q, effective.sev, effective.p, effective.ps);
+    } catch (e) {
+      notify({
+        title: t("toast.failed.title"),
+        description: t("toast.failed.description"),
+        tone: "error",
+        "data-testid": "incidents-toast-failed"
+      });
+      throw e;
     } finally {
       setLoading(false);
     }

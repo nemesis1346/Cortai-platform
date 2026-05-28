@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -345,26 +346,14 @@ export function DevicesClient() {
   );
 }
 
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="rounded-pill border border-cortai-teal/25 bg-cortai-teal/10 px-2 py-0.5 text-[10px] font-semibold text-cortai-teal">
-      {children}
-    </span>
-  );
-}
-
 function StatusBadge({ offline }: { offline: boolean }) {
   if (offline) {
     return (
-      <span className="rounded-pill border border-cortai-red/25 bg-cortai-red/10 px-2 py-0.5 text-[10px] font-semibold text-cortai-red">
-        OFFLINE
-      </span>
+      <Badge tone="red">OFFLINE</Badge>
     );
   }
   return (
-    <span className="rounded-pill border border-cortai-green/25 bg-cortai-green/10 px-2 py-0.5 text-[10px] font-semibold text-cortai-green">
-      ONLINE
-    </span>
+    <Badge tone="green">ONLINE</Badge>
   );
 }
 

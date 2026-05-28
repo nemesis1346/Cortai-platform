@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -359,16 +360,6 @@ export function UsersClient() {
       </Modal>
     </div>
   );
-}
-
-function Badge({ children, tone = "teal" }: { children: React.ReactNode; tone?: "teal" | "green" | "amber" | "red" }) {
-  const styles = {
-    teal: "border-cortai-teal/25 bg-cortai-teal/10 text-cortai-teal",
-    green: "border-cortai-green/25 bg-cortai-green/10 text-cortai-green",
-    amber: "border-cortai-amber/25 bg-cortai-amber/10 text-cortai-amber",
-    red: "border-cortai-red/25 bg-cortai-red/10 text-cortai-red"
-  };
-  return <span className={`rounded-pill border px-2 py-0.5 text-[10px] font-semibold ${styles[tone]}`}>{children}</span>;
 }
 
 function statusTone(status: UserStatus) {
