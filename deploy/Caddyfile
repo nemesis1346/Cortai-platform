@@ -1,7 +1,7 @@
 {
-  # When using only the raw EC2 IP (no DNS/TLS), keep auto-https off.
-  # If you later enable DNS + TLS for the domains below, you can remove this.
-  auto_https off
+  # NOTE:
+  # - Domain sites below rely on public DNS so Caddy can provision HTTPS.
+  # - Raw IP access is handled by the explicit `:80` site at the bottom.
 }
 
 # Optional domains (only work once DNS exists)
