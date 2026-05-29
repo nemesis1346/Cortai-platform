@@ -26,7 +26,14 @@ if [[ ${#SSH_OPTS[@]} -gt 0 ]]; then
     --exclude ".git" \
     --exclude "node_modules" \
     --exclude ".next" \
+    --exclude "playwright-report" \
+    --exclude "test-results" \
     --exclude ".venv" \
+    --exclude ".pytest_cache" \
+    --exclude ".mypy_cache" \
+    --exclude ".ruff_cache" \
+    --exclude ".coverage" \
+    --exclude ".coverage.*" \
     --exclude "secrets" \
     --exclude "deploy/mosquitto/certs" \
     ./ "${REMOTE}:${REMOTE_DIR}/"
@@ -37,7 +44,14 @@ else
     --exclude ".git" \
     --exclude "node_modules" \
     --exclude ".next" \
+    --exclude "playwright-report" \
+    --exclude "test-results" \
     --exclude ".venv" \
+    --exclude ".pytest_cache" \
+    --exclude ".mypy_cache" \
+    --exclude ".ruff_cache" \
+    --exclude ".coverage" \
+    --exclude ".coverage.*" \
     --exclude "secrets" \
     --exclude "deploy/mosquitto/certs" \
     ./ "${REMOTE}:${REMOTE_DIR}/"
@@ -75,8 +89,11 @@ sudo systemctl stop cortai-frontend || true
 trap 'sudo systemctl start cortai-frontend || true' EXIT
 
 cd /opt/cortai/apps/cortai-frontend
+# npm ci removes node_modules, but it cannot clean up files created earlier by
+# root/Docker-owned installs. Remove it explicitly before reinstalling.
+sudo rm -rf node_modules
 npm ci
-rm -rf .next
+sudo rm -rf .next
 npm run build
 
 # Next.js standalone expects static/public copied alongside server.js
