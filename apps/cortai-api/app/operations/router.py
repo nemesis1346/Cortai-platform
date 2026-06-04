@@ -12,6 +12,7 @@ from app.operations.schemas import OperationsKpis
 from app.operations.action_queue_get_router import router as action_queue_get_router
 from app.operations.action_queue_patch_router import router as action_queue_patch_router
 from app.operations.action_queue_post_router import router as action_queue_post_router
+from app.operations.action_queue_dispatch_router import router as action_queue_dispatch_router
 from app.operations.incidents_router import router as incidents_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
@@ -181,4 +182,5 @@ router.include_router(incidents_router)
 router.include_router(action_queue_get_router)
 router.include_router(action_queue_post_router)
 router.include_router(action_queue_patch_router)
+router.include_router(action_queue_dispatch_router)
 

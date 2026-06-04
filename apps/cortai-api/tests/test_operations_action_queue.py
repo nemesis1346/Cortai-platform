@@ -43,6 +43,8 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
     q3 = uuid.uuid4()
     other_q = uuid.uuid4()
 
+    prop_id = uuid.uuid4()
+
     async with SessionLocal() as session:
         session.add_all(
             [
@@ -54,6 +56,15 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        await session.execute(
+            text(
+                """
+                insert into properties (id, org_id, name, slug, created_at, updated_at, status)
+                values (:id, :org_id, 'AQ Hotel', :slug, :now, :now, 'ACTIVE')
+                """
+            ),
+            {"id": prop_id, "org_id": org_id, "slug": f"aq-hotel-{org_id}", "now": now},
+        )
         session.add(
             User(
                 id=assignee_user_id,
@@ -125,13 +136,20 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
         )
         await session.commit()
 
-    yield {"org_id": org_id, "room_a": room_a, "room_b": room_b, "assignee_user_id": assignee_user_id}
+    yield {
+        "org_id": org_id,
+        "room_a": room_a,
+        "room_b": room_b,
+        "assignee_user_id": assignee_user_id,
+        "property_id": prop_id,
+    }
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
         await session.execute(text("delete from ops.action_queue where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.rooms where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from users where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from properties where org_id = :org"), {"org": org_id})
         await set_current_org(session, str(other_org))
         await session.execute(text("delete from ops.action_queue where org_id = :org"), {"org": other_org})
         await session.execute(
@@ -247,4 +265,38 @@ async def test_action_queue_patch_404(seeded_action_queue) -> None:  # type: ign
     async with _client_for_org(org_id=org_id) as client:
         resp = await client.patch(f"/api/operations/action-queue/{missing}", json={"status": "completed"})
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_action_queue_dispatch_requires_urgent(seeded_action_queue) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_action_queue["org_id"]
+    room_b = seeded_action_queue["room_b"]
+
+    async with _client_for_org(org_id=org_id) as client:
+        # Create a non-urgent item
+        created = await client.post(
+            "/api/operations/action-queue",
+            json={"type": "request", "room_id": str(room_b), "title": "Non urgent"},
+        )
+        item_id = created.json()["id"]
+        dispatch = await client.post(f"/api/operations/action-queue/{item_id}/dispatch")
+
+    assert created.status_code == 201
+    assert dispatch.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_action_queue_dispatch_accepts_urgent(seeded_action_queue) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_action_queue["org_id"]
+    room_a = seeded_action_queue["room_a"]
+
+    async with _client_for_org(org_id=org_id) as client:
+        listed = await client.get(f"/api/operations/action-queue?status=urgent&room={room_a}&limit=1")
+        item_id = listed.json()["items"][0]["id"]
+        dispatch = await client.post(f"/api/operations/action-queue/{item_id}/dispatch")
+
+    assert dispatch.status_code == 200
+    body = dispatch.json()
+    assert body["ok"] is True
+    assert body["id"] == item_id
 
