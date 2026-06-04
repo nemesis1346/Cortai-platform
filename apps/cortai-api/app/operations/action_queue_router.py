@@ -5,13 +5,15 @@ import json
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, status
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.action_queue_schemas import (
+    ActionQueueCreate,
     ActionQueueList,
+    ActionQueueItem,
     ActionQueueSeverity,
     ActionQueueStatus,
     ActionQueueType,
@@ -94,4 +96,58 @@ async def list_action_queue(
         next_cursor = _encode_cursor(created_at=last["created_at"], id=last["id"])
 
     return ActionQueueList(items=items, next_cursor=next_cursor)
+
+
+@router.post("", response_model=ActionQueueItem, status_code=status.HTTP_201_CREATED)
+async def create_action_queue_item(
+    payload: ActionQueueCreate,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> ActionQueueItem:
+    now = datetime.now()
+    item_id = uuid.uuid4()
+    row = (
+        await session.execute(
+            text(
+                """
+                insert into ops.action_queue (
+                  id, org_id, type, source, room_id, guest_id, title,
+                  status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
+                  created_at, updated_at
+                )
+                values (
+                  :id, :org_id, :type, :source, :room_id, :guest_id, :title,
+                  :status, :severity, :assigned_to_user_id, :sla_due_at, null, :parent_incident_id,
+                  :created_at, :updated_at
+                )
+                returning
+                  id, org_id, type, source, room_id, guest_id, title,
+                  status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
+                  created_at, updated_at
+                """
+            ),
+            {
+                "id": str(item_id),
+                "org_id": str(principal.org_id),
+                "type": payload.type.value,
+                "source": payload.source,
+                "room_id": str(payload.room_id) if payload.room_id else None,
+                "guest_id": str(payload.guest_id) if payload.guest_id else None,
+                "title": payload.title,
+                "status": payload.status.value,
+                "severity": payload.severity.value,
+                "assigned_to_user_id": (
+                    str(payload.assigned_to_user_id) if payload.assigned_to_user_id else None
+                ),
+                "sla_due_at": payload.sla_due_at,
+                "parent_incident_id": (
+                    str(payload.parent_incident_id) if payload.parent_incident_id else None
+                ),
+                "created_at": now,
+                "updated_at": now,
+            },
+        )
+    ).mappings().one()
+    await session.commit()
+    return ActionQueueItem(**dict(row))
 

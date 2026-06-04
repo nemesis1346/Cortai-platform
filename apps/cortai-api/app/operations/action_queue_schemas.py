@@ -53,3 +53,18 @@ class ActionQueueItem(BaseModel):
 class ActionQueueList(BaseModel):
     items: list[ActionQueueItem]
     next_cursor: str | None = None
+
+
+class ActionQueueCreate(BaseModel):
+    type: ActionQueueType
+    source: str | None = None
+    room_id: uuid.UUID | None = None
+    guest_id: uuid.UUID | None = None
+    title: str = Field(min_length=1, max_length=240)
+
+    status: ActionQueueStatus = ActionQueueStatus.PENDING
+    severity: ActionQueueSeverity = ActionQueueSeverity.LOW
+
+    assigned_to_user_id: uuid.UUID | None = None
+    sla_due_at: datetime | None = None
+    parent_incident_id: uuid.UUID | None = None

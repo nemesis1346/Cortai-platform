@@ -167,3 +167,29 @@ async def test_action_queue_filters_by_status_type_room(seeded_action_queue) -> 
     assert body["items"][0]["type"] == "incident"
     assert body["items"][0]["room_id"] == str(room_a)
 
+
+@pytest.mark.asyncio
+async def test_action_queue_post_creates_row_with_defaults(seeded_action_queue) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_action_queue["org_id"]
+    room_b = seeded_action_queue["room_b"]
+
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.post(
+            "/api/operations/action-queue",
+            json={
+                "type": "request",
+                "source": "Mr. Thompson",
+                "room_id": str(room_b),
+                "title": "Need extra pillows",
+            },
+        )
+
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["org_id"] == str(org_id)
+    assert body["type"] == "request"
+    assert body["status"] == "pending"
+    assert body["severity"] == "low"
+    assert body["room_id"] == str(room_b)
+    assert body["title"] == "Need extra pillows"
+
