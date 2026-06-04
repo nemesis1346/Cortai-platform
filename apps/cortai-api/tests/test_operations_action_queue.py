@@ -10,7 +10,7 @@ from app.auth.dependencies import get_principal
 from app.auth.schemas import Principal
 from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
-from app.models import Organization, UserRole
+from app.models import Organization, User, UserRole, UserStatus
 
 
 def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
@@ -36,6 +36,7 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
     now = datetime.now(UTC)
     room_a = uuid.uuid4()
     room_b = uuid.uuid4()
+    assignee_user_id = uuid.uuid4()
 
     q1 = uuid.uuid4()
     q2 = uuid.uuid4()
@@ -53,6 +54,19 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        session.add(
+            User(
+                id=assignee_user_id,
+                org_id=org_id,
+                email=f"aq-assignee-{org_id}@example.com",
+                full_name="AQ Assignee",
+                role=UserRole.STAFF,
+                status=UserStatus.ACTIVE,
+                password_hash="hash",  # noqa: S106
+                created_at=now,
+                updated_at=now,
+            )
+        )
         # action_queue.room_id has an FK to ops.rooms; seed rooms first.
         await session.execute(
             text(
@@ -111,12 +125,13 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
         )
         await session.commit()
 
-    yield {"org_id": org_id, "room_a": room_a, "room_b": room_b}
+    yield {"org_id": org_id, "room_a": room_a, "room_b": room_b, "assignee_user_id": assignee_user_id}
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
         await session.execute(text("delete from ops.action_queue where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.rooms where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from users where org_id = :org"), {"org": org_id})
         await set_current_org(session, str(other_org))
         await session.execute(text("delete from ops.action_queue where org_id = :org"), {"org": other_org})
         await session.execute(
@@ -192,4 +207,44 @@ async def test_action_queue_post_creates_row_with_defaults(seeded_action_queue) 
     assert body["severity"] == "low"
     assert body["room_id"] == str(room_b)
     assert body["title"] == "Need extra pillows"
+
+
+@pytest.mark.asyncio
+async def test_action_queue_patch_assign_and_complete(seeded_action_queue) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_action_queue["org_id"]
+    room_a = seeded_action_queue["room_a"]
+    assignee = seeded_action_queue["assignee_user_id"]
+
+    async with _client_for_org(org_id=org_id) as client:
+        # Find the urgent incident seeded for room_a
+        listed = await client.get(f"/api/operations/action-queue?status=urgent&room={room_a}&limit=1")
+        item_id = listed.json()["items"][0]["id"]
+        patched = await client.patch(
+            f"/api/operations/action-queue/{item_id}",
+            json={"assigned_to_user_id": str(assignee), "status": "in_progress"},
+        )
+        completed = await client.patch(
+            f"/api/operations/action-queue/{item_id}",
+            json={"status": "completed"},
+        )
+
+    assert patched.status_code == 200
+    p = patched.json()
+    assert p["assigned_to_user_id"] == str(assignee)
+    assert p["status"] == "in_progress"
+    assert p["completed_at"] is None
+
+    assert completed.status_code == 200
+    c = completed.json()
+    assert c["status"] == "completed"
+    assert c["completed_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_action_queue_patch_404(seeded_action_queue) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_action_queue["org_id"]
+    missing = uuid.uuid4()
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.patch(f"/api/operations/action-queue/{missing}", json={"status": "completed"})
+    assert resp.status_code == 404
 
