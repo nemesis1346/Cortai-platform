@@ -16,13 +16,14 @@ async def list_devices(
     session: SessionDep,
     property_id: uuid.UUID | None = Query(default=None),
 ) -> list[DevicePublicRead]:
-    # RLS + TenantContextMiddleware + SessionDep keep this org-scoped.
-    params: dict[str, object] = {}
-    where = ""
+    # Do not rely purely on RLS here: some deployments/test DB roles may bypass RLS.
+    params: dict[str, object] = {"org_id": str(principal.org_id)}
+    where_parts = ["org_id = :org_id"]
     if property_id is not None:
-        where = "where property_id = :property_id"
+        where_parts.append("property_id = :property_id")
         params["property_id"] = str(property_id)
 
+    where = "where " + " and ".join(where_parts)
     rows = (
         await session.execute(
             text(

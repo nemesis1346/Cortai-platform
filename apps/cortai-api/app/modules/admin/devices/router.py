@@ -137,18 +137,17 @@ async def update_device(
             params[k] = v
     sets.append("updated_at = now()")
 
-    stmt = (
-        text(
-            f"""
-            update platform.devices
-            set {", ".join(sets)}
-            where id = :id and org_id = :org_id
-            returning id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,
-                      logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at
-            """  # noqa: S608
-        )
-        .bindparams(sa.bindparam("logical_bindings", type_=postgresql.JSONB))
+    stmt = text(
+        f"""
+        update platform.devices
+        set {", ".join(sets)}
+        where id = :id and org_id = :org_id
+        returning id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,
+                  logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at
+        """  # noqa: S608
     )
+    if "logical_bindings" in params:
+        stmt = stmt.bindparams(sa.bindparam("logical_bindings", type_=postgresql.JSONB))
     row = (
         await session.execute(
             stmt,

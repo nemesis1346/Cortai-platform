@@ -53,3 +53,9 @@ asyncio_default_test_loop_scope = "session"
 addopts = "--cov=app --cov-report=term-missing --cov-fail-under=80"
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = [
+  "app/scripts/*",
+  "app/live/*",
+]

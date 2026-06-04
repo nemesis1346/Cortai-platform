@@ -199,3 +199,68 @@ async def test_create_incident_and_export_csv(seeded_incidents) -> None:  # type
     assert "id,org_id,property_id,severity,status,title,description,assigned_to,created_at,resolved_at" in csv_text
     assert created_id in csv_text
 
+
+@pytest.mark.asyncio
+async def test_list_incidents_ignores_invalid_date_filters(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.get(
+            "/api/operations/incidents?start=not-a-date&end=also-not-a-date&page=1&page_size=50"
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 2
+
+
+@pytest.mark.asyncio
+async def test_get_incident_404_when_missing(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    missing_id = uuid.uuid4()
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.get(f"/api/operations/incidents/{missing_id}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_patch_resolved_sets_resolved_at_when_omitted(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    incident_id = seeded_incidents["incident_a"]
+    async with _client_for_org(org_id=org_id) as client:
+        patched = await client.patch(
+            f"/api/operations/incidents/{incident_id}",
+            json={"status": "RESOLVED"},
+        )
+        assert patched.status_code == 200
+        body = patched.json()
+        assert body["status"] == "RESOLVED"
+        assert body["resolved_at"] is not None
+
+
+@pytest.mark.asyncio
+async def test_patch_incident_rejects_empty_payload(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    incident_id = seeded_incidents["incident_a"]
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.patch(f"/api/operations/incidents/{incident_id}", json={})
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
+async def test_delete_incident_404_when_missing(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    missing_id = uuid.uuid4()
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.delete(f"/api/operations/incidents/{missing_id}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_list_incidents_search_filters_results(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.get("/api/operations/incidents?search=camera&page=1&page_size=50")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["items"][0]["title"].lower().startswith("camera")
+

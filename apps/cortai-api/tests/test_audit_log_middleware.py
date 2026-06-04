@@ -43,7 +43,10 @@ async def seeded_audit_env() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
-        await session.execute(text("delete from audit.change_log where org_id = :org_id"), {"org_id": str(org_id)})
+        # audit.change_log is immutable (UPDATE/DELETE blocked by trigger). TRUNCATE is allowed.
+        await session.execute(
+            text("truncate table audit.change_log"),
+        )
         await session.execute(text("delete from users where org_id = :org_id"), {"org_id": str(org_id)})
         await session.execute(text("delete from organizations where id = :org_id"), {"org_id": str(org_id)})
         await session.commit()
