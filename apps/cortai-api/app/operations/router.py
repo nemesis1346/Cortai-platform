@@ -9,6 +9,7 @@ from sqlalchemy import text
 from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.schemas import OperationsKpis
+from app.operations.action_queue_router import router as action_queue_router
 from app.operations.incidents_router import router as incidents_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
@@ -173,4 +174,7 @@ async def get_kpis(principal: PrincipalDep, session: SessionDep) -> OperationsKp
 
 # Nest incidents under /api/operations/incidents/*
 router.include_router(incidents_router)
+
+# Command Center action queue under /api/operations/action-queue
+router.include_router(action_queue_router)
 
