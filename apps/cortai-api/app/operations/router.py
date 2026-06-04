@@ -14,6 +14,7 @@ from app.operations.action_queue_patch_router import router as action_queue_patc
 from app.operations.action_queue_post_router import router as action_queue_post_router
 from app.operations.action_queue_dispatch_router import router as action_queue_dispatch_router
 from app.operations.incidents_router import router as incidents_router
+from app.operations.front_desk_router import router as front_desk_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
@@ -183,4 +184,5 @@ router.include_router(action_queue_get_router)
 router.include_router(action_queue_post_router)
 router.include_router(action_queue_patch_router)
 router.include_router(action_queue_dispatch_router)
+router.include_router(front_desk_router)
 
