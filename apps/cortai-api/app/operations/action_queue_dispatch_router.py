@@ -22,14 +22,13 @@ async def dispatch_action_queue_item(
     """
     Urgent-only dispatch: emits a NOTIFY event for live subscribers.
 
-    NOTE: ops.action_queue currently has no property_id. We attach a best-effort property_id
-    (first property in org) so property-scoped websocket subscribers can receive the event.
+    NOTE: dispatch emits a NOTIFY event for live subscribers.
     """
     row = (
         await session.execute(
             text(
                 """
-                select id, org_id, type, source, room_id, guest_id, title, status, severity
+                select id, org_id, property_id, type, source, room_id, guest_id, title, status, severity
                 from ops.action_queue
                 where id = :id and org_id = :org_id
                 """
@@ -46,12 +45,6 @@ async def dispatch_action_queue_item(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only urgent action queue items can be dispatched",
         )
-
-    # Best-effort property id for websocket routing.
-    property_id = await session.scalar(
-        text("select id from properties where org_id = :org_id order by created_at asc limit 1"),
-        {"org_id": str(principal.org_id)},
-    )
 
     now = datetime.now(UTC)
     # Touch row (idempotent) to capture a dispatch "activity" without schema changes.
@@ -70,7 +63,7 @@ async def dispatch_action_queue_item(
     event = {
         "type": "action_queue.dispatched",
         "org_id": str(principal.org_id),
-        "property_id": str(property_id) if property_id else None,
+        "property_id": str(row["property_id"]),
         "action_queue_id": str(row["id"]),
         "room_id": str(row["room_id"]) if row["room_id"] else None,
         "guest_id": str(row["guest_id"]) if row["guest_id"] else None,

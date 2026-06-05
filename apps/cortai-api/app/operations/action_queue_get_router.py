@@ -40,6 +40,7 @@ def _decode_cursor(cursor: str) -> tuple[datetime, uuid.UUID] | None:
 async def list_action_queue(
     principal: PrincipalDep,
     session: SessionDep,
+    property_id: uuid.UUID | None = None,
     status: ActionQueueStatus | None = None,
     type: ActionQueueType | None = None,  # noqa: A002
     room: uuid.UUID | None = None,
@@ -49,6 +50,9 @@ async def list_action_queue(
     filters = ["org_id = :org_id"]
     params: dict[str, object] = {"org_id": str(principal.org_id), "limit": limit}
 
+    if property_id is not None:
+        filters.append("property_id = :property_id")
+        params["property_id"] = str(property_id)
     if status is not None:
         filters.append("status = :status")
         params["status"] = status.value
@@ -73,7 +77,7 @@ async def list_action_queue(
             text(
                 f"""
                 select
-                  id, org_id, type, source, room_id, guest_id, title,
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
                   status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
                   created_at, updated_at
                 from ops.action_queue

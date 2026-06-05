@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
@@ -13,7 +14,11 @@ router = APIRouter(prefix="/housekeeping", tags=["operations-housekeeping"])
 
 
 @router.get("/summary", response_model=HousekeepingSummary)
-async def get_housekeeping_summary(principal: PrincipalDep, session: SessionDep) -> HousekeepingSummary:
+async def get_housekeeping_summary(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID | None = Query(default=None),
+) -> HousekeepingSummary:
     now = datetime.now(UTC)
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = start_of_day + timedelta(days=1)
@@ -34,10 +39,16 @@ async def get_housekeeping_summary(principal: PrincipalDep, session: SessionDep)
                   coalesce(avg(extract(epoch from (finished_at - started_at))), 0)::float as avg_clean_seconds
                 from ops.housekeeping_assignments
                 where org_id = :org_id
+                  and property_id = coalesce(:property_id, property_id)
                   and created_at >= :sod and created_at < :eod
                 """
             ),
-            {"org_id": str(principal.org_id), "sod": start_of_day, "eod": end_of_day},
+            {
+                "org_id": principal.org_id,
+                "property_id": property_id,
+                "sod": start_of_day,
+                "eod": end_of_day,
+            },
         )
     ).mappings().one()
 

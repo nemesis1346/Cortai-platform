@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import json
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
@@ -58,7 +59,7 @@ async def update_action_queue_item(
                 set {", ".join(sets)}
                 where id = :id and org_id = :org_id
                 returning
-                  id, org_id, type, source, room_id, guest_id, title,
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
                   status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
                   created_at, updated_at
                 """  # noqa: S608
@@ -70,6 +71,23 @@ async def update_action_queue_item(
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Action queue item not found")
 
+    event_type = "action_queue.updated"
+    try:
+        if str(row["status"]) == "completed":
+            event_type = "action_queue.completed"
+    except Exception:  # noqa: BLE001
+        pass
+
+    now = datetime.now(UTC)
+    event = {
+        "type": event_type,
+        "org_id": str(principal.org_id),
+        "property_id": str(row["property_id"]),
+        "item": dict(row),
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(text("select pg_notify('cortai_live', :payload)"), {"payload": json.dumps(event)})
     await session.commit()
     return ActionQueueItem(**dict(row))
 

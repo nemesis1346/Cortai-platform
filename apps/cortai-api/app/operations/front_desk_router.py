@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
@@ -13,7 +14,11 @@ router = APIRouter(prefix="/front-desk", tags=["operations-front-desk"])
 
 
 @router.get("/stats", response_model=FrontDeskStats)
-async def get_front_desk_stats(principal: PrincipalDep, session: SessionDep) -> FrontDeskStats:
+async def get_front_desk_stats(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID | None = Query(default=None),
+) -> FrontDeskStats:
     now = datetime.now(UTC)
     start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_of_day = start_of_day + timedelta(days=1)
@@ -27,12 +32,18 @@ async def get_front_desk_stats(principal: PrincipalDep, session: SessionDep) -> 
                     select count(*)::int
                     from ops.front_desk_events
                     where org_id = :org_id
+                      and property_id = coalesce(:property_id, property_id)
                       and kind = 'served'
                       and ended_at is not null
                       and ended_at >= :sod and ended_at < :eod
                     """
                 ),
-                {"org_id": str(principal.org_id), "sod": start_of_day, "eod": end_of_day},
+                {
+                    "org_id": principal.org_id,
+                    "property_id": property_id,
+                    "sod": start_of_day,
+                    "eod": end_of_day,
+                },
             )
         )
         or 0
@@ -47,12 +58,18 @@ async def get_front_desk_stats(principal: PrincipalDep, session: SessionDep) -> 
                     select count(*)::int
                     from ops.front_desk_events
                     where org_id = :org_id
+                      and property_id = coalesce(:property_id, property_id)
                       and kind = 'queue_joined'
                       and started_at >= :sod and started_at < :eod
                       and ended_at is null
                     """
                 ),
-                {"org_id": str(principal.org_id), "sod": start_of_day, "eod": end_of_day},
+                {
+                    "org_id": principal.org_id,
+                    "property_id": property_id,
+                    "sod": start_of_day,
+                    "eod": end_of_day,
+                },
             )
         )
         or 0
@@ -67,12 +84,18 @@ async def get_front_desk_stats(principal: PrincipalDep, session: SessionDep) -> 
                     select coalesce(avg(extract(epoch from (ended_at - started_at))), 0)::float
                     from ops.front_desk_events
                     where org_id = :org_id
+                      and property_id = coalesce(:property_id, property_id)
                       and kind = 'queue_joined'
                       and ended_at is not null
                       and started_at >= :sod and started_at < :eod
                     """
                 ),
-                {"org_id": str(principal.org_id), "sod": start_of_day, "eod": end_of_day},
+                {
+                    "org_id": principal.org_id,
+                    "property_id": property_id,
+                    "sod": start_of_day,
+                    "eod": end_of_day,
+                },
             )
         )
         or 0.0
@@ -87,12 +110,18 @@ async def get_front_desk_stats(principal: PrincipalDep, session: SessionDep) -> 
                     select coalesce(avg(extract(epoch from (ended_at - started_at))), 0)::float
                     from ops.front_desk_events
                     where org_id = :org_id
+                      and property_id = coalesce(:property_id, property_id)
                       and kind = 'checked_in'
                       and ended_at is not null
                       and started_at >= :sod and started_at < :eod
                     """
                 ),
-                {"org_id": str(principal.org_id), "sod": start_of_day, "eod": end_of_day},
+                {
+                    "org_id": principal.org_id,
+                    "property_id": property_id,
+                    "sod": start_of_day,
+                    "eod": end_of_day,
+                },
             )
         )
         or 0.0

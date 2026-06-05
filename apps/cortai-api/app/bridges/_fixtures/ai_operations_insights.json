@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-06-05T12:00:00Z",
+  "cards": [
+    {
+      "id": "weekend_gap",
+      "kind": "weekend_gap",
+      "title": "Weekend occupancy gap",
+      "body_md": "Occupancy is trending lower than last weekend. Consider targeted offers for Fri–Sat stays and review group blocks.",
+      "severity": "medium",
+      "action_label": "Review upcoming reservations",
+      "action_payload": { "route": "/dashboard/operations", "tab": "kpis" }
+    },
+    {
+      "id": "arrivals_pace",
+      "kind": "arrivals_pace",
+      "title": "Arrivals pace",
+      "body_md": "Arrivals are pacing above the daily baseline. Ensure front desk staffing is aligned with peak check-in windows.",
+      "severity": "low"
+    },
+    {
+      "id": "auto_show_prep",
+      "kind": "auto_show_prep",
+      "title": "Housekeeping prep",
+      "body_md": "A few rooms are still marked *vacant_dirty* with no active assignments. Consider dispatching attendants to reduce late-ready risk.",
+      "severity": "high",
+      "action_label": "Open housekeeping",
+      "action_payload": { "route": "/dashboard/operations", "tab": "housekeeping" }
+    }
+  ]
+}

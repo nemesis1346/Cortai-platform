@@ -42,21 +42,104 @@
     "loggingOut": "Logging out..."
   },
   "operations": {
-    "title": "Command Center",
-    "selectPropertyToViewKpis": "Select a property to view KPIs.",
-    "autoRefreshNote": "KPIs auto-refresh within 5 seconds.",
-    "refresh": "Refresh",
-    "kpis": {
-      "occupancy": "Occupancy",
-      "arrivals": "Arrivals",
-      "departures": "Departures",
-      "revenue": "Revenue",
-      "openIncidents": "Open incidents",
-      "housekeeping": "Housekeeping",
-      "today": "Today",
-      "operations": "Operations",
-      "progress": "Progress",
-      "dash": "—"
+    "commandCenter": {
+      "title": "Command Center",
+      "subtitle": "Live updates via WebSocket.",
+      "selectProperty": "Select a property to view Command Center data.",
+      "refresh": "Refresh",
+      "common": {
+        "dash": "—",
+        "seconds": "s",
+        "minutes": "m"
+      },
+      "severity": {
+        "info": "INFO",
+        "low": "LOW",
+        "medium": "MEDIUM",
+        "high": "HIGH",
+        "urgent": "URGENT"
+      },
+      "status": {
+        "assigned": "ASSIGNED",
+        "cancelled": "CANCELLED",
+        "completed": "COMPLETED",
+        "in_progress": "IN PROGRESS",
+        "offline": "OFFLINE",
+        "online": "ONLINE",
+        "pending": "PENDING",
+        "urgent": "URGENT",
+        "unknown": "UNKNOWN"
+      },
+      "kpis": {
+        "occupancy": "Occupancy",
+        "arrivals": "Arrivals",
+        "departures": "Departures",
+        "guests": "Guests in hotel",
+        "housekeeping": "Rooms ready",
+        "cleaning": "Rooms cleaning",
+        "staff": "Staff on duty",
+        "alerts": "Active alerts",
+        "arrived": "arrived",
+        "departed": "departed",
+        "onSite": "on site",
+        "rating": "rating",
+        "today": "Today",
+        "operations": "Operations",
+        "progress": "Progress"
+      },
+      "ai": {
+        "title": "CORTAI Analysis",
+        "live": "LIVE",
+        "stub": "STUB",
+        "loading": "Loading insights…",
+        "empty": "No insights yet."
+      },
+      "queue": {
+        "title": "Action Queue",
+        "loading": "Loading…",
+        "empty": "No items.",
+        "types": {
+          "incident": "Incident",
+          "request": "Request",
+          "system_alert": "System alert",
+          "task": "Task",
+          "unknown": "Unknown",
+          "vip": "VIP"
+        },
+        "cols": {
+          "severity": "Severity",
+          "title": "Title",
+          "room": "Room",
+          "status": "Status",
+          "assigned": "Assigned"
+        }
+      },
+      "frontDesk": {
+        "title": "Front Desk",
+        "servedToday": "Served today",
+        "inQueueNow": "In queue now",
+        "avgQueue": "Avg queue",
+        "avgCheckin": "Avg check-in"
+      },
+      "elevators": {
+        "title": "Elevators",
+        "empty": "No elevator data yet.",
+        "floor": "floor",
+        "direction": "direction",
+        "riders": "riders today",
+        "directions": {
+          "down": "down",
+          "idle": "idle",
+          "up": "up"
+        }
+      },
+      "housekeeping": {
+        "title": "Housekeeping",
+        "roomsAssigned": "Rooms assigned",
+        "staffCount": "Staff count",
+        "donePct": "Done",
+        "avgClean": "Avg clean time"
+      }
     }
   },
   "edgeLive": {

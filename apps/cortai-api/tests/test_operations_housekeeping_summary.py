@@ -34,6 +34,7 @@ async def seeded_housekeeping() -> dict[str, uuid.UUID]:
     org_id = uuid.uuid4()
     other_org = uuid.uuid4()
     now = datetime.now(UTC)
+    prop_id = uuid.uuid4()
     attendant_1 = uuid.uuid4()
     attendant_2 = uuid.uuid4()
     room_1 = uuid.uuid4()
@@ -52,6 +53,15 @@ async def seeded_housekeeping() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        await session.execute(
+            text(
+                """
+                insert into properties (id, org_id, name, slug, created_at, updated_at, status)
+                values (:id, :org_id, 'HK Hotel', :slug, :now, :now, 'ACTIVE')
+                """
+            ),
+            {"id": prop_id, "org_id": org_id, "slug": f"hk-hotel-{org_id}", "now": now},
+        )
         session.add_all(
             [
                 User(
@@ -83,15 +93,23 @@ async def seeded_housekeeping() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into ops.rooms (id, org_id, room_number, floor, type, status, vip, created_at, updated_at)
+                insert into ops.rooms (id, org_id, property_id, room_number, floor, type, status, vip, created_at, updated_at)
                 values
-                  (:r1, :org, '101', 1, 'king', 'vacant_clean', false, :now, :now),
-                  (:r2, :org, '102', 1, 'king', 'vacant_clean', false, :now, :now),
-                  (:r3, :org, '103', 1, 'king', 'vacant_clean', false, :now, :now),
-                  (:r4, :org, '104', 1, 'king', 'vacant_clean', false, :now, :now)
+                  (:r1, :org, :prop, '101', 1, 'king', 'vacant_clean', false, :now, :now),
+                  (:r2, :org, :prop, '102', 1, 'king', 'vacant_clean', false, :now, :now),
+                  (:r3, :org, :prop, '103', 1, 'king', 'vacant_clean', false, :now, :now),
+                  (:r4, :org, :prop, '104', 1, 'king', 'vacant_clean', false, :now, :now)
                 """
             ),
-            {"r1": room_1, "r2": room_2, "r3": room_3, "r4": room_4, "org": org_id, "now": now},
+            {
+                "r1": room_1,
+                "r2": room_2,
+                "r3": room_3,
+                "r4": room_4,
+                "org": org_id,
+                "prop": prop_id,
+                "now": now,
+            },
         )
 
         # 4 assignments today: done, in_progress, queued, dnd
@@ -99,13 +117,13 @@ async def seeded_housekeeping() -> dict[str, uuid.UUID]:
             text(
                 """
                 insert into ops.housekeeping_assignments (
-                  id, org_id, attendant_user_id, room_id, status, started_at, finished_at, created_at, updated_at
+                  id, org_id, property_id, attendant_user_id, room_id, status, started_at, finished_at, created_at, updated_at
                 )
                 values
-                  (:a1, :org, :u1, :r1, 'done', :s1, :f1, :now, :now),
-                  (:a2, :org, :u1, :r2, 'in_progress', :s2, null, :now, :now),
-                  (:a3, :org, :u2, :r3, 'queued', null, null, :now, :now),
-                  (:a4, :org, :u2, :r4, 'dnd', null, null, :now, :now)
+                  (:a1, :org, :prop, :u1, :r1, 'done', :s1, :f1, :now, :now),
+                  (:a2, :org, :prop, :u1, :r2, 'in_progress', :s2, null, :now, :now),
+                  (:a3, :org, :prop, :u2, :r3, 'queued', null, null, :now, :now),
+                  (:a4, :org, :prop, :u2, :r4, 'dnd', null, null, :now, :now)
                 """
             ),
             {
@@ -114,6 +132,7 @@ async def seeded_housekeeping() -> dict[str, uuid.UUID]:
                 "a3": uuid.uuid4(),
                 "a4": uuid.uuid4(),
                 "org": org_id,
+                "prop": prop_id,
                 "u1": attendant_1,
                 "u2": attendant_2,
                 "r1": room_1,
@@ -133,15 +152,24 @@ async def seeded_housekeeping() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into ops.rooms (id, org_id, room_number, floor, type, status, vip, created_at, updated_at)
-                values (:r1, :org, '201', 2, 'king', 'vacant_clean', false, :now, :now)
+                insert into properties (id, org_id, name, slug, created_at, updated_at, status)
+                values (:id, :org_id, 'HK Hotel Other', :slug, :now, :now, 'ACTIVE')
+                """
+            ),
+            {"id": uuid.uuid4(), "org_id": other_org, "slug": f"hk-hotel-{other_org}", "now": now},
+        )
+        await session.execute(
+            text(
+                """
+                insert into ops.rooms (id, org_id, property_id, room_number, floor, type, status, vip, created_at, updated_at)
+                values (:r1, :org, (select id from properties where org_id = :org order by created_at asc, id asc limit 1), '201', 2, 'king', 'vacant_clean', false, :now, :now)
                 """
             ),
             {"r1": uuid.uuid4(), "org": other_org, "now": now},
         )
         await session.commit()
 
-    yield {"org_id": org_id, "other_org": other_org}
+    yield {"org_id": org_id, "other_org": other_org, "property_id": prop_id}
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
@@ -150,9 +178,11 @@ async def seeded_housekeeping() -> dict[str, uuid.UUID]:
         )
         await session.execute(text("delete from ops.rooms where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from users where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from properties where org_id = :org"), {"org": org_id})
 
         await set_current_org(session, str(other_org))
         await session.execute(text("delete from ops.rooms where org_id = :org"), {"org": other_org})
+        await session.execute(text("delete from properties where org_id = :org"), {"org": other_org})
 
         await session.execute(
             text("delete from organizations where id in (:a, :b)"),

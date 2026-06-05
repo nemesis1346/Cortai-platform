@@ -75,14 +75,14 @@ async def test_operations_kpis_returns_expected_shape() -> None:
         await session.execute(
             text(
                 """
-                insert into ops.rooms (id, org_id, room_number, floor, type, status, vip, created_at, updated_at)
+                insert into ops.rooms (id, org_id, property_id, room_number, floor, type, status, vip, created_at, updated_at)
                 values
-                  (:r1, :org_id, '101', 1, 'king', 'occupied', false, :now, :now),
-                  (:r2, :org_id, '102', 1, 'queen', 'vacant_clean', false, :now, :now),
-                  (:r3, :org_id, '103', 1, 'king', 'vacant_dirty', false, :now, :now)
+                  (:r1, :org_id, :prop, '101', 1, 'king', 'occupied', false, :now, :now),
+                  (:r2, :org_id, :prop, '102', 1, 'queen', 'vacant_clean', false, :now, :now),
+                  (:r3, :org_id, :prop, '103', 1, 'king', 'vacant_dirty', false, :now, :now)
                 """
             ),
-            {"r1": room_1, "r2": room_2, "r3": room_3, "org_id": org_id, "now": now},
+            {"r1": room_1, "r2": room_2, "r3": room_3, "org_id": org_id, "prop": prop_id, "now": now},
         )
         await session.execute(
             text(

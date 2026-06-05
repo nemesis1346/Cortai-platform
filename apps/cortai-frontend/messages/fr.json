@@ -42,21 +42,104 @@
     "loggingOut": "Déconnexion..."
   },
   "operations": {
-    "title": "Centre de commande",
-    "selectPropertyToViewKpis": "Sélectionnez une propriété pour voir les KPI.",
-    "autoRefreshNote": "Les KPI s’actualisent automatiquement en moins de 5 secondes.",
-    "refresh": "Actualiser",
-    "kpis": {
-      "occupancy": "Occupation",
-      "arrivals": "Arrivées",
-      "departures": "Départs",
-      "revenue": "Revenus",
-      "openIncidents": "Incidents ouverts",
-      "housekeeping": "Entretien",
-      "today": "Aujourd’hui",
-      "operations": "Opérations",
-      "progress": "Progression",
-      "dash": "—"
+    "commandCenter": {
+      "title": "Centre de commande",
+      "subtitle": "Mises à jour en direct via WebSocket.",
+      "selectProperty": "Sélectionnez une propriété pour voir les données du centre de commande.",
+      "refresh": "Actualiser",
+      "common": {
+        "dash": "—",
+        "seconds": " s",
+        "minutes": " min"
+      },
+      "severity": {
+        "info": "INFO",
+        "low": "FAIBLE",
+        "medium": "MOYENNE",
+        "high": "ÉLEVÉE",
+        "urgent": "URGENT"
+      },
+      "status": {
+        "assigned": "ASSIGNÉ",
+        "cancelled": "ANNULÉ",
+        "completed": "TERMINÉ",
+        "in_progress": "EN COURS",
+        "offline": "HORS LIGNE",
+        "online": "EN LIGNE",
+        "pending": "EN ATTENTE",
+        "urgent": "URGENT",
+        "unknown": "INCONNU"
+      },
+      "kpis": {
+        "occupancy": "Occupation",
+        "arrivals": "Arrivées",
+        "departures": "Départs",
+        "guests": "Clients à l’hôtel",
+        "housekeeping": "Chambres prêtes",
+        "cleaning": "Chambres en entretien",
+        "staff": "Personnel de service",
+        "alerts": "Alertes actives",
+        "arrived": "arrivés",
+        "departed": "partis",
+        "onSite": "sur site",
+        "rating": "note",
+        "today": "Aujourd’hui",
+        "operations": "Opérations",
+        "progress": "Progression"
+      },
+      "ai": {
+        "title": "Analyse CORTAI",
+        "live": "EN DIRECT",
+        "stub": "SIMULÉ",
+        "loading": "Chargement des analyses…",
+        "empty": "Aucune analyse pour le moment."
+      },
+      "queue": {
+        "title": "File d’actions",
+        "loading": "Chargement…",
+        "empty": "Aucun élément.",
+        "types": {
+          "incident": "Incident",
+          "request": "Demande",
+          "system_alert": "Alerte système",
+          "task": "Tâche",
+          "unknown": "Inconnu",
+          "vip": "VIP"
+        },
+        "cols": {
+          "severity": "Gravité",
+          "title": "Titre",
+          "room": "Chambre",
+          "status": "Statut",
+          "assigned": "Assigné"
+        }
+      },
+      "frontDesk": {
+        "title": "Réception",
+        "servedToday": "Servis aujourd’hui",
+        "inQueueNow": "En file",
+        "avgQueue": "Moy. attente",
+        "avgCheckin": "Moy. check-in"
+      },
+      "elevators": {
+        "title": "Ascenseurs",
+        "empty": "Aucune donnée ascenseur pour le moment.",
+        "floor": "étage",
+        "direction": "direction",
+        "riders": "passagers aujourd’hui",
+        "directions": {
+          "down": "descente",
+          "idle": "arrêt",
+          "up": "montée"
+        }
+      },
+      "housekeeping": {
+        "title": "Entretien",
+        "roomsAssigned": "Chambres assignées",
+        "staffCount": "Effectif",
+        "donePct": "Terminé",
+        "avgClean": "Moy. nettoyage"
+      }
     }
   },
   "edgeLive": {

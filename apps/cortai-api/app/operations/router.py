@@ -3,7 +3,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
+import uuid
+
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
@@ -23,7 +25,11 @@ AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
 
 
 @router.get("/kpis", response_model=OperationsKpis)
-async def get_kpis(principal: PrincipalDep, session: SessionDep) -> OperationsKpis:
+async def get_kpis(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID | None = Query(default=None),
+) -> OperationsKpis:
     """
     Command Center KPIs sourced from ops.* tables (no mocks).
     """
@@ -32,19 +38,24 @@ async def get_kpis(principal: PrincipalDep, session: SessionDep) -> OperationsKp
     end_of_day = start_of_day + timedelta(days=1)
 
     # Rooms: total count and readiness.
+    rooms_where = "where org_id = :org_id"
+    rooms_params: dict[str, object] = {"org_id": str(principal.org_id)}
+    if property_id is not None:
+        rooms_where += " and property_id = :property_id"
+        rooms_params["property_id"] = str(property_id)
     rooms_row = (
         await session.execute(
             text(
-                """
+                f"""
                 select
                   count(*)::int as total,
                   count(*) filter (where status in ('vacant_clean','inspected'))::int as ready,
                   count(*) filter (where status = 'vacant_dirty')::int as dirty
                 from ops.rooms
-                where org_id = :org_id
-                """
+                {rooms_where}
+                """  # noqa: S608
             ),
-            {"org_id": str(principal.org_id)},
+            rooms_params,
         )
     ).mappings().one()
 
@@ -61,13 +72,18 @@ async def get_kpis(principal: PrincipalDep, session: SessionDep) -> OperationsKp
                     select count(distinct room_id)::int
                     from ops.reservations
                     where org_id = :org_id
+                      and property_id = coalesce(:property_id, property_id)
                       and room_id is not null
                       and status = 'checked_in'
                       and check_in_at <= :now
                       and check_out_at > :now
                     """
                 ),
-                {"org_id": str(principal.org_id), "now": now},
+                {
+                    "org_id": principal.org_id,
+                    "property_id": property_id,
+                    "now": now,
+                },
             )
         )
         or 0
@@ -83,10 +99,14 @@ async def get_kpis(principal: PrincipalDep, session: SessionDep) -> OperationsKp
                     select count(distinct room_id)::int
                     from ops.housekeeping_assignments
                     where org_id = :org_id
+                      and property_id = coalesce(:property_id, property_id)
                       and status in ('queued', 'in_progress')
                     """
                 ),
-                {"org_id": str(principal.org_id)},
+                {
+                    "org_id": principal.org_id,
+                    "property_id": property_id,
+                },
             )
         )
         or 0
@@ -123,10 +143,12 @@ async def get_kpis(principal: PrincipalDep, session: SessionDep) -> OperationsKp
                   )::int as departures_departed
                 from ops.reservations
                 where org_id = :org_id
+                  and property_id = coalesce(:property_id, property_id)
                 """
             ),
             {
-                "org_id": str(principal.org_id),
+                "org_id": principal.org_id,
+                "property_id": property_id,
                 "now": now,
                 "sod": start_of_day,
                 "eod": end_of_day,

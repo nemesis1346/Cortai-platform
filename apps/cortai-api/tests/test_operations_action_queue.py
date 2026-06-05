@@ -82,26 +82,26 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into ops.rooms (id, org_id, room_number, floor, type, status, vip, created_at, updated_at)
+                insert into ops.rooms (id, org_id, property_id, room_number, floor, type, status, vip, created_at, updated_at)
                 values
-                  (:room_a, :org, '101', 1, 'king', 'vacant_clean', false, :now, :now),
-                  (:room_b, :org, '102', 1, 'queen', 'vacant_clean', false, :now, :now)
+                  (:room_a, :org, :prop, '101', 1, 'king', 'vacant_clean', false, :now, :now),
+                  (:room_b, :org, :prop, '102', 1, 'queen', 'vacant_clean', false, :now, :now)
                 """
             ),
-            {"room_a": room_a, "room_b": room_b, "org": org_id, "now": now},
+            {"room_a": room_a, "room_b": room_b, "org": org_id, "prop": prop_id, "now": now},
         )
         await session.execute(
             text(
                 """
                 insert into ops.action_queue (
-                  id, org_id, type, source, room_id, guest_id, title,
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
                   status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
                   created_at, updated_at
                 )
                 values
-                  (:q1, :org, 'request', 'Guest', :room_a, null, 'Extra towels', 'pending', 'low', null, null, null, null, :t1, :t1),
-                  (:q2, :org, 'incident', 'System', :room_a, null, 'Leak detected', 'urgent', 'urgent', null, :sla, null, null, :t2, :t2),
-                  (:q3, :org, 'task', 'Front Desk', :room_b, null, 'Welcome note', 'assigned', 'medium', null, null, null, null, :t3, :t3)
+                  (:q1, :org, :prop, 'request', 'Guest', :room_a, null, 'Extra towels', 'pending', 'low', null, null, null, null, :t1, :t1),
+                  (:q2, :org, :prop, 'incident', 'System', :room_a, null, 'Leak detected', 'urgent', 'urgent', null, :sla, null, null, :t2, :t2),
+                  (:q3, :org, :prop, 'task', 'Front Desk', :room_b, null, 'Welcome note', 'assigned', 'medium', null, null, null, null, :t3, :t3)
                 """
             ),
             {
@@ -109,6 +109,7 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
                 "q2": q2,
                 "q3": q3,
                 "org": org_id,
+                "prop": prop_id,
                 "room_a": room_a,
                 "room_b": room_b,
                 "t1": now - timedelta(minutes=10),
@@ -125,14 +126,14 @@ async def seeded_action_queue() -> dict[str, uuid.UUID]:
             text(
                 """
                 insert into ops.action_queue (
-                  id, org_id, type, source, room_id, guest_id, title,
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
                   status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
                   created_at, updated_at
                 )
-                values (:id, :org, 'request', 'Other', null, null, 'Other org', 'pending', 'low', null, null, null, null, :now, :now)
+                values (:id, :org, :prop, 'request', 'Other', null, null, 'Other org', 'pending', 'low', null, null, null, null, :now, :now)
                 """
             ),
-            {"id": other_q, "org": other_org, "now": now},
+            {"id": other_q, "org": other_org, "prop": prop_id, "now": now},
         )
         await session.commit()
 
@@ -205,11 +206,13 @@ async def test_action_queue_filters_by_status_type_room(seeded_action_queue) -> 
 async def test_action_queue_post_creates_row_with_defaults(seeded_action_queue) -> None:  # type: ignore[no-untyped-def]
     org_id = seeded_action_queue["org_id"]
     room_b = seeded_action_queue["room_b"]
+    prop_id = seeded_action_queue["property_id"]
 
     async with _client_for_org(org_id=org_id) as client:
         resp = await client.post(
             "/api/operations/action-queue",
             json={
+                "property_id": str(prop_id),
                 "type": "request",
                 "source": "Mr. Thompson",
                 "room_id": str(room_b),
@@ -220,6 +223,7 @@ async def test_action_queue_post_creates_row_with_defaults(seeded_action_queue) 
     assert resp.status_code == 201
     body = resp.json()
     assert body["org_id"] == str(org_id)
+    assert body["property_id"] == str(prop_id)
     assert body["type"] == "request"
     assert body["status"] == "pending"
     assert body["severity"] == "low"
@@ -271,12 +275,13 @@ async def test_action_queue_patch_404(seeded_action_queue) -> None:  # type: ign
 async def test_action_queue_dispatch_requires_urgent(seeded_action_queue) -> None:  # type: ignore[no-untyped-def]
     org_id = seeded_action_queue["org_id"]
     room_b = seeded_action_queue["room_b"]
+    prop_id = seeded_action_queue["property_id"]
 
     async with _client_for_org(org_id=org_id) as client:
         # Create a non-urgent item
         created = await client.post(
             "/api/operations/action-queue",
-            json={"type": "request", "room_id": str(room_b), "title": "Non urgent"},
+            json={"property_id": str(prop_id), "type": "request", "room_id": str(room_b), "title": "Non urgent"},
         )
         item_id = created.json()["id"]
         dispatch = await client.post(f"/api/operations/action-queue/{item_id}/dispatch")

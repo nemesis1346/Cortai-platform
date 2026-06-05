@@ -1,0 +1,20 @@
+[
+  {
+    "id": "elevator-1",
+    "name": "Elevator A",
+    "status": "online",
+    "direction": "up",
+    "current_floor": 3,
+    "riders_today": 42,
+    "last_seen_at": "2026-06-05T12:00:00Z"
+  },
+  {
+    "id": "elevator-2",
+    "name": "Elevator B",
+    "status": "online",
+    "direction": "down",
+    "current_floor": 8,
+    "riders_today": 37,
+    "last_seen_at": "2026-06-05T12:00:00Z"
+  }
+]

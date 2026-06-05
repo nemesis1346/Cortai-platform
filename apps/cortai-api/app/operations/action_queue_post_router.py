@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime
 
@@ -26,17 +27,17 @@ async def create_action_queue_item(
             text(
                 """
                 insert into ops.action_queue (
-                  id, org_id, type, source, room_id, guest_id, title,
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
                   status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
                   created_at, updated_at
                 )
                 values (
-                  :id, :org_id, :type, :source, :room_id, :guest_id, :title,
+                  :id, :org_id, :property_id, :type, :source, :room_id, :guest_id, :title,
                   :status, :severity, :assigned_to_user_id, :sla_due_at, null, :parent_incident_id,
                   :created_at, :updated_at
                 )
                 returning
-                  id, org_id, type, source, room_id, guest_id, title,
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
                   status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
                   created_at, updated_at
                 """
@@ -44,6 +45,7 @@ async def create_action_queue_item(
             {
                 "id": str(item_id),
                 "org_id": str(principal.org_id),
+                "property_id": str(payload.property_id),
                 "type": payload.type.value,
                 "source": payload.source,
                 "room_id": str(payload.room_id) if payload.room_id else None,
@@ -63,6 +65,15 @@ async def create_action_queue_item(
             },
         )
     ).mappings().one()
+    event = {
+        "type": "action_queue.created",
+        "org_id": str(principal.org_id),
+        "property_id": str(payload.property_id),
+        "item": dict(row),
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(text("select pg_notify('cortai_live', :payload)"), {"payload": json.dumps(event)})
     await session.commit()
     return ActionQueueItem(**dict(row))
 

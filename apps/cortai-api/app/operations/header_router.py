@@ -23,7 +23,7 @@ async def get_operations_header(
     # Validate property belongs to org (RLS-scoped).
     exists = await session.scalar(
         text("select 1 from properties where id = :pid"),
-        {"pid": str(property_id)},
+        {"pid": property_id},
     )
     if exists is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
@@ -47,8 +47,8 @@ async def get_operations_header(
                     """
                 ),
                 {
-                    "org_id": str(principal.org_id),
-                    "property_id": str(property_id),
+                    "org_id": principal.org_id,
+                    "property_id": property_id,
                     "now": now,
                 },
             )
@@ -60,7 +60,7 @@ async def get_operations_header(
         (
             await session.scalar(
                 text("select coalesce(room_count, 0)::int from properties where id = :pid"),
-                {"pid": str(property_id)},
+                {"pid": property_id},
             )
         )
         or 0
@@ -75,10 +75,11 @@ async def get_operations_header(
                     select count(*)::int
                     from ops.action_queue
                     where org_id = :org_id
+                      and property_id = :property_id
                       and status = 'urgent'
                     """
                 ),
-                {"org_id": str(principal.org_id)},
+                {"org_id": principal.org_id, "property_id": property_id},
             )
         )
         or 0

@@ -32,6 +32,7 @@ class ActionQueueSeverity(enum.StrEnum):
 class ActionQueueItem(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
+    property_id: uuid.UUID
 
     type: ActionQueueType
     source: str | None = None
@@ -56,6 +57,7 @@ class ActionQueueList(BaseModel):
 
 
 class ActionQueueCreate(BaseModel):
+    property_id: uuid.UUID
     type: ActionQueueType
     source: str | None = None
     room_id: uuid.UUID | None = None

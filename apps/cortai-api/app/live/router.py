@@ -43,8 +43,8 @@ async def _authorize_property(*, org_id: str, property_id: str) -> bool:
         async with session.begin():
             await set_current_org(session, org_id)
             row = await session.execute(
-                text("select 1 from properties where id = :pid"),
-                {"pid": property_uuid},
+                text("select 1 from properties where id = :pid and org_id = :org_id"),
+                {"pid": property_uuid, "org_id": org_id},
             )
             return row.first() is not None
 

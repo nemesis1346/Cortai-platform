@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     cookie_domain: str | None = None
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # External bridge services (IoT + AI). By default we serve deterministic mock
+    # responses so local dev + CI don't depend on external infra.
+    bridges_mode: str = "mock"  # mock|real
+    iot_bridge_base_url: str | None = None
+    ai_bridge_base_url: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:

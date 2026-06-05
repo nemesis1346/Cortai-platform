@@ -34,6 +34,7 @@ async def seeded_front_desk_events() -> dict[str, uuid.UUID]:
     org_id = uuid.uuid4()
     other_org = uuid.uuid4()
     now = datetime.now(UTC)
+    prop_id = uuid.uuid4()
 
     async with SessionLocal() as session:
         session.add_all(
@@ -49,16 +50,26 @@ async def seeded_front_desk_events() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into ops.front_desk_events (id, org_id, kind, guest_id, reservation_id, queue_position, started_at, ended_at, created_at, updated_at)
+                insert into properties (id, org_id, name, slug, created_at, updated_at, status)
+                values (:id, :org_id, 'FD Hotel', :slug, :now, :now, 'ACTIVE')
+                """
+            ),
+            {"id": prop_id, "org_id": org_id, "slug": f"fd-hotel-{org_id}", "now": now},
+        )
+        await session.execute(
+            text(
+                """
+                insert into ops.front_desk_events (id, org_id, property_id, kind, guest_id, reservation_id, queue_position, started_at, ended_at, created_at, updated_at)
                 values
-                  (:q_joined_done, :org, 'queue_joined', null, null, 1, :t0, :t1, :now, :now),
-                  (:served, :org, 'served', null, null, 1, :t1, :t2, :now, :now),
-                  (:checkin, :org, 'checked_in', null, null, null, :t2, :t3, :now, :now),
-                  (:q_joined_open, :org, 'queue_joined', null, null, 2, :t3, null, :now, :now)
+                  (:q_joined_done, :org, :prop, 'queue_joined', null, null, 1, :t0, :t1, :now, :now),
+                  (:served, :org, :prop, 'served', null, null, 1, :t1, :t2, :now, :now),
+                  (:checkin, :org, :prop, 'checked_in', null, null, null, :t2, :t3, :now, :now),
+                  (:q_joined_open, :org, :prop, 'queue_joined', null, null, 2, :t3, null, :now, :now)
                 """
             ),
             {
                 "org": org_id,
+                "prop": prop_id,
                 "now": now,
                 "q_joined_done": uuid.uuid4(),
                 "served": uuid.uuid4(),
@@ -77,21 +88,32 @@ async def seeded_front_desk_events() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into ops.front_desk_events (id, org_id, kind, guest_id, reservation_id, queue_position, started_at, ended_at, created_at, updated_at)
-                values (:id, :org, 'served', null, null, 1, :now, :now, :now, :now)
+                insert into properties (id, org_id, name, slug, created_at, updated_at, status)
+                values (:id, :org_id, 'FD Hotel Other', :slug, :now, :now, 'ACTIVE')
+                """
+            ),
+            {"id": uuid.uuid4(), "org_id": other_org, "slug": f"fd-hotel-{other_org}", "now": now},
+        )
+        await session.execute(
+            text(
+                """
+                insert into ops.front_desk_events (id, org_id, property_id, kind, guest_id, reservation_id, queue_position, started_at, ended_at, created_at, updated_at)
+                values (:id, :org, (select id from properties where org_id = :org order by created_at asc, id asc limit 1), 'served', null, null, 1, :now, :now, :now, :now)
                 """
             ),
             {"id": uuid.uuid4(), "org": other_org, "now": now},
         )
         await session.commit()
 
-    yield {"org_id": org_id, "other_org": other_org}
+    yield {"org_id": org_id, "other_org": other_org, "property_id": prop_id}
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
         await session.execute(text("delete from ops.front_desk_events where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from properties where org_id = :org"), {"org": org_id})
         await set_current_org(session, str(other_org))
         await session.execute(text("delete from ops.front_desk_events where org_id = :org"), {"org": other_org})
+        await session.execute(text("delete from properties where org_id = :org"), {"org": other_org})
         await session.execute(
             text("delete from organizations where id in (:a, :b)"),
             {"a": org_id, "b": other_org},

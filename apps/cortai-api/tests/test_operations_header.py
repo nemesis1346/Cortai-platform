@@ -64,11 +64,11 @@ async def seeded_header_env() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into ops.rooms (id, org_id, room_number, floor, type, status, vip, created_at, updated_at)
-                values (:id, :org, '101', 1, 'king', 'occupied', false, :now, :now)
+                insert into ops.rooms (id, org_id, property_id, room_number, floor, type, status, vip, created_at, updated_at)
+                values (:id, :org, :prop, '101', 1, 'king', 'occupied', false, :now, :now)
                 """
             ),
-            {"id": room_id, "org": org_id, "now": now},
+            {"id": room_id, "org": org_id, "prop": prop_id, "now": now},
         )
         await session.execute(
             text(
@@ -103,13 +103,13 @@ async def seeded_header_env() -> dict[str, uuid.UUID]:
             text(
                 """
                 insert into ops.action_queue (
-                  id, org_id, type, source, room_id, guest_id, title,
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
                   status, severity, created_at, updated_at
                 )
-                values (:id, :org, 'incident', 'System', :room, null, 'Urgent thing', 'urgent', 'urgent', :now, :now)
+                values (:id, :org, :prop, 'incident', 'System', :room, null, 'Urgent thing', 'urgent', 'urgent', :now, :now)
                 """
             ),
-            {"id": urgent_id, "org": org_id, "room": room_id, "now": now},
+            {"id": urgent_id, "org": org_id, "prop": prop_id, "room": room_id, "now": now},
         )
         await session.commit()
 
