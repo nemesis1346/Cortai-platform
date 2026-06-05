@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, Query, status
 
 FIXTURES_DIR = Path(__file__).parent / "_fixtures"
 
@@ -28,6 +28,7 @@ async def mock_iot_elevators() -> Any:
 
 
 @mock_app.get("/api/ai/v1/operations/insights")
-async def mock_ai_operations_insights() -> Any:
-    return load_fixture("ai_operations_insights.json")
+async def mock_ai_operations_insights(locale: str = Query(default="en")) -> Any:
+    fixture_locale = "fr" if locale.lower().startswith("fr") else "en"
+    return load_fixture(f"ai_operations_insights.{fixture_locale}.json")
 

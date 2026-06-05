@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-06-05T12:00:00Z",
+  "cards": [
+    {
+      "id": "weekend_gap",
+      "kind": "weekend_gap",
+      "title": "Écart d’occupation du week-end",
+      "body_md": "L’occupation est inférieure à celle du week-end dernier. Envisagez des offres ciblées pour les séjours du vendredi au samedi et vérifiez les blocs de groupes.",
+      "severity": "medium",
+      "action_label": "Vérifier les réservations à venir",
+      "action_payload": { "route": "/dashboard/operations", "tab": "kpis" }
+    },
+    {
+      "id": "arrivals_pace",
+      "kind": "arrivals_pace",
+      "title": "Rythme des arrivées",
+      "body_md": "Les arrivées dépassent le niveau habituel de la journée. Assurez-vous que l’effectif de réception couvre les pics d’arrivée.",
+      "severity": "low"
+    },
+    {
+      "id": "auto_show_prep",
+      "kind": "auto_show_prep",
+      "title": "Préparation de l’entretien",
+      "body_md": "Quelques chambres sont encore marquées vacant_dirty sans affectation active. Envisagez de répartir les préposés pour réduire le risque de chambres prêtes tardivement.",
+      "severity": "high",
+      "action_label": "Ouvrir l’entretien",
+      "action_payload": { "route": "/dashboard/operations", "tab": "housekeeping" }
+    }
+  ]
+}

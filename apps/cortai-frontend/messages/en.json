@@ -49,6 +49,7 @@
       "refresh": "Refresh",
       "common": {
         "dash": "—",
+        "locale": "en",
         "seconds": "s",
         "minutes": "m"
       },
@@ -96,6 +97,7 @@
       },
       "queue": {
         "title": "Action Queue",
+        "assignToMe": "Assign to me",
         "loading": "Loading…",
         "empty": "No items.",
         "types": {
@@ -111,7 +113,8 @@
           "title": "Title",
           "room": "Room",
           "status": "Status",
-          "assigned": "Assigned"
+          "assigned": "Assigned",
+          "actions": "Actions"
         }
       },
       "frontDesk": {

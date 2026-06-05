@@ -5,7 +5,7 @@
       "id": "weekend_gap",
       "kind": "weekend_gap",
       "title": "Weekend occupancy gap",
-      "body_md": "Occupancy is trending lower than last weekend. Consider targeted offers for Fri–Sat stays and review group blocks.",
+      "body_md": "Occupancy is trending lower than last weekend. Consider targeted offers for Fri-Sat stays and review group blocks.",
       "severity": "medium",
       "action_label": "Review upcoming reservations",
       "action_payload": { "route": "/dashboard/operations", "tab": "kpis" }
@@ -21,7 +21,7 @@
       "id": "auto_show_prep",
       "kind": "auto_show_prep",
       "title": "Housekeeping prep",
-      "body_md": "A few rooms are still marked *vacant_dirty* with no active assignments. Consider dispatching attendants to reduce late-ready risk.",
+      "body_md": "A few rooms are still marked vacant_dirty with no active assignments. Consider dispatching attendants to reduce late-ready risk.",
       "severity": "high",
       "action_label": "Open housekeeping",
       "action_payload": { "route": "/dashboard/operations", "tab": "housekeeping" }

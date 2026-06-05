@@ -4,103 +4,26 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Table, Td } from "@/components/ui/Table";
-
-type OperationsKpis = {
-  occupancy_pct: number;
-  occupancy_rooms: { used: number; total: number };
-  guests_in_hotel: number;
-  guests_total_capacity: number;
-  staff_on_site: number;
-  staff_on_duty: number;
-  arrivals_today: { count: number; arrived: number };
-  departures_today: { count: number; departed: number };
-  rooms_ready: number;
-  rooms_cleaning: number;
-};
-
-type ActionQueueItem = {
-  id: string;
-  org_id: string;
-  property_id: string;
-  type: string;
-  source: string | null;
-  room_id: string | null;
-  guest_id: string | null;
-  title: string;
-  status: string;
-  severity: string;
-  assigned_to_user_id: string | null;
-  sla_due_at: string | null;
-  completed_at: string | null;
-  parent_incident_id: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
-type ActionQueueList = { items: ActionQueueItem[]; next_cursor: string | null };
-
-type FrontDeskStats = {
-  served_today: number;
-  in_queue_now: number;
-  queue_avg_seconds: number;
-  checkin_avg_seconds: number;
-};
-
-type HousekeepingSummary = {
-  rooms_assigned: number;
-  staff_count: number;
-  avg_per_staff: number;
-  done_pct: number;
-  efficiency_pct: number;
-  avg_clean_seconds: number;
-  in_process: number;
-  in_transit: number;
-  on_break: number;
-  dnd: number;
-};
-
-type OperationsHeader = {
-  property_id: string;
-  ai_live: boolean;
-  occupancy_pct: number;
-  active_alerts: number;
-  rating: number;
-};
-
-type AiInsightCard = {
-  id: string;
-  kind: string;
-  title: string;
-  body_md: string;
-  severity: string;
-  action_label?: string | null;
-  action_payload?: unknown;
-};
-
-type AiInsights = { generated_at: string; cards: AiInsightCard[] };
-
-type ElevatorState = {
-  id: string;
-  name: string;
-  status: string;
-  direction: string | null;
-  current_floor: number | null;
-  riders_today: number | null;
-  last_seen_at?: string | null;
-};
-
-type LiveMsg = {
-  type: string;
-  org_id?: string;
-  property_id?: string;
-  payload?: unknown;
-  item?: ActionQueueItem;
-  _server_published_at_ms?: number;
-};
+import {
+  ActionQueueTable,
+  AiInsightsBanner,
+  ElevatorsPanel,
+  FrontDeskPanel,
+  HousekeepingSummaryPanel,
+  KpiTilesPanel
+} from "./CommandCenterComponents";
+import type {
+  ActionQueueItem,
+  ActionQueueList,
+  AiInsights,
+  ElevatorState,
+  FrontDeskStats,
+  HousekeepingSummary,
+  LiveMsg,
+  OperationsHeader,
+  OperationsKpis
+} from "./CommandCenterTypes";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -141,16 +64,6 @@ function fmtSeconds(n: number, labels: { dash: string; seconds: string; minutes:
   if (n < 60) return `${Math.round(n)}${labels.seconds}`;
   const m = Math.round(n / 60);
   return `${m}${labels.minutes}`;
-}
-
-function KpiTile({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-lg border border-cortai-border bg-cortai-bg2 p-3">
-      <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-cortai-text3">{label}</div>
-      <div className="mt-1 text-2xl font-semibold text-cortai-text">{value}</div>
-      {sub ? <div className="mt-1 text-xs text-cortai-text2">{sub}</div> : null}
-    </div>
-  );
 }
 
 function severityTone(sev: string): "teal" | "blue" | "amber" | "red" | "green" {
@@ -226,14 +139,26 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
   }, [propertyId]);
 
   const refreshAiInsights = useCallback(async () => {
-    setAiInsights(await apiFetch<AiInsights>("/api/ai/v1/operations/insights"));
-  }, []);
+    setAiInsights(await apiFetch<AiInsights>(`/api/ai/v1/operations/insights?locale=${encodeURIComponent(t("common.locale"))}`));
+  }, [t]);
 
   const refreshElevators = useCallback(async () => {
     if (!propertyId) return;
     const items = await apiFetch<ElevatorState[]>(`/api/iot/v1/elevators`);
     setElevators(Object.fromEntries(items.map((e) => [e.id, e])));
   }, [propertyId]);
+
+  const assignToMe = useCallback(
+    async (item: ActionQueueItem) => {
+      if (!user) return;
+      const updated = await apiFetch<ActionQueueItem>(`/api/operations/action-queue/${encodeURIComponent(item.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ assigned_to_user_id: user.id, status: "assigned" })
+      });
+      setQueue((prev) => prev.map((q) => (q.id === updated.id ? updated : q)));
+    },
+    [user]
+  );
 
   const refreshAll = useCallback(async () => {
     setError(null);
@@ -245,7 +170,7 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
         apiFetch<ActionQueueList>(`/api/operations/action-queue?limit=50&property_id=${encodeURIComponent(propertyId)}`),
         apiFetch<FrontDeskStats>(`/api/operations/front-desk/stats?property_id=${encodeURIComponent(propertyId)}`),
         apiFetch<HousekeepingSummary>(`/api/operations/housekeeping/summary?property_id=${encodeURIComponent(propertyId)}`),
-        apiFetch<AiInsights>("/api/ai/v1/operations/insights"),
+        apiFetch<AiInsights>(`/api/ai/v1/operations/insights?locale=${encodeURIComponent(t("common.locale"))}`),
         apiFetch<ElevatorState[]>(`/api/iot/v1/elevators`)
       ]);
       setHeader(hdr);
@@ -261,7 +186,7 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
     } finally {
       setLoading(false);
     }
-  }, [propertyId]);
+  }, [propertyId, t]);
 
   useEffect(() => {
     void refreshAll();
@@ -392,152 +317,112 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <KpiTile
-          label={t("kpis.occupancy")}
-          value={kpis ? `${kpis.occupancy_pct.toFixed(0)}%` : loading ? dash : dash}
-          sub={kpis ? `${kpis.occupancy_rooms.used}/${kpis.occupancy_rooms.total}` : t("kpis.today")}
-        />
-        <KpiTile
-          label={t("kpis.arrivals")}
-          value={kpis ? String(kpis.arrivals_today.count) : loading ? dash : dash}
-          sub={kpis ? `${t("kpis.arrived")}: ${kpis.arrivals_today.arrived}` : t("kpis.today")}
-        />
-        <KpiTile
-          label={t("kpis.departures")}
-          value={kpis ? String(kpis.departures_today.count) : loading ? dash : dash}
-          sub={kpis ? `${t("kpis.departed")}: ${kpis.departures_today.departed}` : t("kpis.today")}
-        />
-        <KpiTile
-          label={t("kpis.guests")}
-          value={kpis ? String(kpis.guests_in_hotel) : loading ? dash : dash}
-          sub={kpis ? `${kpis.guests_in_hotel}/${kpis.guests_total_capacity}` : t("kpis.operations")}
-        />
-        <KpiTile
-          label={t("kpis.housekeeping")}
-          value={kpis ? String(kpis.rooms_ready) : loading ? dash : dash}
-          sub={t("kpis.progress")}
-        />
-        <KpiTile
-          label={t("kpis.cleaning")}
-          value={kpis ? String(kpis.rooms_cleaning) : loading ? dash : dash}
-          sub={t("kpis.operations")}
-        />
-        <KpiTile
-          label={t("kpis.staff")}
-          value={kpis ? String(kpis.staff_on_duty) : loading ? dash : dash}
-          sub={kpis ? `${t("kpis.onSite")}: ${kpis.staff_on_site}` : t("kpis.operations")}
-        />
-        <KpiTile
-          label={t("kpis.alerts")}
-          value={header ? String(header.active_alerts) : loading ? dash : dash}
-          sub={header ? `${t("kpis.rating")}: ${header.rating.toFixed(1)}` : t("kpis.operations")}
-        />
-      </div>
+      <KpiTilesPanel
+        dash={dash}
+        header={header}
+        kpis={kpis}
+        labels={{
+          alerts: t("kpis.alerts"),
+          arrived: t("kpis.arrived"),
+          arrivals: t("kpis.arrivals"),
+          cleaning: t("kpis.cleaning"),
+          departed: t("kpis.departed"),
+          departures: t("kpis.departures"),
+          guests: t("kpis.guests"),
+          housekeeping: t("kpis.housekeeping"),
+          occupancy: t("kpis.occupancy"),
+          onSite: t("kpis.onSite"),
+          operations: t("kpis.operations"),
+          progress: t("kpis.progress"),
+          rating: t("kpis.rating"),
+          staff: t("kpis.staff"),
+          today: t("kpis.today")
+        }}
+        loading={loading}
+      />
 
-      <Card title={t("ai.title")} action={header ? <Badge tone={header.ai_live ? "green" : "amber"}>{header.ai_live ? t("ai.live") : t("ai.stub")}</Badge> : null}>
-        {aiInsights?.cards?.length ? (
-          <div className="grid gap-3 lg:grid-cols-3">
-            {aiInsights.cards.slice(0, 3).map((c) => (
-              <div key={c.id} className="rounded-md border border-cortai-border bg-cortai-bg2 p-3">
-                <div className="flex items-center gap-2">
-                  <div className="text-xs font-semibold text-cortai-text">{c.title}</div>
-                  <div className="ml-auto">
-                    <Badge tone={severityTone(String(c.severity ?? ""))}>{severityLabel(String(c.severity ?? "info"))}</Badge>
-                  </div>
-                </div>
-                <pre className="mt-2 whitespace-pre-wrap text-xs text-cortai-text2">{c.body_md}</pre>
-                {c.action_label ? (
-                  <div className="mt-2 text-[11px] text-cortai-text3">{c.action_label}</div>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-xs text-cortai-text3">{loading ? t("ai.loading") : t("ai.empty")}</div>
-        )}
-      </Card>
+      <AiInsightsBanner
+        aiInsights={aiInsights}
+        emptyLabel={t("ai.empty")}
+        header={header}
+        labels={{ live: t("ai.live"), stub: t("ai.stub") }}
+        loading={loading}
+        loadingLabel={t("ai.loading")}
+        severityLabel={severityLabel}
+        severityTone={severityTone}
+        title={t("ai.title")}
+      />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
-          <Card title={t("queue.title")}>
-            <Table headers={[t("queue.cols.severity"), t("queue.cols.title"), t("queue.cols.room"), t("queue.cols.status"), t("queue.cols.assigned")]}>
-              {queue.length === 0 ? (
-                <tr>
-                  <Td className="text-cortai-text3" colSpan={5}>
-                    {loading ? t("queue.loading") : t("queue.empty")}
-                  </Td>
-                </tr>
-              ) : null}
-              {queue.map((q) => (
-                <tr key={q.id}>
-                  <Td>
-                    <Badge tone={severityTone(q.severity)}>{severityLabel(q.severity)}</Badge>
-                  </Td>
-                  <Td className="max-w-[520px]">
-                    <div className="font-semibold">{q.title}</div>
-                    <div className="text-[11px] text-cortai-text3">{typeLabel(q.type)}</div>
-                  </Td>
-                  <Td>{q.room_id ? q.room_id.slice(0, 8) : dash}</Td>
-                  <Td>
-                    <Badge tone={statusTone(q.status)}>{statusLabel(q.status)}</Badge>
-                  </Td>
-                  <Td className="text-cortai-text2">{q.assigned_to_user_id ? q.assigned_to_user_id.slice(0, 8) : dash}</Td>
-                </tr>
-              ))}
-            </Table>
-          </Card>
+          <ActionQueueTable
+            assignLabel={t("queue.assignToMe")}
+            canAssign={Boolean(user)}
+            columnHeaders={[
+              t("queue.cols.severity"),
+              t("queue.cols.title"),
+              t("queue.cols.room"),
+              t("queue.cols.status"),
+              t("queue.cols.assigned"),
+              t("queue.cols.actions")
+            ]}
+            dash={dash}
+            emptyLabel={t("queue.empty")}
+            loading={loading}
+            loadingLabel={t("queue.loading")}
+            onAssign={(item) => void assignToMe(item)}
+            queue={queue}
+            severityLabel={severityLabel}
+            severityTone={severityTone}
+            statusLabel={statusLabel}
+            statusTone={statusTone}
+            title={t("queue.title")}
+            typeLabel={typeLabel}
+          />
         </div>
 
         <div className="grid gap-4">
-          <Card title={t("frontDesk.title")}>
-            {frontDesk ? (
-              <div className="grid grid-cols-2 gap-3">
-                <KpiTile label={t("frontDesk.servedToday")} value={String(frontDesk.served_today)} />
-                <KpiTile label={t("frontDesk.inQueueNow")} value={String(frontDesk.in_queue_now)} />
-                <KpiTile label={t("frontDesk.avgQueue")} value={fmtDuration(frontDesk.queue_avg_seconds)} />
-                <KpiTile label={t("frontDesk.avgCheckin")} value={fmtDuration(frontDesk.checkin_avg_seconds)} />
-              </div>
-            ) : (
-              <div className="text-xs text-cortai-text3">{loading ? dash : dash}</div>
-            )}
-          </Card>
+          <FrontDeskPanel
+            dash={dash}
+            frontDesk={frontDesk}
+            fmtDuration={fmtDuration}
+            labels={{
+              avgCheckin: t("frontDesk.avgCheckin"),
+              avgQueue: t("frontDesk.avgQueue"),
+              inQueueNow: t("frontDesk.inQueueNow"),
+              servedToday: t("frontDesk.servedToday"),
+              title: t("frontDesk.title")
+            }}
+            loading={loading}
+          />
 
-          <Card title={t("elevators.title")}>
-            {Object.keys(elevators).length ? (
-              <div className="grid gap-2">
-                {Object.values(elevators).slice(0, 4).map((e) => (
-                  <div key={e.id} className="rounded-md border border-cortai-border bg-cortai-bg2 p-3 text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="font-semibold text-cortai-text">{e.name}</div>
-                      <div className="ml-auto">
-                        <Badge tone={e.status === "offline" ? "red" : "teal"}>{statusLabel(String(e.status))}</Badge>
-                      </div>
-                    </div>
-                    <div className="mt-1 text-cortai-text2">
-                      {t("elevators.floor")}: {e.current_floor ?? dash} · {t("elevators.direction")}: {directionLabel(e.direction)} ·{" "}
-                      {t("elevators.riders")}: {e.riders_today ?? dash}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-xs text-cortai-text3">{t("elevators.empty")}</div>
-            )}
-          </Card>
+          <ElevatorsPanel
+            dash={dash}
+            directionLabel={directionLabel}
+            elevators={elevators}
+            labels={{
+              direction: t("elevators.direction"),
+              empty: t("elevators.empty"),
+              floor: t("elevators.floor"),
+              riders: t("elevators.riders"),
+              title: t("elevators.title")
+            }}
+            statusLabel={statusLabel}
+          />
 
-          <Card title={t("housekeeping.title")}>
-            {housekeeping ? (
-              <div className="grid grid-cols-2 gap-3">
-                <KpiTile label={t("housekeeping.roomsAssigned")} value={String(housekeeping.rooms_assigned)} />
-                <KpiTile label={t("housekeeping.staffCount")} value={String(housekeeping.staff_count)} />
-                <KpiTile label={t("housekeeping.donePct")} value={`${housekeeping.done_pct.toFixed(0)}%`} />
-                <KpiTile label={t("housekeeping.avgClean")} value={fmtDuration(housekeeping.avg_clean_seconds)} />
-              </div>
-            ) : (
-              <div className="text-xs text-cortai-text3">{loading ? dash : dash}</div>
-            )}
-          </Card>
+          <HousekeepingSummaryPanel
+            dash={dash}
+            fmtDuration={fmtDuration}
+            housekeeping={housekeeping}
+            labels={{
+              avgClean: t("housekeeping.avgClean"),
+              donePct: t("housekeeping.donePct"),
+              roomsAssigned: t("housekeeping.roomsAssigned"),
+              staffCount: t("housekeeping.staffCount"),
+              title: t("housekeeping.title")
+            }}
+            loading={loading}
+          />
         </div>
       </div>
     </div>

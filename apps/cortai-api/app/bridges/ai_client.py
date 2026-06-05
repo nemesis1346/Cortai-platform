@@ -13,7 +13,9 @@ async def get_operations_insights(request: Request) -> Any:
     settings = get_settings()
     mode = settings.bridges_mode.lower().strip()
     if mode == "mock":
-        return load_fixture("ai_operations_insights.json")
+        locale = str(request.query_params.get("locale") or "en").lower()
+        fixture_locale = "fr" if locale.startswith("fr") else "en"
+        return load_fixture(f"ai_operations_insights.{fixture_locale}.json")
     if mode != "real":
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

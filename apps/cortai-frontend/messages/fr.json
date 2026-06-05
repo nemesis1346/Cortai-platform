@@ -49,6 +49,7 @@
       "refresh": "Actualiser",
       "common": {
         "dash": "—",
+        "locale": "fr",
         "seconds": " s",
         "minutes": " min"
       },
@@ -96,6 +97,7 @@
       },
       "queue": {
         "title": "File d’actions",
+        "assignToMe": "M’assigner",
         "loading": "Chargement…",
         "empty": "Aucun élément.",
         "types": {
@@ -111,7 +113,8 @@
           "title": "Titre",
           "room": "Chambre",
           "status": "Statut",
-          "assigned": "Assigné"
+          "assigned": "Assigné",
+          "actions": "Actions"
         }
       },
       "frontDesk": {
