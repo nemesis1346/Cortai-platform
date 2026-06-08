@@ -65,3 +65,8 @@ class RoomDetail(BaseModel):
     current_reservation: ReservationSummary | None = None
     recent_incidents: list[dict] = Field(default_factory=list)
 
+
+class RoomUpdate(BaseModel):
+    status: RoomStatus | None = None
+    attendant_user_id: uuid.UUID | None = None
+
