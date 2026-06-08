@@ -54,7 +54,10 @@ async def main() -> None:
                 "_server_published_at": now.isoformat(),
                 "_server_published_at_ms": int(now.timestamp() * 1000),
             }
-            await conn.execute("select pg_notify('cortai_live', $1)", json.dumps(event))
+            # Ensure UUID/datetime payloads are JSON-serializable (matches FastAPI encoders).
+            from fastapi.encoders import jsonable_encoder
+
+            await conn.execute("select pg_notify('cortai_live', $1)", json.dumps(jsonable_encoder(event)))
 
         logger.info(
             "de08.offline_sweep_complete",

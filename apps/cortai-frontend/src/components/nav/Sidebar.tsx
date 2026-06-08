@@ -143,6 +143,8 @@ export function Sidebar({ locale }: { locale: string }) {
         icon: <IconGrid />,
         href: (l) => `/${l}/dashboard/operations`,
         items: [
+          { id: "commandCenter", label: t("commandCenter"), href: (l) => `/${l}/dashboard/operations` },
+          { id: "roomMonitor", label: t("roomMonitor"), href: (l) => `/${l}/dashboard/operations/room-monitor` },
           { id: "live", label: t("live"), href: (l) => `/${l}/dashboard/live` },
           { id: "edgeLive", label: t("edgeLive"), href: (l) => `/${l}/dashboard/edge/live` },
           { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` }

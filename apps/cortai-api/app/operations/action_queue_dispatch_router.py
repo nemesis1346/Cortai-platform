@@ -5,6 +5,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
@@ -76,7 +77,7 @@ async def dispatch_action_queue_item(
     }
     await session.execute(
         text("select pg_notify('cortai_live', :payload)"),
-        {"payload": json.dumps(event)},
+        {"payload": json.dumps(jsonable_encoder(event))},
     )
 
     await session.commit()

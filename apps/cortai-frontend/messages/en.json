@@ -29,6 +29,8 @@
     "hr": "HR",
     "revenue": "Revenue",
     "incidentLog": "Incident Log",
+    "commandCenter": "Command Center",
+    "roomMonitor": "Room Monitor",
     "edgeLive": "Edge Live",
     "property": "Property",
     "propertyLoading": "Loading properties…",
@@ -42,6 +44,40 @@
     "loggingOut": "Logging out..."
   },
   "operations": {
+    "roomMonitor": {
+      "title": "Room Monitor",
+      "subtitle": "Tap a room to view details and IoT.",
+      "selectProperty": "Select a property to view rooms.",
+      "refresh": "Refresh",
+      "gridTitle": "Rooms",
+      "empty": "No rooms found.",
+      "filters": {
+        "floor": "Floor",
+        "type": "Type",
+        "search": "Search",
+        "apply": "Filter",
+        "allStatuses": "All statuses"
+      },
+      "drawer": {
+        "title": "Room detail",
+        "titleWithRoom": "Room {room}",
+        "close": "Close",
+        "loading": "Loading…",
+        "noData": "No data.",
+        "room": "Room",
+        "status": "Status:",
+        "lastService": "Last service:",
+        "markOoo": "Mark OOO",
+        "markInspected": "Mark inspected",
+        "reservation": "Reservation",
+        "noReservation": "No current reservation.",
+        "checkIn": "Check-in:",
+        "checkOut": "Check-out:",
+        "iot": "IoT",
+        "recentIncidents": "Recent incidents",
+        "noIncidents": "No incidents."
+      }
+    },
     "commandCenter": {
       "title": "Command Center",
       "subtitle": "Live updates via WebSocket.",

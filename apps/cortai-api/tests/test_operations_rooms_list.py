@@ -128,11 +128,12 @@ async def seeded_rooms() -> dict[str, uuid.UUID]:
 @pytest.mark.asyncio
 async def test_rooms_list_is_scoped_to_org(seeded_rooms) -> None:  # type: ignore[no-untyped-def]
     org_id = seeded_rooms["org_id"]
+    prop_a = seeded_rooms["prop_a"]
     async with _client_for_org(org_id=org_id) as client:
-        resp = await client.get("/api/operations/rooms")
+        resp = await client.get(f"/api/operations/rooms?property_id={prop_a}")
     assert resp.status_code == 200
     body = resp.json()
-    assert len(body["items"]) == 3
+    assert len(body["items"]) == 2
     assert all(item["org_id"] == str(org_id) for item in body["items"])
 
 
@@ -140,23 +141,32 @@ async def test_rooms_list_is_scoped_to_org(seeded_rooms) -> None:  # type: ignor
 async def test_rooms_list_filters_by_property_floor_status_type_and_search(seeded_rooms) -> None:  # type: ignore[no-untyped-def]
     org_id = seeded_rooms["org_id"]
     prop_a = seeded_rooms["prop_a"]
+    prop_b = seeded_rooms["prop_b"]
 
     async with _client_for_org(org_id=org_id) as client:
         resp = await client.get(f"/api/operations/rooms?property_id={prop_a}&floor=2")
         assert resp.status_code == 200
         assert [r["room_number"] for r in resp.json()["items"]] == ["201"]
 
-        resp2 = await client.get("/api/operations/rooms?status=out_of_order")
+        resp2 = await client.get(f"/api/operations/rooms?property_id={prop_b}&status=out_of_order")
         assert resp2.status_code == 200
         assert len(resp2.json()["items"]) == 1
         assert resp2.json()["items"][0]["status"] == "out_of_order"
 
-        resp3 = await client.get("/api/operations/rooms?type=king")
+        resp3 = await client.get(f"/api/operations/rooms?property_id={prop_a}&type=king")
         assert resp3.status_code == 200
         assert [r["room_number"] for r in resp3.json()["items"]] == ["101"]
 
-        resp4 = await client.get("/api/operations/rooms?search=0")
+        resp4 = await client.get(f"/api/operations/rooms?property_id={prop_a}&search=0")
         assert resp4.status_code == 200
         nums = {r["room_number"] for r in resp4.json()["items"]}
-        assert nums == {"101", "201", "001"}
+        assert nums == {"101", "201"}
+
+
+@pytest.mark.asyncio
+async def test_rooms_list_requires_property_id(seeded_rooms) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_rooms["org_id"]
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.get("/api/operations/rooms")
+    assert resp.status_code in {400, 422}
 

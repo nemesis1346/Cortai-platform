@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import json
 import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
@@ -115,6 +117,16 @@ async def patch_room(
                 },
             )
 
+    now = datetime.now(UTC)
+    event = {
+        "type": "room.updated",
+        "org_id": str(principal.org_id),
+        "property_id": str(room_row["property_id"]),
+        "room": dict(room_row),
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(text("select pg_notify('cortai_live', :payload)"), {"payload": json.dumps(jsonable_encoder(event))})
     await session.commit()
     return RoomListItem(**dict(room_row))
 

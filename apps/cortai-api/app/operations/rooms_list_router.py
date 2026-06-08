@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
@@ -16,18 +16,15 @@ router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
 async def list_rooms(
     principal: PrincipalDep,
     session: SessionDep,
-    property_id: uuid.UUID | None = None,
+    property_id: uuid.UUID = Query(...),
     floor: int | None = None,
     status: RoomStatus | None = None,
     type: str | None = None,  # noqa: A002
     search: str | None = None,
 ) -> RoomList:
-    filters = ["org_id = :org_id"]
-    params: dict[str, object] = {"org_id": str(principal.org_id)}
+    filters = ["org_id = :org_id", "property_id = :property_id"]
+    params: dict[str, object] = {"org_id": str(principal.org_id), "property_id": str(property_id)}
 
-    if property_id is not None:
-        filters.append("property_id = :property_id")
-        params["property_id"] = str(property_id)
     if floor is not None:
         filters.append("floor = :floor")
         params["floor"] = floor

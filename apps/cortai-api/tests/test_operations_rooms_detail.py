@@ -58,11 +58,16 @@ async def seeded_room_detail() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into ops.rooms (id, org_id, property_id, room_number, floor, type, status, vip, created_at, updated_at, last_service_at)
-                values (:r101, :org, :p1, '101', 1, 'king', 'occupied', false, :now, :now, :now)
+                insert into ops.rooms (
+                  id, org_id, property_id,
+                  room_number, floor, type, status, vip,
+                  created_at, updated_at, last_service_at,
+                  current_reservation_id
+                )
+                values (:r101, :org, :p1, '101', 1, 'king', 'occupied', false, :now, :now, :now, :res)
                 """
             ),
-            {"r101": room_101, "org": org_id, "p1": prop_a, "now": now},
+            {"r101": room_101, "org": org_id, "p1": prop_a, "now": now, "res": res_1},
         )
         await session.execute(
             text(
@@ -102,13 +107,19 @@ async def seeded_room_detail() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into operations.incidents (
-                  id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                insert into ops.action_queue (
+                  id, org_id, property_id, type, source, room_id, guest_id, title,
+                  status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
+                  created_at, updated_at
                 )
-                values (:id, :org, :prop, 'HIGH', 'OPEN', 'Room incident', 'test', null, :now, null)
+                values (
+                  :id, :org, :prop, 'incident', 'tests', :room_id, null, 'Room incident',
+                  'pending', 'high', null, null, null, null,
+                  :now, :now
+                )
                 """
             ),
-            {"id": incident_1, "org": org_id, "prop": prop_a, "now": now},
+            {"id": incident_1, "org": org_id, "prop": prop_a, "room_id": room_101, "now": now},
         )
         await session.commit()
 
@@ -116,7 +127,7 @@ async def seeded_room_detail() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
-        await session.execute(text("delete from operations.incidents where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from ops.action_queue where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.reservations where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.guests where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.rooms where org_id = :org"), {"org": org_id})

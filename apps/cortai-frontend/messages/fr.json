@@ -29,6 +29,8 @@
     "hr": "RH",
     "revenue": "Revenus",
     "incidentLog": "Journal d'incidents",
+    "commandCenter": "Centre de commande",
+    "roomMonitor": "Surveillance des chambres",
     "edgeLive": "Edge en direct",
     "property": "Propriété",
     "propertyLoading": "Chargement des propriétés…",
@@ -42,6 +44,40 @@
     "loggingOut": "Déconnexion..."
   },
   "operations": {
+    "roomMonitor": {
+      "title": "Surveillance des chambres",
+      "subtitle": "Sélectionnez une chambre pour voir les détails et l’IoT.",
+      "selectProperty": "Sélectionnez une propriété pour voir les chambres.",
+      "refresh": "Actualiser",
+      "gridTitle": "Chambres",
+      "empty": "Aucune chambre trouvée.",
+      "filters": {
+        "floor": "Étage",
+        "type": "Type",
+        "search": "Rechercher",
+        "apply": "Filtrer",
+        "allStatuses": "Tous les statuts"
+      },
+      "drawer": {
+        "title": "Détail de la chambre",
+        "titleWithRoom": "Chambre {room}",
+        "close": "Fermer",
+        "loading": "Chargement…",
+        "noData": "Aucune donnée.",
+        "room": "Chambre",
+        "status": "Statut :",
+        "lastService": "Dernier service :",
+        "markOoo": "Mettre HS",
+        "markInspected": "Marquer inspectée",
+        "reservation": "Réservation",
+        "noReservation": "Aucune réservation en cours.",
+        "checkIn": "Arrivée :",
+        "checkOut": "Départ :",
+        "iot": "IoT",
+        "recentIncidents": "Incidents récents",
+        "noIncidents": "Aucun incident."
+      }
+    },
     "commandCenter": {
       "title": "Centre de commande",
       "subtitle": "Mises à jour en direct via WebSocket.",
