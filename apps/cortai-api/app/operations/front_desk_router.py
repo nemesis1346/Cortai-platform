@@ -8,7 +8,12 @@ from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
-from app.operations.front_desk_schemas import FrontDeskArrivals, FrontDeskDepartures, FrontDeskStats
+from app.operations.front_desk_schemas import (
+    FrontDeskArrivals,
+    FrontDeskDepartures,
+    FrontDeskInHotel,
+    FrontDeskStats,
+)
 
 router = APIRouter(prefix="/front-desk", tags=["operations-front-desk"])
 
@@ -261,4 +266,62 @@ async def list_departures(
         items.append(rr)
 
     return FrontDeskDepartures(date=target, items=items)
+
+
+@router.get("/in-hotel", response_model=FrontDeskInHotel)
+async def list_in_hotel(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID = Query(...),
+) -> FrontDeskInHotel:
+    """
+    In-hotel guests: checked-in reservations active "now".
+    """
+    now = datetime.now(UTC)
+    rows = (
+        await session.execute(
+            text(
+                """
+                select
+                  r.id as reservation_id,
+                  r.property_id,
+                  r.status,
+                  r.check_in_at,
+                  r.check_out_at,
+                  g.first_name as guest__first_name,
+                  g.last_name as guest__last_name,
+                  g.vip as guest__vip,
+                  r.room_id,
+                  rm.room_number
+                from ops.reservations r
+                join ops.guests g on g.id = r.guest_id
+                left join ops.rooms rm on rm.id = r.room_id
+                where r.org_id = :org_id
+                  and r.property_id = :property_id
+                  and r.status = 'checked_in'
+                  and r.check_in_at <= :now
+                  and r.check_out_at > :now
+                order by g.vip desc, r.check_in_at desc, r.id asc
+                """
+            ),
+            {
+                "org_id": str(principal.org_id),
+                "property_id": str(property_id),
+                "now": now,
+            },
+        )
+    ).mappings().all()
+
+    items = []
+    for r in rows:
+        rr = dict(r)
+        guest = {
+            "first_name": rr.pop("guest__first_name"),
+            "last_name": rr.pop("guest__last_name"),
+            "vip": rr.pop("guest__vip"),
+        }
+        rr["guest"] = guest
+        items.append(rr)
+
+    return FrontDeskInHotel(items=items)
 
