@@ -34,3 +34,21 @@ class FrontDeskArrivals(BaseModel):
     date: date
     items: list[FrontDeskArrivalItem]
 
+
+class FrontDeskDepartureItem(BaseModel):
+    reservation_id: uuid.UUID
+    property_id: uuid.UUID
+    status: str
+
+    check_in_at: datetime
+    check_out_at: datetime
+
+    guest: FrontDeskGuestSummary
+    room_id: uuid.UUID | None = None
+    room_number: str | None = None
+
+
+class FrontDeskDepartures(BaseModel):
+    date: date
+    items: list[FrontDeskDepartureItem]
+
