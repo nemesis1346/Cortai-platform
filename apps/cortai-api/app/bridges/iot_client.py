@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 import httpx
@@ -30,6 +31,33 @@ async def get_elevators(request: Request) -> Any:
     async with httpx.AsyncClient(base_url=settings.iot_bridge_base_url, timeout=timeout) as client:
         resp = await client.get(
             "/api/iot/v1/elevators",
+            params=dict(request.query_params),
+            headers=headers,
+        )
+    return _decode_json_response(resp)
+
+
+async def get_room_iot(*, request: Request, room_id: uuid.UUID) -> Any:
+    settings = get_settings()
+    mode = settings.bridges_mode.lower().strip()
+    if mode == "mock":
+        return load_fixture("iot_room_iot.json")
+    if mode != "real":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invalid BRIDGES_MODE",
+        )
+    if not settings.iot_bridge_base_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="IOT_BRIDGE_BASE_URL not set",
+        )
+
+    headers = _forward_headers(request)
+    timeout = httpx.Timeout(10.0, connect=5.0)
+    async with httpx.AsyncClient(base_url=settings.iot_bridge_base_url, timeout=timeout) as client:
+        resp = await client.get(
+            f"/api/operations/rooms/{room_id}/iot",
             params=dict(request.query_params),
             headers=headers,
         )

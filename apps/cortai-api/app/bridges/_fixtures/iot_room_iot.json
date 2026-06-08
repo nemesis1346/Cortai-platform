@@ -1,0 +1,28 @@
+{
+  "room_id": "00000000-0000-0000-0000-000000000000",
+  "hvac": {
+    "current_temp_c": 24.6,
+    "target_temp_c": 21.0,
+    "mode": "cooling",
+    "fan_speed": "auto",
+    "fault_code": null,
+    "updated_at": "2026-06-08T12:00:00Z"
+  },
+  "sensors": [
+    {
+      "device_id": "sensor-door-101",
+      "type": "door",
+      "value": 0,
+      "unit": "bool",
+      "ts": "2026-06-08T12:00:00Z"
+    },
+    {
+      "device_id": "sensor-occupancy-101",
+      "type": "occupancy",
+      "value": 1,
+      "unit": "bool",
+      "ts": "2026-06-08T12:00:00Z"
+    }
+  ]
+}
+
