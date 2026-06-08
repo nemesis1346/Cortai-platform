@@ -20,6 +20,7 @@ from app.operations.front_desk_router import router as front_desk_router
 from app.operations.housekeeping_router import router as housekeeping_router
 from app.operations.header_router import router as header_router
 from app.operations.rooms_list_router import router as rooms_list_router
+from app.operations.rooms_detail_router import router as rooms_detail_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
@@ -210,6 +211,7 @@ router.include_router(action_queue_post_router)
 router.include_router(action_queue_patch_router)
 router.include_router(action_queue_dispatch_router)
 router.include_router(rooms_list_router)
+router.include_router(rooms_detail_router)
 router.include_router(front_desk_router)
 router.include_router(housekeeping_router)
 router.include_router(header_router)

@@ -34,3 +34,34 @@ class RoomListItem(BaseModel):
 class RoomList(BaseModel):
     items: list[RoomListItem]
 
+
+class GuestSummary(BaseModel):
+    id: uuid.UUID
+    first_name: str = Field(min_length=1, max_length=120)
+    last_name: str = Field(min_length=1, max_length=120)
+    vip: bool
+    language: str
+    phone_e164: str | None = Field(default=None, max_length=32)
+    email: str | None = Field(default=None, max_length=255)
+
+
+class ReservationSummary(BaseModel):
+    id: uuid.UUID
+    guest_id: uuid.UUID
+    property_id: uuid.UUID
+    room_id: uuid.UUID | None = None
+    status: str
+    check_in_at: datetime
+    check_out_at: datetime
+    rate_cents: int | None = None
+    group_id: str | None = Field(default=None, max_length=64)
+    source: str | None = Field(default=None, max_length=64)
+
+    guest: GuestSummary
+
+
+class RoomDetail(BaseModel):
+    room: RoomListItem
+    current_reservation: ReservationSummary | None = None
+    recent_incidents: list[dict] = Field(default_factory=list)
+
