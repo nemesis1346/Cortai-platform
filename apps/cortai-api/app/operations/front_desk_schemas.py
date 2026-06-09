@@ -113,3 +113,15 @@ class FrontDeskWalkInResult(BaseModel):
     room_id: uuid.UUID
     status: str
 
+
+class FrontDeskQueueJoinRequest(BaseModel):
+    property_id: uuid.UUID
+    reservation_id: uuid.UUID
+
+
+class FrontDeskQueueJoinResult(BaseModel):
+    ok: bool = True
+    event_id: uuid.UUID
+    queue_position: int = Field(ge=1)
+    reservation_id: uuid.UUID
+

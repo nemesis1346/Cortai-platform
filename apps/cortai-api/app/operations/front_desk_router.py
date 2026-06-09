@@ -18,6 +18,8 @@ from app.operations.front_desk_schemas import (
     FrontDeskDepartures,
     FrontDeskInHotel,
     FrontDeskStats,
+    FrontDeskQueueJoinRequest,
+    FrontDeskQueueJoinResult,
     FrontDeskWalkInRequest,
     FrontDeskWalkInResult,
 )
@@ -808,5 +810,144 @@ async def walk_in(
         guest_id=guest_id,
         room_id=payload.room_id,
         status="checked_in",
+    )
+
+
+@router.post("/queue/join", response_model=FrontDeskQueueJoinResult)
+async def queue_join(
+    payload: FrontDeskQueueJoinRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> FrontDeskQueueJoinResult:
+    """
+    Queue join: guest physically arrives.
+
+    Creates an open-ended front desk event with kind=queue_joined and ended_at NULL.
+    Emits a live event so UIs can refresh.
+    """
+    from fastapi import HTTPException, status  # local import to keep router import light
+
+    now = datetime.now(UTC)
+
+    # Reservation must exist in this org/property.
+    res = (
+        await session.execute(
+            text(
+                """
+                select id, org_id, property_id, guest_id, status
+                from ops.reservations
+                where id = :id and org_id = :org_id and property_id = :property_id
+                """
+            ),
+            {
+                "id": str(payload.reservation_id),
+                "org_id": str(principal.org_id),
+                "property_id": str(payload.property_id),
+            },
+        )
+    ).mappings().first()
+    if res is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+
+    if str(res["status"]) in {"checked_in", "checked_out", "cancelled", "no_show"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reservation is not eligible to join the queue")
+
+    # Idempotent: if already in queue (today) return existing position.
+    existing = (
+        await session.execute(
+            text(
+                """
+                select id, queue_position
+                from ops.front_desk_events
+                where org_id = :org_id
+                  and property_id = :property_id
+                  and kind = 'queue_joined'
+                  and reservation_id = :reservation_id
+                  and ended_at is null
+                order by started_at desc
+                limit 1
+                """
+            ),
+            {
+                "org_id": str(principal.org_id),
+                "property_id": str(payload.property_id),
+                "reservation_id": str(payload.reservation_id),
+            },
+        )
+    ).mappings().first()
+    if existing is not None:
+        event_id = uuid.UUID(str(existing["id"]))
+        pos = int(existing["queue_position"] or 1)
+        return FrontDeskQueueJoinResult(
+            event_id=event_id,
+            queue_position=pos,
+            reservation_id=payload.reservation_id,
+        )
+
+    # Determine the next queue position for currently-open queue items.
+    next_pos = int(
+        (
+            await session.scalar(
+                text(
+                    """
+                    select coalesce(max(queue_position), 0)::int + 1
+                    from ops.front_desk_events
+                    where org_id = :org_id
+                      and property_id = :property_id
+                      and kind = 'queue_joined'
+                      and ended_at is null
+                    """
+                ),
+                {"org_id": str(principal.org_id), "property_id": str(payload.property_id)},
+            )
+        )
+        or 1
+    )
+
+    event_id = uuid.uuid4()
+    await session.execute(
+        text(
+            """
+            insert into ops.front_desk_events (
+              id, org_id, property_id, kind, guest_id, reservation_id,
+              queue_position, started_at, ended_at, created_at, updated_at
+            )
+            values (
+              :id, :org_id, :property_id, 'queue_joined', :guest_id, :reservation_id,
+              :pos, :now, null, :now, :now
+            )
+            """
+        ),
+        {
+            "id": str(event_id),
+            "org_id": str(principal.org_id),
+            "property_id": str(payload.property_id),
+            "guest_id": str(res["guest_id"]),
+            "reservation_id": str(payload.reservation_id),
+            "pos": next_pos,
+            "now": now,
+        },
+    )
+
+    event = {
+        "type": "front_desk.event",
+        "org_id": str(principal.org_id),
+        "property_id": str(payload.property_id),
+        "kind": "queue_joined",
+        "reservation_id": str(payload.reservation_id),
+        "queue_position": next_pos,
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(
+        text("select pg_notify('cortai_live', :payload)"),
+        {"payload": json.dumps(jsonable_encoder(event))},
+    )
+
+    await session.commit()
+    return FrontDeskQueueJoinResult(
+        event_id=event_id,
+        queue_position=next_pos,
+        reservation_id=payload.reservation_id,
     )
 
