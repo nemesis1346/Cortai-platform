@@ -41,3 +41,11 @@ class GuestServiceRequestItem(BaseModel):
 class GuestServiceRequestList(BaseModel):
     items: list[GuestServiceRequestItem]
 
+
+class GuestServiceRequestCreate(BaseModel):
+    property_id: uuid.UUID
+    room_id: uuid.UUID | None = None
+    guest_id: uuid.UUID | None = None
+    type: GuestServiceType
+    note: str | None = Field(default=None, max_length=500)
+
