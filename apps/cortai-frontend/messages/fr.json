@@ -358,6 +358,36 @@
       "ok": "OK",
       "faults": "{count} défauts",
       "noFaults": "Aucun défaut",
+      "alerts": {
+        "title": "Alertes actives",
+        "empty": "Aucun défaut CVC actif.",
+        "room": "Chambre {room}",
+        "fault": "Défaut {code}",
+        "badge": "{count} alerte(s)"
+      },
+      "chips": {
+        "current": "Actuel {value}",
+        "target": "Cible {value}",
+        "modeFan": "{mode} · ventil. {fan}"
+      },
+      "control": {
+        "title": "Commande CVC · Chambre {room}",
+        "subtitle": "Envoyer une commande via le pont IoT.",
+        "close": "Fermer",
+        "cancel": "Annuler",
+        "send": "Envoyer",
+        "currentLine": "Actuel : {value}",
+        "targetTemp": "Température cible (°C)",
+        "targetTempPlaceholder": "ex. 22.0",
+        "mode": "Mode",
+        "fanSpeed": "Vitesse ventil.",
+        "modes": { "auto": "Auto", "cooling": "Refroidir", "heating": "Chauffer", "off": "Arrêt" },
+        "fans": { "auto": "Auto", "low": "Faible", "medium": "Moyenne", "high": "Élevée" }
+      },
+      "toast": {
+        "sent": { "title": "Commande envoyée", "description": "Attente d’ack (≤ {seconds}s)." },
+        "failed": { "title": "Échec commande CVC", "description": "Veuillez réessayer." }
+      },
       "cols": {
         "roomId": "Chambre",
         "current": "Actuel",

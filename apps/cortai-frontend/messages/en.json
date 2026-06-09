@@ -358,6 +358,36 @@
       "ok": "OK",
       "faults": "{count} faults",
       "noFaults": "No faults",
+      "alerts": {
+        "title": "Active alerts",
+        "empty": "No active HVAC faults.",
+        "room": "Room {room}",
+        "fault": "Fault {code}",
+        "badge": "{count} alert(s)"
+      },
+      "chips": {
+        "current": "Current {value}",
+        "target": "Target {value}",
+        "modeFan": "{mode} · fan {fan}"
+      },
+      "control": {
+        "title": "HVAC control · Room {room}",
+        "subtitle": "Send a control command via the IoT bridge.",
+        "close": "Close",
+        "cancel": "Cancel",
+        "send": "Send command",
+        "currentLine": "Current: {value}",
+        "targetTemp": "Target temperature (°C)",
+        "targetTempPlaceholder": "e.g. 22.0",
+        "mode": "Mode",
+        "fanSpeed": "Fan speed",
+        "modes": { "auto": "Auto", "cooling": "Cooling", "heating": "Heating", "off": "Off" },
+        "fans": { "auto": "Auto", "low": "Low", "medium": "Medium", "high": "High" }
+      },
+      "toast": {
+        "sent": { "title": "Command sent", "description": "Awaiting ack (≤ {seconds}s)." },
+        "failed": { "title": "HVAC command failed", "description": "Please try again." }
+      },
       "cols": {
         "roomId": "Room",
         "current": "Current",
