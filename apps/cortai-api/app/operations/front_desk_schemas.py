@@ -69,3 +69,14 @@ class FrontDeskInHotelItem(BaseModel):
 class FrontDeskInHotel(BaseModel):
     items: list[FrontDeskInHotelItem]
 
+
+class FrontDeskCheckInRequest(BaseModel):
+    room_id: uuid.UUID
+
+
+class FrontDeskCheckInResult(BaseModel):
+    ok: bool = True
+    reservation_id: uuid.UUID
+    room_id: uuid.UUID
+    status: str
+
