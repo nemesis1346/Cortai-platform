@@ -34,6 +34,7 @@
     "frontDesk": "Front Desk",
     "guestServices": "Guest Services",
     "shiftHandover": "Shift Handover",
+    "hvac": "HVAC",
     "liveBadge": "LIVE",
     "edgeLive": "Edge Live",
     "property": "Property",
@@ -48,6 +49,10 @@
     "loggingOut": "Logging out..."
   },
   "operations": {
+    "common": {
+      "dash": "—",
+      "tempUnitC": "°C"
+    },
     "roomMonitor": {
       "title": "Room Monitor",
       "subtitle": "Tap a room to view details and IoT.",
@@ -319,6 +324,48 @@
         "saved": { "title": "Draft saved", "description": "Shift handover notes were updated." },
         "signed": { "title": "Shift signed off", "description": "Next shift was started with carry-forward items." },
         "failed": { "title": "Shift handover failed", "description": "Please try again." }
+      },
+      "status": { "notStarted": "Not started", "open": "Open", "signed": "Signed" },
+      "auto": {
+        "heading": {
+          "shiftSummary": "Shift summary",
+          "openWork": "Open work",
+          "priorityIncidents": "Priority incidents",
+          "pendingGuestRequests": "Pending guest requests"
+        },
+        "kpi": {
+          "occupancy": "Occupancy",
+          "rooms": "rooms",
+          "guestsInHotel": "Guests in hotel",
+          "arrivals": "Arrivals",
+          "departures": "Departures",
+          "roomsReadyCleaning": "Rooms ready / cleaning",
+          "staffOnSiteDuty": "Staff on site / duty"
+        },
+        "openIncidents": "Open incidents",
+        "pendingGuestRequests": "Pending guest requests"
+      }
+    }
+    ,
+    "hvac": {
+      "title": "HVAC",
+      "subtitle": "Per-room HVAC state from the IoT bridge.",
+      "selectProperty": "Select a property to view HVAC rooms.",
+      "refresh": "Refresh",
+      "rooms": "Rooms",
+      "loading": "Loading…",
+      "empty": "No HVAC rooms found.",
+      "ok": "OK",
+      "faults": "{count} faults",
+      "noFaults": "No faults",
+      "cols": {
+        "roomId": "Room",
+        "current": "Current",
+        "target": "Target",
+        "mode": "Mode",
+        "fan": "Fan",
+        "fault": "Fault",
+        "updated": "Updated"
       }
     }
   },

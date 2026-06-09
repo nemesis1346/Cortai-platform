@@ -1,0 +1,29 @@
+[
+  {
+    "room_id": "11111111-1111-1111-1111-111111111111",
+    "current_temp_c": 24.6,
+    "target_temp_c": 21.0,
+    "mode": "cooling",
+    "fan_speed": "auto",
+    "fault_code": null,
+    "last_updated": "2026-06-08T12:00:00Z"
+  },
+  {
+    "room_id": "22222222-2222-2222-2222-222222222222",
+    "current_temp_c": 22.2,
+    "target_temp_c": 22.0,
+    "mode": "heating",
+    "fan_speed": "low",
+    "fault_code": null,
+    "last_updated": "2026-06-08T12:00:00Z"
+  },
+  {
+    "room_id": "33333333-3333-3333-3333-333333333333",
+    "current_temp_c": 27.1,
+    "target_temp_c": 20.0,
+    "mode": "cooling",
+    "fan_speed": "high",
+    "fault_code": "E42",
+    "last_updated": "2026-06-08T12:00:00Z"
+  }
+]

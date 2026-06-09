@@ -34,6 +34,7 @@
     "frontDesk": "Réception",
     "guestServices": "Services aux clients",
     "shiftHandover": "Passation de quart",
+    "hvac": "CVC",
     "liveBadge": "EN DIRECT",
     "edgeLive": "Edge en direct",
     "property": "Propriété",
@@ -48,6 +49,10 @@
     "loggingOut": "Déconnexion..."
   },
   "operations": {
+    "common": {
+      "dash": "—",
+      "tempUnitC": "°C"
+    },
     "roomMonitor": {
       "title": "Surveillance des chambres",
       "subtitle": "Sélectionnez une chambre pour voir les détails et l’IoT.",
@@ -319,6 +324,48 @@
         "saved": { "title": "Brouillon enregistré", "description": "Les notes de passation ont été mises à jour." },
         "signed": { "title": "Quart clôturé", "description": "Le prochain quart a été démarré avec les éléments reportés." },
         "failed": { "title": "Échec de la passation", "description": "Veuillez réessayer." }
+      },
+      "status": { "notStarted": "Non démarré", "open": "Ouvert", "signed": "Signé" },
+      "auto": {
+        "heading": {
+          "shiftSummary": "Résumé du quart",
+          "openWork": "Travail ouvert",
+          "priorityIncidents": "Incidents prioritaires",
+          "pendingGuestRequests": "Demandes en attente"
+        },
+        "kpi": {
+          "occupancy": "Occupation",
+          "rooms": "chambres",
+          "guestsInHotel": "Clients à l’hôtel",
+          "arrivals": "Arrivées",
+          "departures": "Départs",
+          "roomsReadyCleaning": "Chambres prêtes / en entretien",
+          "staffOnSiteDuty": "Personnel sur site / de service"
+        },
+        "openIncidents": "Incidents ouverts",
+        "pendingGuestRequests": "Demandes clients en attente"
+      }
+    }
+    ,
+    "hvac": {
+      "title": "CVC",
+      "subtitle": "État CVC par chambre depuis le pont IoT.",
+      "selectProperty": "Sélectionnez une propriété pour voir les chambres CVC.",
+      "refresh": "Actualiser",
+      "rooms": "Chambres",
+      "loading": "Chargement…",
+      "empty": "Aucune chambre CVC trouvée.",
+      "ok": "OK",
+      "faults": "{count} défauts",
+      "noFaults": "Aucun défaut",
+      "cols": {
+        "roomId": "Chambre",
+        "current": "Actuel",
+        "target": "Cible",
+        "mode": "Mode",
+        "fan": "Ventil.",
+        "fault": "Défaut",
+        "updated": "Maj"
       }
     }
   },

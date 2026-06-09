@@ -27,6 +27,11 @@ async def mock_iot_elevators() -> Any:
     return load_fixture("iot_elevators.json")
 
 
+@mock_app.get("/api/iot/v1/hvac/rooms")
+async def mock_iot_hvac_rooms() -> Any:
+    return load_fixture("iot_hvac_rooms.json")
+
+
 @mock_app.get("/api/ai/v1/operations/insights")
 async def mock_ai_operations_insights(locale: str = Query(default="en")) -> Any:
     fixture_locale = "fr" if locale.lower().startswith("fr") else "en"

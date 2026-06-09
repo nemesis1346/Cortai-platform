@@ -96,8 +96,8 @@ function getCookie(name: string) {
   return null;
 }
 
-function fmtDate(value: string | null) {
-  if (!value) return "-";
+function fmtDate(value: string | null, dash: string) {
+  if (!value) return dash;
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return d.toLocaleString();
@@ -126,44 +126,57 @@ function fallbackChecklist(incidents: Incident[], requests: GuestServiceRequest[
   for (const req of requests.slice(0, 5)) {
     items.push({
       id: `guest-request:${req.id}`,
-      text: `${req.type}${req.room_id ? ` room ${req.room_id.slice(0, 8)}` : ""}${req.note ? ` - ${req.note}` : ""}`,
+      text: `${req.type}${req.room_id ? ` ${req.room_id.slice(0, 8)}` : ""}${req.note ? ` - ${req.note}` : ""}`,
       done: false
     });
   }
   return items;
 }
 
-function buildSummary(kpis: OperationsKpis | null, incidents: Incident[], requests: GuestServiceRequest[]) {
-  const lines = ["## Shift summary", ""];
+function buildSummary(
+  t: (key: string) => string,
+  kpis: OperationsKpis | null,
+  incidents: Incident[],
+  requests: GuestServiceRequest[]
+) {
+  const lines = [`## ${t("auto.heading.shiftSummary")}`, ""];
   if (kpis) {
     lines.push(
-      `- Occupancy: ${Math.round(kpis.occupancy_pct)}% (${kpis.occupancy_rooms.used}/${kpis.occupancy_rooms.total} rooms)`,
-      `- Guests in hotel: ${kpis.guests_in_hotel}/${kpis.guests_total_capacity}`,
-      `- Arrivals: ${kpis.arrivals_today.arrived}/${kpis.arrivals_today.count}`,
-      `- Departures: ${kpis.departures_today.departed}/${kpis.departures_today.count}`,
-      `- Rooms ready / cleaning: ${kpis.rooms_ready}/${kpis.rooms_cleaning}`,
-      `- Staff on site / duty: ${kpis.staff_on_site}/${kpis.staff_on_duty}`
+      `- ${t("auto.kpi.occupancy")}: ${Math.round(kpis.occupancy_pct)}% (${kpis.occupancy_rooms.used}/${kpis.occupancy_rooms.total} ${t(
+        "auto.kpi.rooms"
+      )})`,
+      `- ${t("auto.kpi.guestsInHotel")}: ${kpis.guests_in_hotel}/${kpis.guests_total_capacity}`,
+      `- ${t("auto.kpi.arrivals")}: ${kpis.arrivals_today.arrived}/${kpis.arrivals_today.count}`,
+      `- ${t("auto.kpi.departures")}: ${kpis.departures_today.departed}/${kpis.departures_today.count}`,
+      `- ${t("auto.kpi.roomsReadyCleaning")}: ${kpis.rooms_ready}/${kpis.rooms_cleaning}`,
+      `- ${t("auto.kpi.staffOnSiteDuty")}: ${kpis.staff_on_site}/${kpis.staff_on_duty}`
     );
   }
-  lines.push("", `## Open work`, `- Open incidents: ${incidents.length}`, `- Pending guest requests: ${requests.length}`);
+  lines.push(
+    "",
+    `## ${t("auto.heading.openWork")}`,
+    `- ${t("auto.openIncidents")}: ${incidents.length}`,
+    `- ${t("auto.pendingGuestRequests")}: ${requests.length}`
+  );
   if (incidents.length > 0) {
-    lines.push("", "## Priority incidents");
+    lines.push("", `## ${t("auto.heading.priorityIncidents")}`);
     for (const inc of incidents.slice(0, 5)) lines.push(`- [${inc.severity}] ${inc.title}`);
   }
   if (requests.length > 0) {
-    lines.push("", "## Pending guest requests");
+    lines.push("", `## ${t("auto.heading.pendingGuestRequests")}`);
     for (const req of requests.slice(0, 5)) lines.push(`- ${req.type}${req.note ? `: ${req.note}` : ""}`);
   }
   return lines.join("\n");
 }
 
-function signedLabel(handover: ShiftHandover | null) {
-  if (!handover) return "Not started";
-  return handover.signed_at ? "Signed" : "Open";
+function signedLabel(t: (key: string) => string, handover: ShiftHandover | null) {
+  if (!handover) return t("status.notStarted");
+  return handover.signed_at ? t("status.signed") : t("status.open");
 }
 
 export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: string }) {
   const t = useTranslations("operations.shiftHandover");
+  const tc = useTranslations("operations.common");
   const { notify } = useToast();
 
   const [propertyId, setPropertyId] = useState(initialPropertyId);
@@ -204,12 +217,12 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
       const generatedChecklist = fallbackChecklist(inc.items, req.items);
       const handoverChecklist = checklistFromJson(cur.handover?.checklist_json);
       setChecklist(handoverChecklist.length > 0 ? handoverChecklist : generatedChecklist);
-      setNotes(cur.handover?.summary_md ?? buildSummary(k, inc.items, req.items));
+      setNotes(cur.handover?.summary_md ?? buildSummary(t, k, inc.items, req.items));
       setDirty(false);
     } finally {
       setLoading(false);
     }
-  }, [propertyId]);
+  }, [propertyId, t]);
 
   useEffect(() => {
     void load();
@@ -296,7 +309,11 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-lg font-semibold">{t("title")}</h1>
-            {open ? <Badge tone="green">{t("live")}</Badge> : <Badge tone="neutral">{signedLabel(current?.handover ?? null)}</Badge>}
+            {open ? (
+              <Badge tone="green">{t("live")}</Badge>
+            ) : (
+              <Badge tone="neutral">{signedLabel(t, current?.handover ?? null)}</Badge>
+            )}
           </div>
           <p className="text-xs text-cortai-text2">{t("subtitle")}</p>
         </div>
@@ -315,11 +332,15 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
           <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
             <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3">
               <div className="text-[10px] uppercase tracking-wide text-cortai-text3">{t("summary.shift")}</div>
-              <div className="mt-1 text-sm font-semibold">{current ? `${current.shift_label} · ${current.shift_date}` : "-"}</div>
+              <div className="mt-1 text-sm font-semibold">
+                {current ? `${current.shift_label} · ${current.shift_date}` : tc("dash")}
+              </div>
             </div>
             <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3">
               <div className="text-[10px] uppercase tracking-wide text-cortai-text3">{t("summary.occupancy")}</div>
-              <div className="mt-1 text-sm font-semibold">{kpis ? `${Math.round(kpis.occupancy_pct)}%` : "-"}</div>
+              <div className="mt-1 text-sm font-semibold">
+                {kpis ? `${Math.round(kpis.occupancy_pct)}%` : tc("dash")}
+              </div>
             </div>
             <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3">
               <div className="text-[10px] uppercase tracking-wide text-cortai-text3">{t("summary.incidents")}</div>
@@ -402,7 +423,7 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
               <tr key={inc.id}>
                 <Td>{inc.title}</Td>
                 <Td><Badge tone={inc.severity === "CRITICAL" || inc.severity === "HIGH" ? "red" : "amber"}>{inc.status}</Badge></Td>
-                <Td className="text-cortai-text2">{fmtDate(inc.created_at)}</Td>
+                <Td className="text-cortai-text2">{fmtDate(inc.created_at, tc("dash"))}</Td>
               </tr>
             ))}
           </Table>
@@ -416,7 +437,7 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
               <tr key={req.id}>
                 <Td>{req.note ?? req.type}</Td>
                 <Td><Badge tone="amber">{req.status}</Badge></Td>
-                <Td className="text-cortai-text2">{fmtDate(req.created_at)}</Td>
+                <Td className="text-cortai-text2">{fmtDate(req.created_at, tc("dash"))}</Td>
               </tr>
             ))}
           </Table>
