@@ -207,8 +207,12 @@
           "status": "Status",
           "room": "Room",
           "checkIn": "Check-in",
-          "checkOut": "Check-out"
+          "checkOut": "Check-out",
+          "actions": "Actions"
         }
+      },
+      "actions": {
+        "checkIn": "Check in"
       },
       "queue": {
         "empty": "No guests in queue.",
@@ -224,6 +228,11 @@
         "title": "Walk-in registration",
         "firstName": "First name",
         "lastName": "Last name",
+        "roomId": "Room ID",
+        "submit": "Check in"
+      },
+      "checkInModal": {
+        "title": "Check in arrival",
         "roomId": "Room ID",
         "submit": "Check in"
       }

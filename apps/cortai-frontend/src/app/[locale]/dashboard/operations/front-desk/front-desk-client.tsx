@@ -110,6 +110,8 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
   const [walkInFirstName, setWalkInFirstName] = useState("");
   const [walkInLastName, setWalkInLastName] = useState("");
   const [walkInRoomId, setWalkInRoomId] = useState("");
+  const [checkInReservation, setCheckInReservation] = useState<ReservationListItem | null>(null);
+  const [checkInRoomId, setCheckInRoomId] = useState("");
 
   const queueCount = queue?.items?.length ?? 0;
 
@@ -197,6 +199,28 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
       setWalkInFirstName("");
       setWalkInLastName("");
       setWalkInRoomId("");
+      await loadAll();
+    } catch (e) {
+      setError(String(e));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function submitCheckIn() {
+    if (!checkInReservation) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await apiFetch<unknown>(
+        `/api/operations/front-desk/check-in/${encodeURIComponent(checkInReservation.reservation_id)}`,
+        {
+          method: "POST",
+          body: JSON.stringify({ room_id: checkInRoomId })
+        }
+      );
+      setCheckInReservation(null);
+      setCheckInRoomId("");
       await loadAll();
     } catch (e) {
       setError(String(e));
@@ -304,12 +328,13 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
               t("list.cols.status"),
               t("list.cols.room"),
               t("list.cols.checkIn"),
-              t("list.cols.checkOut")
+              t("list.cols.checkOut"),
+              t("list.cols.actions")
             ]}
           >
             {currentItems.length === 0 ? (
               <tr>
-                <Td className="text-cortai-text3" colSpan={5}>
+                <Td className="text-cortai-text3" colSpan={6}>
                   {loading ? t("loading") : t("empty")}
                 </Td>
               </tr>
@@ -329,6 +354,20 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
                 <Td>{item.room_number ?? "—"}</Td>
                 <Td className="text-cortai-text2">{fmtDate(item.check_in_at)}</Td>
                 <Td className="text-cortai-text2">{fmtDate(item.check_out_at)}</Td>
+                <Td>
+                  {tab === "arrivals" && item.status === "booked" ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setCheckInReservation(item);
+                        setCheckInRoomId(item.room_id ?? "");
+                      }}
+                    >
+                      {t("actions.checkIn")}
+                    </Button>
+                  ) : null}
+                </Td>
               </tr>
             ))}
           </Table>
@@ -373,6 +412,54 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
               disabled={!walkInFirstName.trim() || !walkInLastName.trim() || !walkInRoomId.trim() || loading}
             >
               {t("walkInModal.submit")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={checkInReservation !== null}
+        title={t("checkInModal.title")}
+        closeLabel={t("close")}
+        onClose={() => {
+          setCheckInReservation(null);
+          setCheckInRoomId("");
+        }}
+      >
+        <div className="grid gap-3">
+          {checkInReservation ? (
+            <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3 text-xs text-cortai-text2">
+              <div className="font-semibold text-cortai-text">{fullName(checkInReservation.guest)}</div>
+              <div>{checkInReservation.reservation_id}</div>
+            </div>
+          ) : null}
+          <div className="grid gap-1">
+            <label className="text-xs text-cortai-text2">{t("checkInModal.roomId")}</label>
+            <input
+              value={checkInRoomId}
+              onChange={(e) => setCheckInRoomId(e.target.value)}
+              placeholder="e.g. 8339ad2c-..."
+              className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-2 text-xs outline-none focus:border-cortai-teal"
+            />
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setCheckInReservation(null);
+                setCheckInRoomId("");
+              }}
+            >
+              {t("close")}
+            </Button>
+            <Button
+              type="button"
+              className="ml-auto"
+              onClick={() => void submitCheckIn()}
+              disabled={!checkInRoomId.trim() || loading}
+            >
+              {t("checkInModal.submit")}
             </Button>
           </div>
         </div>

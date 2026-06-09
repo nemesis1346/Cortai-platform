@@ -207,8 +207,12 @@
           "status": "Statut",
           "room": "Chambre",
           "checkIn": "Arrivée",
-          "checkOut": "Départ"
+          "checkOut": "Départ",
+          "actions": "Actions"
         }
+      },
+      "actions": {
+        "checkIn": "Enregistrer"
       },
       "queue": {
         "empty": "Aucun client en file.",
@@ -224,6 +228,11 @@
         "title": "Enregistrement sans réservation",
         "firstName": "Prénom",
         "lastName": "Nom",
+        "roomId": "ID chambre",
+        "submit": "Enregistrer"
+      },
+      "checkInModal": {
+        "title": "Enregistrer l’arrivée",
         "roomId": "ID chambre",
         "submit": "Enregistrer"
       }
