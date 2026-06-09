@@ -137,3 +137,15 @@ class FrontDeskQueueServeResult(BaseModel):
     reservation_id: uuid.UUID
     queue_position: int = Field(ge=1)
 
+
+class FrontDeskQueueItem(BaseModel):
+    event_id: uuid.UUID
+    reservation_id: uuid.UUID
+    guest: FrontDeskGuestSummary
+    queue_position: int = Field(ge=1)
+    started_at: datetime
+
+
+class FrontDeskQueue(BaseModel):
+    items: list[FrontDeskQueueItem]
+

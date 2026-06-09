@@ -31,6 +31,7 @@
     "incidentLog": "Journal d'incidents",
     "commandCenter": "Centre de commande",
     "roomMonitor": "Surveillance des chambres",
+    "frontDesk": "Réception",
     "edgeLive": "Edge en direct",
     "property": "Propriété",
     "propertyLoading": "Chargement des propriétés…",
@@ -178,6 +179,52 @@
         "staffCount": "Effectif",
         "donePct": "Terminé",
         "avgClean": "Moy. nettoyage"
+      }
+    }
+    ,
+    "frontDesk": {
+      "title": "Réception",
+      "subtitle": "Arrivées, départs, clients à l’hôtel et file en direct.",
+      "selectProperty": "Sélectionnez une propriété pour voir les données de la réception.",
+      "refresh": "Actualiser",
+      "walkIn": "Sans réservation",
+      "close": "Fermer",
+      "loading": "Chargement…",
+      "empty": "Aucun élément.",
+      "vip": "VIP",
+      "queueCount": "File : {count}",
+      "tabs": {
+        "title": "Réception",
+        "arrivals": "Arrivées",
+        "departures": "Départs",
+        "inHotel": "À l’hôtel",
+        "queue": "File"
+      },
+      "list": {
+        "cols": {
+          "guest": "Client",
+          "status": "Statut",
+          "room": "Chambre",
+          "checkIn": "Arrivée",
+          "checkOut": "Départ"
+        }
+      },
+      "queue": {
+        "empty": "Aucun client en file.",
+        "serve": "Servir le prochain",
+        "cols": {
+          "pos": "#",
+          "guest": "Client",
+          "started": "Arrivé",
+          "actions": "Actions"
+        }
+      },
+      "walkInModal": {
+        "title": "Enregistrement sans réservation",
+        "firstName": "Prénom",
+        "lastName": "Nom",
+        "roomId": "ID chambre",
+        "submit": "Enregistrer"
       }
     }
   },

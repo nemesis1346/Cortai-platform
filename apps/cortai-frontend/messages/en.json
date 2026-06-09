@@ -31,6 +31,7 @@
     "incidentLog": "Incident Log",
     "commandCenter": "Command Center",
     "roomMonitor": "Room Monitor",
+    "frontDesk": "Front Desk",
     "edgeLive": "Edge Live",
     "property": "Property",
     "propertyLoading": "Loading properties…",
@@ -178,6 +179,52 @@
         "staffCount": "Staff count",
         "donePct": "Done",
         "avgClean": "Avg clean time"
+      }
+    }
+    ,
+    "frontDesk": {
+      "title": "Front Desk",
+      "subtitle": "Arrivals, departures, in-hotel guests, and live queue.",
+      "selectProperty": "Select a property to view Front Desk data.",
+      "refresh": "Refresh",
+      "walkIn": "Walk-in",
+      "close": "Close",
+      "loading": "Loading…",
+      "empty": "No items.",
+      "vip": "VIP",
+      "queueCount": "Queue: {count}",
+      "tabs": {
+        "title": "Front Desk Hub",
+        "arrivals": "Arrivals",
+        "departures": "Departures",
+        "inHotel": "In Hotel",
+        "queue": "Queue"
+      },
+      "list": {
+        "cols": {
+          "guest": "Guest",
+          "status": "Status",
+          "room": "Room",
+          "checkIn": "Check-in",
+          "checkOut": "Check-out"
+        }
+      },
+      "queue": {
+        "empty": "No guests in queue.",
+        "serve": "Serve next",
+        "cols": {
+          "pos": "#",
+          "guest": "Guest",
+          "started": "Arrived",
+          "actions": "Actions"
+        }
+      },
+      "walkInModal": {
+        "title": "Walk-in registration",
+        "firstName": "First name",
+        "lastName": "Last name",
+        "roomId": "Room ID",
+        "submit": "Check in"
       }
     }
   },

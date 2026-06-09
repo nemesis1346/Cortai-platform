@@ -17,6 +17,7 @@ from app.operations.front_desk_schemas import (
     FrontDeskCheckOutResult,
     FrontDeskDepartures,
     FrontDeskInHotel,
+    FrontDeskQueue,
     FrontDeskStats,
     FrontDeskQueueJoinRequest,
     FrontDeskQueueJoinResult,
@@ -335,6 +336,54 @@ async def list_in_hotel(
         items.append(rr)
 
     return FrontDeskInHotel(items=items)
+
+
+@router.get("/queue", response_model=FrontDeskQueue)
+async def list_queue(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID = Query(...),
+) -> FrontDeskQueue:
+    """
+    Current front-desk queue: open queue_joined events for this property.
+    """
+    rows = (
+        await session.execute(
+            text(
+                """
+                select
+                  e.id as event_id,
+                  e.reservation_id,
+                  e.queue_position,
+                  e.started_at,
+                  g.first_name as guest__first_name,
+                  g.last_name as guest__last_name,
+                  g.vip as guest__vip
+                from ops.front_desk_events e
+                join ops.guests g on g.id = e.guest_id
+                where e.org_id = :org_id
+                  and e.property_id = :property_id
+                  and e.kind = 'queue_joined'
+                  and e.ended_at is null
+                order by e.queue_position asc nulls last, e.started_at asc, e.id asc
+                """
+            ),
+            {"org_id": str(principal.org_id), "property_id": str(property_id)},
+        )
+    ).mappings().all()
+
+    items = []
+    for r in rows:
+        rr = dict(r)
+        guest = {
+            "first_name": rr.pop("guest__first_name"),
+            "last_name": rr.pop("guest__last_name"),
+            "vip": rr.pop("guest__vip"),
+        }
+        rr["guest"] = guest
+        items.append(rr)
+
+    return FrontDeskQueue(items=items)
 
 
 @router.post("/check-in/{reservation_id}", response_model=FrontDeskCheckInResult)
