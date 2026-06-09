@@ -83,3 +83,47 @@ async def test_hvac_rooms_404_when_property_missing(seeded_property_for_hvac) ->
         resp = await client.get(f"/api/operations/hvac/rooms?property_id={missing}")
     assert resp.status_code == 404
 
+
+@pytest.mark.asyncio
+async def test_hvac_room_control_returns_fixture_payload(seeded_property_for_hvac) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_property_for_hvac["org_id"]
+    prop_id = seeded_property_for_hvac["property_id"]
+    now = datetime.now(UTC)
+    room_id = uuid.uuid4()
+
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_id))
+        await session.execute(
+            text(
+                """
+                insert into ops.rooms (id, org_id, property_id, room_number, floor, type, status, vip, created_at, updated_at)
+                values (:r, :org, :p, '101', 1, 'king', 'vacant_clean', false, :now, :now)
+                """
+            ),
+            {"r": room_id, "org": org_id, "p": prop_id, "now": now},
+        )
+        await session.commit()
+
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.post(
+            f"/api/operations/hvac/rooms/{room_id}/control",
+            json={"target_temp_c": 22.0, "mode": "cooling", "fan_speed": "auto"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "command_id" in body
+    assert "accepted_at" in body
+    assert "expected_ack_within_s" in body
+
+
+@pytest.mark.asyncio
+async def test_hvac_room_control_404_when_room_missing(seeded_property_for_hvac) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_property_for_hvac["org_id"]
+    missing = uuid.uuid4()
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.post(
+            f"/api/operations/hvac/rooms/{missing}/control",
+            json={"target_temp_c": 22.0},
+        )
+    assert resp.status_code == 404
+

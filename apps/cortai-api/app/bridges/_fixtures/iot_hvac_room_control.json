@@ -1,0 +1,5 @@
+{
+  "command_id": "cmd-00000000-0000-0000-0000-000000000000",
+  "accepted_at": "2026-06-08T12:00:00Z",
+  "expected_ack_within_s": 5
+}
