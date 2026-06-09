@@ -50,3 +50,26 @@ async def control_hvac_room(
     filtered = {k: v for k, v in payload.items() if k in allowed and v is not None}
     return await iot_client.post_hvac_room_control(request=request, room_id=room_id, payload=filtered)
 
+
+@router.get("/alerts")
+async def list_hvac_alerts(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID = Query(...),
+    since: str | None = Query(default=None),
+) -> Any:
+    exists = await session.scalar(
+        text("select 1 from properties where id = :id and org_id = :org_id"),
+        {"id": str(property_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+
+    # Ensure type=hvac_fault is always applied.
+    params = dict(request.query_params)
+    params["type"] = "hvac_fault"
+    if since is not None:
+        params["since"] = since
+
+    return await iot_client.get_edge_events(request, params_override=params)

@@ -38,6 +38,14 @@ async def mock_iot_hvac_room_control(room_id: str) -> Any:
     return load_fixture("iot_hvac_room_control.json")
 
 
+@mock_app.get("/api/iot/v1/edge-events")
+async def mock_iot_edge_events(type: str | None = Query(default=None)) -> Any:  # noqa: A002
+    if (type or "").strip().lower() == "hvac_fault":
+        return load_fixture("iot_edge_events_hvac_fault.json")
+    # Minimal fallback fixture for other types.
+    return []
+
+
 @mock_app.get("/api/ai/v1/operations/insights")
 async def mock_ai_operations_insights(locale: str = Query(default="en")) -> Any:
     fixture_locale = "fr" if locale.lower().startswith("fr") else "en"

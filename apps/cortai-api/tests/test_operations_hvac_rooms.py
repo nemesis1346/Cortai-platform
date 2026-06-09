@@ -127,3 +127,25 @@ async def test_hvac_room_control_404_when_room_missing(seeded_property_for_hvac)
         )
     assert resp.status_code == 404
 
+
+@pytest.mark.asyncio
+async def test_hvac_alerts_returns_fixture_payload(seeded_property_for_hvac) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_property_for_hvac["org_id"]
+    prop_id = seeded_property_for_hvac["property_id"]
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.get(f"/api/operations/hvac/alerts?property_id={prop_id}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert isinstance(body, list)
+    assert len(body) == 3
+    assert body[0]["type"] == "hvac_fault"
+
+
+@pytest.mark.asyncio
+async def test_hvac_alerts_404_when_property_missing(seeded_property_for_hvac) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_property_for_hvac["org_id"]
+    missing = uuid.uuid4()
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.get(f"/api/operations/hvac/alerts?property_id={missing}")
+    assert resp.status_code == 404
+
