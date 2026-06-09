@@ -8,12 +8,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/components/auth/AuthProvider";
 import type { UserRole } from "@/lib/api";
+import { apiFetch } from "@/lib/api";
 
 type NavItem = {
   id: string;
   label: string;
   href: (locale: string) => string;
   roles?: UserRole[];
+};
+
+type ShiftHandoverCurrent = {
+  handover: { signed_at: string | null } | null;
 };
 
 type NavGroup = {
@@ -33,6 +38,16 @@ function hasAccess(role: UserRole | undefined, roles?: UserRole[]) {
 
 function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function getCookie(name: string) {
+  if (typeof document === "undefined") return null;
+  const parts = document.cookie.split(";").map((p) => p.trim());
+  const prefix = `${name}=`;
+  for (const p of parts) {
+    if (p.startsWith(prefix)) return decodeURIComponent(p.slice(prefix.length));
+  }
+  return null;
 }
 
 function IconGrid() {
@@ -131,6 +146,7 @@ export function Sidebar({ locale }: { locale: string }) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const { user } = useAuth();
+  const [shiftOpen, setShiftOpen] = useState(false);
 
   const groups = useMemo<NavGroup[]>(() => {
     const adminRoles: UserRole[] = ["IT_ADMIN", "SERVICE_PROVIDER_ADMIN"];
@@ -147,6 +163,7 @@ export function Sidebar({ locale }: { locale: string }) {
           { id: "roomMonitor", label: t("roomMonitor"), href: (l) => `/${l}/dashboard/operations/room-monitor` },
           { id: "frontDesk", label: t("frontDesk"), href: (l) => `/${l}/dashboard/operations/front-desk` },
           { id: "guestServices", label: t("guestServices"), href: (l) => `/${l}/dashboard/operations/guest-services` },
+          { id: "shiftHandover", label: t("shiftHandover"), href: (l) => `/${l}/dashboard/operations/shift-handover` },
           { id: "live", label: t("live"), href: (l) => `/${l}/dashboard/live` },
           { id: "edgeLive", label: t("edgeLive"), href: (l) => `/${l}/dashboard/edge/live` },
           { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` }
@@ -221,6 +238,32 @@ export function Sidebar({ locale }: { locale: string }) {
         items: g.items.filter((it) => hasAccess(user?.role, it.roles))
       }));
   }, [groups, user?.role]);
+
+  useEffect(() => {
+    if (!user) return;
+    const propertyId = getCookie("cortai_property_id") ?? "";
+    if (!propertyId) {
+      setShiftOpen(false);
+      return;
+    }
+    let cancelled = false;
+    async function loadShiftState() {
+      try {
+        const resp = await apiFetch<ShiftHandoverCurrent>(
+          `/api/operations/shift-handover/current?property_id=${encodeURIComponent(propertyId)}`
+        );
+        if (!cancelled) setShiftOpen(Boolean(resp.handover && !resp.handover.signed_at));
+      } catch {
+        if (!cancelled) setShiftOpen(false);
+      }
+    }
+    void loadShiftState();
+    const timer = window.setInterval(() => void loadShiftState(), 60000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [user]);
 
   const activeGroupId = useMemo(() => {
     for (const g of visibleGroups) {
@@ -315,6 +358,11 @@ export function Sidebar({ locale }: { locale: string }) {
                         >
                           <span className="text-cortai-text2">{g.icon}</span>
                           <span className="min-w-0 flex-1 truncate">{it.label}</span>
+                          {it.id === "shiftHandover" && shiftOpen ? (
+                            <span className="rounded-pill border border-cortai-green/25 bg-cortai-green/10 px-1.5 py-0.5 text-[9px] font-bold text-cortai-green">
+                              {t("liveBadge")}
+                            </span>
+                          ) : null}
                         </Link>
                       );
                     })}

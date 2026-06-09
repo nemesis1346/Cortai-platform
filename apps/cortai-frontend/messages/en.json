@@ -33,6 +33,8 @@
     "roomMonitor": "Room Monitor",
     "frontDesk": "Front Desk",
     "guestServices": "Guest Services",
+    "shiftHandover": "Shift Handover",
+    "liveBadge": "LIVE",
     "edgeLive": "Edge Live",
     "property": "Property",
     "propertyLoading": "Loading properties…",
@@ -276,6 +278,47 @@
       "toast": {
         "created": { "title": "Request created", "description": "Guest service request created successfully." },
         "failed": { "title": "Request failed", "description": "Unable to create guest service request." }
+      }
+    }
+    ,
+    "shiftHandover": {
+      "title": "Shift Handover",
+      "subtitle": "Sign off the current shift with KPI context, open work, and carry-forward checklist items.",
+      "selectProperty": "Select a property to view shift handover.",
+      "refresh": "Refresh",
+      "signOff": "End shift & start next",
+      "saveDraft": "Save draft",
+      "saved": "Saved",
+      "unsaved": "Unsaved changes",
+      "live": "LIVE",
+      "summary": {
+        "title": "Current Shift Summary",
+        "shift": "Shift",
+        "occupancy": "Occupancy",
+        "incidents": "Open incidents",
+        "requests": "Pending requests",
+        "notes": "Notes (Markdown)"
+      },
+      "checklist": {
+        "title": "Carry-forward Checklist",
+        "empty": "No open items.",
+        "placeholder": "Add open item",
+        "add": "Add",
+        "remove": "Remove"
+      },
+      "openWork": {
+        "title": "Open Work Snapshot",
+        "incident": "Incident",
+        "request": "Request",
+        "status": "Status",
+        "created": "Created",
+        "noIncidents": "No open incidents.",
+        "noRequests": "No pending guest requests."
+      },
+      "toast": {
+        "saved": { "title": "Draft saved", "description": "Shift handover notes were updated." },
+        "signed": { "title": "Shift signed off", "description": "Next shift was started with carry-forward items." },
+        "failed": { "title": "Shift handover failed", "description": "Please try again." }
       }
     }
   },

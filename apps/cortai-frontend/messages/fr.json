@@ -33,6 +33,8 @@
     "roomMonitor": "Surveillance des chambres",
     "frontDesk": "Réception",
     "guestServices": "Services aux clients",
+    "shiftHandover": "Passation de quart",
+    "liveBadge": "EN DIRECT",
     "edgeLive": "Edge en direct",
     "property": "Propriété",
     "propertyLoading": "Chargement des propriétés…",
@@ -276,6 +278,47 @@
       "toast": {
         "created": { "title": "Demande créée", "description": "Demande créée avec succès." },
         "failed": { "title": "Échec", "description": "Impossible de créer la demande." }
+      }
+    }
+    ,
+    "shiftHandover": {
+      "title": "Passation de quart",
+      "subtitle": "Clôturez le quart avec les KPI, le travail ouvert et les éléments à reporter.",
+      "selectProperty": "Sélectionnez une propriété pour voir la passation.",
+      "refresh": "Actualiser",
+      "signOff": "Clôturer et démarrer le suivant",
+      "saveDraft": "Enregistrer le brouillon",
+      "saved": "Enregistré",
+      "unsaved": "Modifications non enregistrées",
+      "live": "EN DIRECT",
+      "summary": {
+        "title": "Résumé du quart actuel",
+        "shift": "Quart",
+        "occupancy": "Occupation",
+        "incidents": "Incidents ouverts",
+        "requests": "Demandes en attente",
+        "notes": "Notes (Markdown)"
+      },
+      "checklist": {
+        "title": "Checklist reportée",
+        "empty": "Aucun élément ouvert.",
+        "placeholder": "Ajouter un élément",
+        "add": "Ajouter",
+        "remove": "Retirer"
+      },
+      "openWork": {
+        "title": "Travail ouvert",
+        "incident": "Incident",
+        "request": "Demande",
+        "status": "Statut",
+        "created": "Créé",
+        "noIncidents": "Aucun incident ouvert.",
+        "noRequests": "Aucune demande en attente."
+      },
+      "toast": {
+        "saved": { "title": "Brouillon enregistré", "description": "Les notes de passation ont été mises à jour." },
+        "signed": { "title": "Quart clôturé", "description": "Le prochain quart a été démarré avec les éléments reportés." },
+        "failed": { "title": "Échec de la passation", "description": "Veuillez réessayer." }
       }
     }
   },
