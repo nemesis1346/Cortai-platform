@@ -16,6 +16,8 @@ from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.incidents_schemas import (
     IncidentAssignRequest,
+    IncidentAttachmentPresignRequest,
+    IncidentAttachmentPresignResponse,
     IncidentCreate,
     IncidentList,
     IncidentRead,
@@ -23,6 +25,7 @@ from app.operations.incidents_schemas import (
     IncidentStatus,
     IncidentUpdate,
 )
+from app.storage.s3 import incident_attachment_key, presign_put
 
 # Mounted under `app.operations.router` which already has `/api/operations` prefix.
 router = APIRouter(prefix="/incidents", tags=["operations-incidents"])
@@ -337,6 +340,43 @@ async def assign_incident(
 
     await session.commit()
     return IncidentRead(**dict(row))
+
+
+@router.post("/{incident_id}/attachments", response_model=IncidentAttachmentPresignResponse)
+async def create_incident_attachment_upload(
+    incident_id: uuid.UUID,
+    payload: IncidentAttachmentPresignRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> IncidentAttachmentPresignResponse:
+    inc = (
+        await session.execute(
+            text(
+                """
+                select id, org_id, property_id
+                from operations.incidents
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": str(incident_id), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if inc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    attachment_id = uuid.uuid4()
+    key = incident_attachment_key(
+        org_id=principal.org_id,
+        incident_id=incident_id,
+        attachment_id=attachment_id,
+        filename=payload.filename,
+    )
+    signed = presign_put(key=key, content_type=payload.content_type)
+    return IncidentAttachmentPresignResponse(
+        key=key,
+        upload_url=signed.url,
+        upload_headers=signed.headers,
+    )
 
 
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT)

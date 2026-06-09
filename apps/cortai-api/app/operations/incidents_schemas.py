@@ -45,6 +45,17 @@ class IncidentAssignRequest(BaseModel):
     assigned_to: uuid.UUID | None = None
 
 
+class IncidentAttachmentPresignRequest(BaseModel):
+    filename: str = Field(min_length=1, max_length=200)
+    content_type: str = Field(min_length=1, max_length=200)
+
+
+class IncidentAttachmentPresignResponse(BaseModel):
+    key: str
+    upload_url: str
+    upload_headers: dict[str, str] = Field(default_factory=dict)
+
+
 class IncidentRead(IncidentBase):
     id: uuid.UUID
     org_id: uuid.UUID

@@ -11,6 +11,7 @@ from app.auth.schemas import Principal
 from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
 from app.models import Organization, User, UserRole, UserStatus
+import app.storage.s3 as s3mod
 
 
 @pytest_asyncio.fixture
@@ -362,4 +363,28 @@ async def test_patch_assign_endpoint_404_when_assignee_missing(seeded_incidents)
             json={"assigned_to": str(missing_user_id)},
         )
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_post_incident_attachments_returns_presigned_key(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    incident_id = seeded_incidents["incident_a"]
+
+    def _fake_presign_put(*, key: str, content_type: str):  # type: ignore[no-untyped-def]
+        from app.storage.s3 import PresignedPut
+
+        return PresignedPut(url=f"https://example.com/upload/{key}", headers={"content-type": content_type})
+
+    s3mod.presign_put = _fake_presign_put  # type: ignore[assignment]
+
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.post(
+            f"/api/operations/incidents/{incident_id}/attachments",
+            json={"filename": "photo.png", "content_type": "image/png"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "key" in body and str(incident_id) in body["key"]
+    assert body["upload_url"].startswith("https://example.com/upload/")
+    assert body["upload_headers"]["content-type"] == "image/png"
 

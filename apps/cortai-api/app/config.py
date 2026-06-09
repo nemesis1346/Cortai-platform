@@ -37,6 +37,15 @@ class Settings(BaseSettings):
     iot_bridge_base_url: str | None = None
     ai_bridge_base_url: str | None = None
 
+    # Object storage (S3) for uploads (e.g., incident attachments).
+    s3_mode: str = "mock"  # mock|real
+    s3_bucket: str | None = None
+    s3_region: str | None = None
+    s3_endpoint_url: str | None = None
+    s3_presign_expires_s: int = Field(default=15 * 60, ge=60, le=7 * 24 * 60 * 60)
+    aws_access_key_id: str | None = None
+    aws_secret_access_key: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
