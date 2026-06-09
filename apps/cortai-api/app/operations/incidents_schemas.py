@@ -56,6 +56,11 @@ class IncidentAttachmentPresignResponse(BaseModel):
     upload_headers: dict[str, str] = Field(default_factory=dict)
 
 
+class IncidentEscalateRequest(BaseModel):
+    reason: str | None = Field(default=None, max_length=500)
+    severity: IncidentSeverity | None = None
+
+
 class IncidentRead(IncidentBase):
     id: uuid.UUID
     org_id: uuid.UUID

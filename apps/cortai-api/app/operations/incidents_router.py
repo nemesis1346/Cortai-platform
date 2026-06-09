@@ -19,12 +19,14 @@ from app.operations.incidents_schemas import (
     IncidentAttachmentPresignRequest,
     IncidentAttachmentPresignResponse,
     IncidentCreate,
+    IncidentEscalateRequest,
     IncidentList,
     IncidentRead,
     IncidentSeverity,
     IncidentStatus,
     IncidentUpdate,
 )
+from app.notify.email import send_escalation_email
 from app.storage.s3 import incident_attachment_key, presign_put
 
 # Mounted under `app.operations.router` which already has `/api/operations` prefix.
@@ -377,6 +379,78 @@ async def create_incident_attachment_upload(
         upload_url=signed.url,
         upload_headers=signed.headers,
     )
+
+
+@router.post("/{incident_id}/escalate", response_model=IncidentRead)
+async def escalate_incident(
+    incident_id: uuid.UUID,
+    payload: IncidentEscalateRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> IncidentRead:
+    # Escalation updates severity/status and notifies.
+    inc = (
+        await session.execute(
+            text(
+                """
+                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                from operations.incidents
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": str(incident_id), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if inc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    next_severity = payload.severity or IncidentSeverity.CRITICAL
+
+    updated = (
+        await session.execute(
+            text(
+                """
+                update operations.incidents
+                set severity = :severity,
+                    status = case when status = 'RESOLVED' then status else 'IN_PROGRESS' end
+                where id = :id and org_id = :org_id
+                returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                """
+            ),
+            {"id": str(incident_id), "org_id": str(principal.org_id), "severity": next_severity.value},
+        )
+    ).mappings().one()
+
+    now = datetime.now(UTC)
+    event = {
+        "type": "incident.escalated",
+        "org_id": str(principal.org_id),
+        "property_id": str(updated["property_id"]),
+        "incident": dict(updated),
+        "reason": payload.reason,
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(
+        text("select pg_notify('cortai_live', :payload)"),
+        {"payload": json.dumps(jsonable_encoder(event))},
+    )
+
+    subject = f"[COrtai] Incident escalated: {updated['title']}"
+    body_lines = [
+        f"Incident ID: {updated['id']}",
+        f"Org ID: {updated['org_id']}",
+        f"Property ID: {updated['property_id']}",
+        f"Severity: {updated['severity']}",
+        f"Status: {updated['status']}",
+    ]
+    if payload.reason:
+        body_lines.append("")
+        body_lines.append(f"Reason: {payload.reason}")
+    await send_escalation_email(subject=subject, body_text="\n".join(body_lines))
+
+    await session.commit()
+    return IncidentRead(**dict(updated))
 
 
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT)

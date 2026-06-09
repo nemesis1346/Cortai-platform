@@ -12,6 +12,7 @@ from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
 from app.models import Organization, User, UserRole, UserStatus
 import app.storage.s3 as s3mod
+import app.notify.email as emailmod
 
 
 @pytest_asyncio.fixture
@@ -387,4 +388,29 @@ async def test_post_incident_attachments_returns_presigned_key(seeded_incidents)
     assert "key" in body and str(incident_id) in body["key"]
     assert body["upload_url"].startswith("https://example.com/upload/")
     assert body["upload_headers"]["content-type"] == "image/png"
+
+
+@pytest.mark.asyncio
+async def test_post_incident_escalate_emits_email_and_updates_severity(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    incident_id = seeded_incidents["incident_a"]
+
+    sent: list[tuple[str, str]] = []
+
+    async def _fake_send_escalation_email(*, subject: str, body_text: str) -> None:
+        sent.append((subject, body_text))
+
+    emailmod.send_escalation_email = _fake_send_escalation_email  # type: ignore[assignment]
+
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.post(
+            f"/api/operations/incidents/{incident_id}/escalate",
+            json={"reason": "manual escalation"},
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["severity"] == "CRITICAL"
+    assert body["status"] in {"IN_PROGRESS", "RESOLVED"}
+    assert len(sent) == 1
+    assert "Incident escalated" in sent[0][0]
 

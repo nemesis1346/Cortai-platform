@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
 
+    # Notifications (email)
+    email_mode: str = "mock"  # mock|real
+    email_from: str | None = None
+    email_escalations_to: str | None = None
+    email_ses_region: str | None = None
+
 
 @lru_cache
 def get_settings() -> Settings:
