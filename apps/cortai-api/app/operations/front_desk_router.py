@@ -20,6 +20,8 @@ from app.operations.front_desk_schemas import (
     FrontDeskStats,
     FrontDeskQueueJoinRequest,
     FrontDeskQueueJoinResult,
+    FrontDeskQueueServeRequest,
+    FrontDeskQueueServeResult,
     FrontDeskWalkInRequest,
     FrontDeskWalkInResult,
 )
@@ -949,5 +951,112 @@ async def queue_join(
         event_id=event_id,
         queue_position=next_pos,
         reservation_id=payload.reservation_id,
+    )
+
+
+@router.post("/queue/serve", response_model=FrontDeskQueueServeResult)
+async def queue_serve(
+    payload: FrontDeskQueueServeRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> FrontDeskQueueServeResult:
+    """
+    Queue serve: clerk picks up next open queue item (FIFO by queue_position then started_at).
+
+    Closes the queue_joined event and records a served event for metrics.
+    Emits a live event so UIs can refresh.
+    """
+    from fastapi import HTTPException, status  # local import to keep router import light
+
+    now = datetime.now(UTC)
+
+    # Find the next open queue_joined event for this property.
+    next_row = (
+        await session.execute(
+            text(
+                """
+                select id, reservation_id, guest_id, queue_position
+                from ops.front_desk_events
+                where org_id = :org_id
+                  and property_id = :property_id
+                  and kind = 'queue_joined'
+                  and ended_at is null
+                order by queue_position asc nulls last, started_at asc, id asc
+                limit 1
+                """
+            ),
+            {"org_id": str(principal.org_id), "property_id": str(payload.property_id)},
+        )
+    ).mappings().first()
+    if next_row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Queue is empty")
+
+    queue_join_event_id = uuid.UUID(str(next_row["id"]))
+    reservation_id = uuid.UUID(str(next_row["reservation_id"]))
+    guest_id = next_row["guest_id"]
+    queue_position = int(next_row["queue_position"] or 1)
+
+    # Close the queue_joined event.
+    await session.execute(
+        text(
+            """
+            update ops.front_desk_events
+            set ended_at = :now,
+                updated_at = :now
+            where id = :id and org_id = :org_id
+              and kind = 'queue_joined'
+              and ended_at is null
+            """
+        ),
+        {"id": str(queue_join_event_id), "org_id": str(principal.org_id), "now": now},
+    )
+
+    # Record a served event.
+    served_event_id = uuid.uuid4()
+    await session.execute(
+        text(
+            """
+            insert into ops.front_desk_events (
+              id, org_id, property_id, kind, guest_id, reservation_id,
+              queue_position, started_at, ended_at, created_at, updated_at
+            )
+            values (
+              :id, :org_id, :property_id, 'served', :guest_id, :reservation_id,
+              :pos, :now, :now, :now, :now
+            )
+            """
+        ),
+        {
+            "id": str(served_event_id),
+            "org_id": str(principal.org_id),
+            "property_id": str(payload.property_id),
+            "guest_id": str(guest_id) if guest_id is not None else None,
+            "reservation_id": str(reservation_id),
+            "pos": queue_position,
+            "now": now,
+        },
+    )
+
+    event = {
+        "type": "front_desk.event",
+        "org_id": str(principal.org_id),
+        "property_id": str(payload.property_id),
+        "kind": "served",
+        "reservation_id": str(reservation_id),
+        "queue_position": queue_position,
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(
+        text("select pg_notify('cortai_live', :payload)"),
+        {"payload": json.dumps(jsonable_encoder(event))},
+    )
+
+    await session.commit()
+    return FrontDeskQueueServeResult(
+        served_event_id=served_event_id,
+        queue_join_event_id=queue_join_event_id,
+        reservation_id=reservation_id,
+        queue_position=queue_position,
     )
 

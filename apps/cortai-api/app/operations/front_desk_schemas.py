@@ -125,3 +125,15 @@ class FrontDeskQueueJoinResult(BaseModel):
     queue_position: int = Field(ge=1)
     reservation_id: uuid.UUID
 
+
+class FrontDeskQueueServeRequest(BaseModel):
+    property_id: uuid.UUID
+
+
+class FrontDeskQueueServeResult(BaseModel):
+    ok: bool = True
+    served_event_id: uuid.UUID
+    queue_join_event_id: uuid.UUID
+    reservation_id: uuid.UUID
+    queue_position: int = Field(ge=1)
+
