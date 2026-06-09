@@ -18,3 +18,11 @@ async def get_iot_elevators(request: Request) -> Any:
 async def get_ai_operations_insights(request: Request) -> Any:
     return await ai_client.get_operations_insights(request)
 
+
+@router.post("/api/ai/v1/incidents/{incident_id}/triage")
+async def post_ai_incident_triage(incident_id: str, request: Request) -> Any:
+    data = await request.json()
+    # The AI bridge contract keys off the incident id in the path.
+    data = {**data, "id": incident_id}
+    return await ai_client.post_incident_triage(request=request, incident=data)
+

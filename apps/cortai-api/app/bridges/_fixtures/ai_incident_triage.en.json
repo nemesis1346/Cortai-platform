@@ -1,0 +1,8 @@
+{
+  "suggested_priority": "high",
+  "suggested_category": "security",
+  "suggested_assignee_id": null,
+  "confidence": 0.72,
+  "reasoning_md": "This incident appears urgent based on severity and title. **Escalate** to on-call security staff and begin remediation."
+}
+

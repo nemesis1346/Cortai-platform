@@ -7,12 +7,13 @@ import uuid
 from datetime import UTC, datetime
 
 import sqlalchemy as sa
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
 from app.auth.dependencies import PrincipalDep
+from app.bridges.ai_client import post_incident_triage
 from app.db import SessionDep
 from app.operations.incidents_schemas import (
     IncidentAssignRequest,
@@ -24,6 +25,7 @@ from app.operations.incidents_schemas import (
     IncidentRead,
     IncidentSeverity,
     IncidentStatus,
+    IncidentTriageResponse,
     IncidentUpdate,
 )
 from app.notify.email import send_escalation_email
@@ -451,6 +453,44 @@ async def escalate_incident(
 
     await session.commit()
     return IncidentRead(**dict(updated))
+
+
+@router.post("/{incident_id}/triage", response_model=IncidentTriageResponse)
+async def triage_incident(
+    incident_id: uuid.UUID,
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> IncidentTriageResponse:
+    inc = (
+        await session.execute(
+            text(
+                """
+                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                from operations.incidents
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": str(incident_id), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if inc is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    payload = {
+        "id": str(inc["id"]),
+        "org_id": str(inc["org_id"]),
+        "property_id": str(inc["property_id"]),
+        "severity": str(inc["severity"]),
+        "status": str(inc["status"]),
+        "title": inc["title"],
+        "description": inc["description"],
+        "assigned_to": str(inc["assigned_to"]) if inc["assigned_to"] else None,
+        "created_at": inc["created_at"].isoformat() if inc["created_at"] else None,
+        "resolved_at": inc["resolved_at"].isoformat() if inc["resolved_at"] else None,
+    }
+    resp = await post_incident_triage(request=request, incident=payload)
+    return IncidentTriageResponse(**resp)
 
 
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT)

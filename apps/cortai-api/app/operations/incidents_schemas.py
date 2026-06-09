@@ -61,6 +61,14 @@ class IncidentEscalateRequest(BaseModel):
     severity: IncidentSeverity | None = None
 
 
+class IncidentTriageResponse(BaseModel):
+    suggested_priority: str
+    suggested_category: str
+    suggested_assignee_id: uuid.UUID | None = None
+    confidence: float | None = None
+    reasoning_md: str
+
+
 class IncidentRead(IncidentBase):
     id: uuid.UUID
     org_id: uuid.UUID

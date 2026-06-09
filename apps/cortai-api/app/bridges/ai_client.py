@@ -38,6 +38,36 @@ async def get_operations_insights(request: Request) -> Any:
     return _decode_json_response(resp)
 
 
+async def post_incident_triage(*, request: Request, incident: dict[str, Any]) -> Any:
+    settings = get_settings()
+    mode = settings.bridges_mode.lower().strip()
+    if mode == "mock":
+        locale = str(request.query_params.get("locale") or "en").lower()
+        fixture_locale = "fr" if locale.startswith("fr") else "en"
+        return load_fixture(f"ai_incident_triage.{fixture_locale}.json")
+    if mode != "real":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invalid BRIDGES_MODE",
+        )
+    if not settings.ai_bridge_base_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="AI_BRIDGE_BASE_URL not set",
+        )
+
+    headers = _forward_headers(request)
+    timeout = httpx.Timeout(15.0, connect=5.0)
+    async with httpx.AsyncClient(base_url=settings.ai_bridge_base_url, timeout=timeout) as client:
+        resp = await client.post(
+            f"/api/ai/v1/incidents/{incident['id']}/triage",
+            params=dict(request.query_params),
+            headers=headers,
+            json=incident,
+        )
+    return _decode_json_response(resp)
+
+
 def _forward_headers(request: Request) -> dict[str, str]:
     cookie = request.headers.get("cookie")
     return {"cookie": cookie} if cookie else {}

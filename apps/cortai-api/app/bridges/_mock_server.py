@@ -32,3 +32,9 @@ async def mock_ai_operations_insights(locale: str = Query(default="en")) -> Any:
     fixture_locale = "fr" if locale.lower().startswith("fr") else "en"
     return load_fixture(f"ai_operations_insights.{fixture_locale}.json")
 
+
+@mock_app.post("/api/ai/v1/incidents/{incident_id}/triage")
+async def mock_ai_incident_triage(incident_id: str, locale: str = Query(default="en")) -> Any:
+    fixture_locale = "fr" if locale.lower().startswith("fr") else "en"
+    return load_fixture(f"ai_incident_triage.{fixture_locale}.json")
+

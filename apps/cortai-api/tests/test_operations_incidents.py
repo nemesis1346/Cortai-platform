@@ -13,6 +13,7 @@ from app.main import create_app
 from app.models import Organization, User, UserRole, UserStatus
 import app.storage.s3 as s3mod
 import app.notify.email as emailmod
+import app.bridges.ai_client as aiclient
 
 
 @pytest_asyncio.fixture
@@ -413,4 +414,32 @@ async def test_post_incident_escalate_emits_email_and_updates_severity(seeded_in
     assert body["status"] in {"IN_PROGRESS", "RESOLVED"}
     assert len(sent) == 1
     assert "Incident escalated" in sent[0][0]
+
+
+@pytest.mark.asyncio
+async def test_post_incident_triage_proxies_to_bridge(seeded_incidents) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_incidents["org_id"]
+    incident_id = seeded_incidents["incident_a"]
+
+    async def _fake_post_incident_triage(*, request, incident):  # type: ignore[no-untyped-def]
+        assert incident["id"] == str(incident_id)
+        return {
+            "suggested_priority": "high",
+            "suggested_category": "security",
+            "suggested_assignee_id": None,
+            "confidence": 0.9,
+            "reasoning_md": "**test reasoning**",
+        }
+
+    aiclient.post_incident_triage = _fake_post_incident_triage  # type: ignore[assignment]
+
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.post(f"/api/operations/incidents/{incident_id}/triage")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["suggested_priority"] == "high"
+    assert body["suggested_category"] == "security"
+    assert body["suggested_assignee_id"] is None
+    assert body["confidence"] == 0.9
+    assert "reasoning_md" in body
 

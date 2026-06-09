@@ -1,0 +1,8 @@
+{
+  "suggested_priority": "high",
+  "suggested_category": "securite",
+  "suggested_assignee_id": null,
+  "confidence": 0.72,
+  "reasoning_md": "Cet incident semble urgent compte tenu de la gravité et du titre. **Escalader** vers l'équipe de sécurité et lancer la remédiation."
+}
+
