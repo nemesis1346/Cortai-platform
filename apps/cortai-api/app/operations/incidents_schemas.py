@@ -41,6 +41,10 @@ class IncidentUpdate(BaseModel):
     resolved_at: datetime | None = None
 
 
+class IncidentAssignRequest(BaseModel):
+    assigned_to: uuid.UUID | None = None
+
+
 class IncidentRead(IncidentBase):
     id: uuid.UUID
     org_id: uuid.UUID

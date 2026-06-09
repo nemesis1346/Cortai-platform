@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import uuid
 from datetime import UTC, datetime
 
 import sqlalchemy as sa
 from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
 from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.incidents_schemas import (
+    IncidentAssignRequest,
     IncidentCreate,
     IncidentList,
     IncidentRead,
@@ -278,6 +281,60 @@ async def update_incident(
     row = (await session.execute(stmt, params)).mappings().first()
     if row is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+    await session.commit()
+    return IncidentRead(**dict(row))
+
+
+@router.patch("/{incident_id}/assign", response_model=IncidentRead)
+async def assign_incident(
+    incident_id: uuid.UUID,
+    payload: IncidentAssignRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> IncidentRead:
+    # Validate assignee exists in this org (avoid FK 500s).
+    if payload.assigned_to is not None:
+        exists = await session.scalar(
+            text("select 1 from users where id = :id and org_id = :org_id"),
+            {"id": str(payload.assigned_to), "org_id": str(principal.org_id)},
+        )
+        if exists is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignee user not found")
+
+    row = (
+        await session.execute(
+            text(
+                """
+                update operations.incidents
+                set assigned_to = :assigned_to
+                where id = :id and org_id = :org_id
+                returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                """
+            ),
+            {
+                "id": str(incident_id),
+                "org_id": str(principal.org_id),
+                "assigned_to": str(payload.assigned_to) if payload.assigned_to else None,
+            },
+        )
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+
+    now = datetime.now(UTC)
+    event = {
+        "type": "incident.assigned",
+        "org_id": str(principal.org_id),
+        "property_id": str(row["property_id"]),
+        "incident": dict(row),
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(
+        text("select pg_notify('cortai_live', :payload)"),
+        {"payload": json.dumps(jsonable_encoder(event))},
+    )
+
     await session.commit()
     return IncidentRead(**dict(row))
 
