@@ -80,3 +80,10 @@ class FrontDeskCheckInResult(BaseModel):
     room_id: uuid.UUID
     status: str
 
+
+class FrontDeskCheckOutResult(BaseModel):
+    ok: bool = True
+    reservation_id: uuid.UUID
+    room_id: uuid.UUID
+    status: str
+

@@ -14,6 +14,7 @@ from app.operations.front_desk_schemas import (
     FrontDeskArrivals,
     FrontDeskCheckInRequest,
     FrontDeskCheckInResult,
+    FrontDeskCheckOutResult,
     FrontDeskDepartures,
     FrontDeskInHotel,
     FrontDeskStats,
@@ -484,4 +485,119 @@ async def check_in_reservation(
 
     await session.commit()
     return FrontDeskCheckInResult(reservation_id=reservation_id, room_id=payload.room_id, status="checked_in")
+
+
+@router.post("/check-out/{reservation_id}", response_model=FrontDeskCheckOutResult)
+async def check_out_reservation(
+    reservation_id: uuid.UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> FrontDeskCheckOutResult:
+    """
+    Check-out: mark reservation checked_out, clear room occupancy, emit WS event.
+
+    V1: "closes folio" is represented as reservation status change + action queue follow-up can be added later.
+    """
+    now = datetime.now(UTC)
+
+    # Load reservation (scoped to org) and ensure it's eligible.
+    res = (
+        await session.execute(
+            text(
+                """
+                select id, org_id, property_id, guest_id, room_id, status
+                from ops.reservations
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": str(reservation_id), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if res is None:
+        from fastapi import HTTPException, status  # local import to keep router import light
+
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+
+    if str(res["status"]) != "checked_in":
+        from fastapi import HTTPException, status  # noqa: PLC0415
+
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reservation is not eligible for check-out")
+
+    if res["room_id"] is None:
+        from fastapi import HTTPException, status  # noqa: PLC0415
+
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reservation has no assigned room")
+
+    room_id = uuid.UUID(str(res["room_id"]))
+
+    # Mark reservation checked_out.
+    await session.execute(
+        text(
+            """
+            update ops.reservations
+            set status = 'checked_out',
+                updated_at = now()
+            where id = :id and org_id = :org_id
+            """
+        ),
+        {"id": str(reservation_id), "org_id": str(principal.org_id)},
+    )
+
+    # Clear room occupancy pointer (best-effort, only if it still points to this reservation).
+    await session.execute(
+        text(
+            """
+            update ops.rooms
+            set status = 'vacant_dirty',
+                current_reservation_id = null,
+                updated_at = now()
+            where id = :room_id and org_id = :org_id
+              and (current_reservation_id is null or current_reservation_id = :reservation_id)
+            """
+        ),
+        {"room_id": str(room_id), "org_id": str(principal.org_id), "reservation_id": str(reservation_id)},
+    )
+
+    # Record a front desk event.
+    await session.execute(
+        text(
+            """
+            insert into ops.front_desk_events (
+              id, org_id, property_id, kind, guest_id, reservation_id,
+              queue_position, started_at, ended_at, created_at, updated_at
+            )
+            values (
+              :id, :org_id, :property_id, 'checked_out', :guest_id, :reservation_id,
+              null, :now, :now, :now, :now
+            )
+            """
+        ),
+        {
+            "id": str(uuid.uuid4()),
+            "org_id": str(principal.org_id),
+            "property_id": str(res["property_id"]),
+            "guest_id": str(res["guest_id"]),
+            "reservation_id": str(reservation_id),
+            "now": now,
+        },
+    )
+
+    # Live event for UI.
+    event = {
+        "type": "front_desk.event",
+        "org_id": str(principal.org_id),
+        "property_id": str(res["property_id"]),
+        "kind": "checked_out",
+        "reservation_id": str(reservation_id),
+        "room_id": str(room_id),
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(
+        text("select pg_notify('cortai_live', :payload)"),
+        {"payload": json.dumps(jsonable_encoder(event))},
+    )
+
+    await session.commit()
+    return FrontDeskCheckOutResult(reservation_id=reservation_id, room_id=room_id, status="checked_out")
 
