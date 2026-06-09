@@ -95,7 +95,7 @@ async def test_guest_services_create_inserts_request_and_action_queue(seeded_gue
             await session.execute(
                 text(
                     """
-                    select type, status, note
+                    select type, status, note, action_queue_item_id
                     from ops.guest_service_requests
                     where org_id = :org and property_id = :prop and room_id = :room
                     order by created_at desc
@@ -107,6 +107,7 @@ async def test_guest_services_create_inserts_request_and_action_queue(seeded_gue
         ).mappings().one()
         assert req["type"] == "towels"
         assert req["status"] == "pending"
+        assert req["action_queue_item_id"] is not None
 
         aq = (
             await session.execute(

@@ -27,6 +27,7 @@ class GuestServiceRequestItem(BaseModel):
     property_id: uuid.UUID
     room_id: uuid.UUID | None = None
     guest_id: uuid.UUID | None = None
+    action_queue_item_id: uuid.UUID | None = None
 
     type: GuestServiceType
     status: GuestServiceStatus
@@ -48,4 +49,9 @@ class GuestServiceRequestCreate(BaseModel):
     guest_id: uuid.UUID | None = None
     type: GuestServiceType
     note: str | None = Field(default=None, max_length=500)
+
+
+class GuestServiceRequestUpdate(BaseModel):
+    status: GuestServiceStatus | None = None
+    assigned_to_user_id: uuid.UUID | None = None
 
