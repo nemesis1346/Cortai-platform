@@ -16,6 +16,7 @@ from app.operations.shift_handover_schemas import (
     ShiftHandoverRead,
     ShiftHandoverSignoffRequest,
     ShiftHandoverSignoffResponse,
+    ShiftHandoverUpdate,
     ShiftLabel,
 )
 
@@ -303,4 +304,68 @@ async def signoff_shift_handover(
 
     await session.commit()
     return ShiftHandoverSignoffResponse(signed=signed, next=next_handover)
+
+
+@router.patch("/{handover_id}", response_model=ShiftHandoverRead)
+async def update_shift_handover(
+    handover_id: uuid.UUID,
+    payload: ShiftHandoverUpdate,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> ShiftHandoverRead:
+    data = payload.model_dump(exclude_unset=True)
+    if not data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+
+    current = (
+        await session.execute(
+            text(
+                """
+                select id, org_id, signed_at
+                from ops.shift_handover
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": str(handover_id), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if current is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shift handover not found")
+    if current.get("signed_at") is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Shift handover is already signed and cannot be edited",
+        )
+
+    sets: list[str] = []
+    params: dict[str, object] = {"id": str(handover_id), "org_id": str(principal.org_id)}
+    bind_jsonb = False
+    if "summary_md" in data:
+        sets.append("summary_md = :summary_md")
+        params["summary_md"] = data["summary_md"]
+    if "checklist_json" in data:
+        sets.append("checklist_json = :checklist_json")
+        params["checklist_json"] = jsonable_encoder(data["checklist_json"])
+        bind_jsonb = True
+
+    stmt = text(
+        f"""
+        update ops.shift_handover
+        set {", ".join(sets)}
+        where id = :id and org_id = :org_id
+        returning
+          id, org_id, property_id, shift_date, shift_label,
+          summary_md, checklist_json,
+          signed_by_user_id, signed_at, carry_forward_from_id,
+          created_at, updated_at
+        """  # noqa: S608
+    )
+    if bind_jsonb:
+        stmt = stmt.bindparams(sa.bindparam("checklist_json", type_=postgresql.JSONB))
+    row = (await session.execute(stmt, params)).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shift handover not found")
+
+    await session.commit()
+    return ShiftHandoverRead(**dict(row))
 

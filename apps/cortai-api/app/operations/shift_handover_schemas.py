@@ -57,3 +57,8 @@ class ShiftHandoverSignoffResponse(BaseModel):
     signed: ShiftHandoverRead
     next: ShiftHandoverRead | None = None
 
+
+class ShiftHandoverUpdate(BaseModel):
+    summary_md: str | None = None
+    checklist_json: dict[str, Any] | None = None
+

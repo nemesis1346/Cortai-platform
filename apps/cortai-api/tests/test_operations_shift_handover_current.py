@@ -167,3 +167,58 @@ async def test_post_shift_handover_signoff_is_idempotent_for_next_shift(seeded_s
     assert b2["next"] is not None
     assert b1["next"]["id"] == b2["next"]["id"]
 
+
+@pytest.mark.asyncio
+async def test_patch_shift_handover_updates_before_signoff(seeded_shift_handover) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_shift_handover["org_id"]
+    prop_id = seeded_shift_handover["property_id"]
+    user_id = uuid.uuid4()
+
+    # Create an unsigned "afternoon" record (as the next shift).
+    async with _client_for_org(org_id=org_id, user_id=user_id) as client:
+        resp = await client.post(
+            "/api/operations/shift-handover",
+            json={
+                "property_id": str(prop_id),
+                "shift_label": "morning",
+                "summary_md": "Signed off",
+                "checklist_json": {"open_items": [{"id": "x"}]},
+                "start_next": True,
+            },
+        )
+        afternoon_id = resp.json()["next"]["id"]
+        patch = await client.patch(
+            f"/api/operations/shift-handover/{afternoon_id}",
+            json={"summary_md": "Edited notes", "checklist_json": {"open_items": [{"id": "y"}]}},
+        )
+    assert patch.status_code == 200
+    body = patch.json()
+    assert body["id"] == afternoon_id
+    assert body["summary_md"] == "Edited notes"
+    assert body["checklist_json"]["open_items"][0]["id"] == "y"
+
+
+@pytest.mark.asyncio
+async def test_patch_shift_handover_rejected_after_signoff(seeded_shift_handover) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_shift_handover["org_id"]
+    prop_id = seeded_shift_handover["property_id"]
+    user_id = uuid.uuid4()
+
+    async with _client_for_org(org_id=org_id, user_id=user_id) as client:
+        resp = await client.post(
+            "/api/operations/shift-handover",
+            json={
+                "property_id": str(prop_id),
+                "shift_label": "morning",
+                "summary_md": "Signed off",
+                "checklist_json": {"open_items": [{"id": "x"}]},
+                "start_next": False,
+            },
+        )
+        signed_id = resp.json()["signed"]["id"]
+        patch = await client.patch(
+            f"/api/operations/shift-handover/{signed_id}",
+            json={"summary_md": "Should fail"},
+        )
+    assert patch.status_code == 409
+
