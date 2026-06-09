@@ -13,11 +13,16 @@ from app.main import create_app
 from app.models import Organization, UserRole
 
 
-def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
+def _client_for_org(*, org_id: uuid.UUID, user_id: uuid.UUID | None = None) -> AsyncClient:
     app = create_app()
 
     async def override_principal() -> Principal:
-        return Principal(user_id=uuid.uuid4(), org_id=org_id, email="user@example.com", role=UserRole.STAFF)
+        return Principal(
+            user_id=user_id or uuid.uuid4(),
+            org_id=org_id,
+            email="user@example.com",
+            role=UserRole.STAFF,
+        )
 
     async def override_session():  # type: ignore[no-untyped-def]
         async with SessionLocal() as session:
@@ -108,4 +113,57 @@ async def test_get_shift_handover_current_returns_null_when_missing(seeded_shift
     assert resp.status_code == 200
     body = resp.json()
     assert body["handover"] is None
+
+
+@pytest.mark.asyncio
+async def test_post_shift_handover_signoff_creates_signed_and_next(seeded_shift_handover) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_shift_handover["org_id"]
+    prop_id = seeded_shift_handover["property_id"]
+    user_id = uuid.uuid4()
+
+    async with _client_for_org(org_id=org_id, user_id=user_id) as client:
+        resp = await client.post(
+            "/api/operations/shift-handover",
+            json={
+                "property_id": str(prop_id),
+                "shift_label": "morning",
+                "summary_md": "Signed off",
+                "checklist_json": {"open_items": [{"id": "x"}]},
+                "start_next": True,
+            },
+        )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["signed"]["property_id"] == str(prop_id)
+    assert body["signed"]["signed_by_user_id"] == str(user_id)
+    assert body["signed"]["signed_at"] is not None
+    assert body["signed"]["summary_md"] == "Signed off"
+    assert body["next"] is not None
+    assert body["next"]["property_id"] == str(prop_id)
+    assert body["next"]["signed_at"] is None
+    assert body["next"]["carry_forward_from_id"] == body["signed"]["id"]
+
+
+@pytest.mark.asyncio
+async def test_post_shift_handover_signoff_is_idempotent_for_next_shift(seeded_shift_handover) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_shift_handover["org_id"]
+    prop_id = seeded_shift_handover["property_id"]
+    user_id = uuid.uuid4()
+
+    async with _client_for_org(org_id=org_id, user_id=user_id) as client:
+        r1 = await client.post(
+            "/api/operations/shift-handover",
+            json={"property_id": str(prop_id), "shift_label": "morning", "start_next": True},
+        )
+        r2 = await client.post(
+            "/api/operations/shift-handover",
+            json={"property_id": str(prop_id), "shift_label": "morning", "start_next": True},
+        )
+    assert r1.status_code == 200
+    assert r2.status_code == 200
+    b1 = r1.json()
+    b2 = r2.json()
+    assert b1["next"] is not None
+    assert b2["next"] is not None
+    assert b1["next"]["id"] == b2["next"]["id"]
 
