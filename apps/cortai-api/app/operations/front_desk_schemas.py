@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, date
+from datetime import UTC, datetime, date, timedelta
 
 from pydantic import BaseModel, Field
 
@@ -84,6 +84,32 @@ class FrontDeskCheckInResult(BaseModel):
 class FrontDeskCheckOutResult(BaseModel):
     ok: bool = True
     reservation_id: uuid.UUID
+    room_id: uuid.UUID
+    status: str
+
+
+class FrontDeskWalkInGuest(BaseModel):
+    first_name: str = Field(min_length=1, max_length=120)
+    last_name: str = Field(min_length=1, max_length=120)
+    vip: bool = False
+    language: str = Field(default="en", max_length=8)
+
+
+class FrontDeskWalkInRequest(BaseModel):
+    property_id: uuid.UUID
+    room_id: uuid.UUID
+    guest: FrontDeskWalkInGuest
+    check_out_at: datetime | None = None
+
+    def effective_check_out_at(self, *, now: datetime) -> datetime:
+        # Keep v1 simple: default to 1-night stay if not provided.
+        return self.check_out_at or (now + timedelta(days=1))
+
+
+class FrontDeskWalkInResult(BaseModel):
+    ok: bool = True
+    reservation_id: uuid.UUID
+    guest_id: uuid.UUID
     room_id: uuid.UUID
     status: str
 

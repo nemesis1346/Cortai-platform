@@ -18,6 +18,8 @@ from app.operations.front_desk_schemas import (
     FrontDeskDepartures,
     FrontDeskInHotel,
     FrontDeskStats,
+    FrontDeskWalkInRequest,
+    FrontDeskWalkInResult,
 )
 
 router = APIRouter(prefix="/front-desk", tags=["operations-front-desk"])
@@ -600,4 +602,211 @@ async def check_out_reservation(
 
     await session.commit()
     return FrontDeskCheckOutResult(reservation_id=reservation_id, room_id=room_id, status="checked_out")
+
+
+@router.post("/walk-in", response_model=FrontDeskWalkInResult)
+async def walk_in(
+    payload: FrontDeskWalkInRequest,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> FrontDeskWalkInResult:
+    """
+    Walk-in: create guest + reservation + check-in in one shot.
+
+    V1: minimal guest profile + immediate room assignment.
+    """
+    from fastapi import HTTPException, status  # local import to keep router import light
+
+    now = datetime.now(UTC)
+
+    # Validate room belongs to org/property and is usable.
+    room = (
+        await session.execute(
+            text(
+                """
+                select id, org_id, property_id, status
+                from ops.rooms
+                where id = :room_id and org_id = :org_id and property_id = :property_id
+                """
+            ),
+            {
+                "room_id": str(payload.room_id),
+                "org_id": str(principal.org_id),
+                "property_id": str(payload.property_id),
+            },
+        )
+    ).mappings().first()
+    if room is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+    if str(room["status"]) in {"occupied", "out_of_order"}:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Room is not eligible for walk-in")
+
+    guest_id = uuid.uuid4()
+    reservation_id = uuid.uuid4()
+    check_out_at = payload.effective_check_out_at(now=now)
+
+    # Create guest.
+    await session.execute(
+        text(
+            """
+            insert into ops.guests (id, org_id, first_name, last_name, vip, language, created_at, updated_at)
+            values (:id, :org_id, :first_name, :last_name, :vip, :language, :now, :now)
+            """
+        ),
+        {
+            "id": str(guest_id),
+            "org_id": str(principal.org_id),
+            "first_name": payload.guest.first_name.strip(),
+            "last_name": payload.guest.last_name.strip(),
+            "vip": bool(payload.guest.vip),
+            "language": payload.guest.language.strip() or "en",
+            "now": now,
+        },
+    )
+
+    # Create reservation in checked_in state with room assigned.
+    await session.execute(
+        text(
+            """
+            insert into ops.reservations (
+              id, org_id, guest_id, property_id, room_id, status,
+              check_in_at, check_out_at, rate_cents, group_id, source,
+              created_at, updated_at
+            )
+            values (
+              :id, :org_id, :guest_id, :property_id, :room_id, 'checked_in',
+              :check_in_at, :check_out_at, null, null, 'walk_in',
+              :now, :now
+            )
+            """
+        ),
+        {
+            "id": str(reservation_id),
+            "org_id": str(principal.org_id),
+            "guest_id": str(guest_id),
+            "property_id": str(payload.property_id),
+            "room_id": str(payload.room_id),
+            "check_in_at": now,
+            "check_out_at": check_out_at,
+            "now": now,
+        },
+    )
+
+    # Update room occupancy and current reservation pointer.
+    await session.execute(
+        text(
+            """
+            update ops.rooms
+            set status = 'occupied',
+                current_reservation_id = :reservation_id,
+                updated_at = now()
+            where id = :room_id and org_id = :org_id
+            """
+        ),
+        {
+            "room_id": str(payload.room_id),
+            "org_id": str(principal.org_id),
+            "reservation_id": str(reservation_id),
+        },
+    )
+
+    # Record a walk-in event (front desk).
+    await session.execute(
+        text(
+            """
+            insert into ops.front_desk_events (
+              id, org_id, property_id, kind, guest_id, reservation_id,
+              queue_position, started_at, ended_at, created_at, updated_at
+            )
+            values (
+              :id, :org_id, :property_id, 'walk_in', :guest_id, :reservation_id,
+              null, :now, :now, :now, :now
+            )
+            """
+        ),
+        {
+            "id": str(uuid.uuid4()),
+            "org_id": str(principal.org_id),
+            "property_id": str(payload.property_id),
+            "guest_id": str(guest_id),
+            "reservation_id": str(reservation_id),
+            "now": now,
+        },
+    )
+
+    # Also record check-in event for metrics parity with normal check-in.
+    await session.execute(
+        text(
+            """
+            insert into ops.front_desk_events (
+              id, org_id, property_id, kind, guest_id, reservation_id,
+              queue_position, started_at, ended_at, created_at, updated_at
+            )
+            values (
+              :id, :org_id, :property_id, 'checked_in', :guest_id, :reservation_id,
+              null, :now, :now, :now, :now
+            )
+            """
+        ),
+        {
+            "id": str(uuid.uuid4()),
+            "org_id": str(principal.org_id),
+            "property_id": str(payload.property_id),
+            "guest_id": str(guest_id),
+            "reservation_id": str(reservation_id),
+            "now": now,
+        },
+    )
+
+    # Create key request in action queue.
+    await session.execute(
+        text(
+            """
+            insert into ops.action_queue (
+              id, org_id, property_id, type, source, room_id, guest_id, title,
+              status, severity, assigned_to_user_id, sla_due_at, completed_at, parent_incident_id,
+              created_at, updated_at
+            )
+            values (
+              :id, :org_id, :property_id, 'request', 'front_desk', :room_id, :guest_id, :title,
+              'pending', 'low', null, null, null, null,
+              :now, :now
+            )
+            """
+        ),
+        {
+            "id": str(uuid.uuid4()),
+            "org_id": str(principal.org_id),
+            "property_id": str(payload.property_id),
+            "room_id": str(payload.room_id),
+            "guest_id": str(guest_id),
+            "title": f"Key request for room {payload.room_id}",
+            "now": now,
+        },
+    )
+
+    # Live event for UI.
+    event = {
+        "type": "front_desk.event",
+        "org_id": str(principal.org_id),
+        "property_id": str(payload.property_id),
+        "kind": "walk_in",
+        "reservation_id": str(reservation_id),
+        "room_id": str(payload.room_id),
+        "guest_id": str(guest_id),
+        "_server_published_at": now.isoformat(),
+        "_server_published_at_ms": int(now.timestamp() * 1000),
+    }
+    await session.execute(
+        text("select pg_notify('cortai_live', :payload)"),
+        {"payload": json.dumps(jsonable_encoder(event))},
+    )
+
+    await session.commit()
+    return FrontDeskWalkInResult(
+        reservation_id=reservation_id,
+        guest_id=guest_id,
+        room_id=payload.room_id,
+        status="checked_in",
+    )
 
