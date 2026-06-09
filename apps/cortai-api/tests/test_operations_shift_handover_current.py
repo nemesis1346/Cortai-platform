@@ -222,3 +222,42 @@ async def test_patch_shift_handover_rejected_after_signoff(seeded_shift_handover
         )
     assert patch.status_code == 409
 
+
+@pytest.mark.asyncio
+async def test_get_shift_handover_history_filters_by_date(seeded_shift_handover) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_shift_handover["org_id"]
+    prop_id = seeded_shift_handover["property_id"]
+
+    # Seed a second day record.
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_id))
+        now = datetime.now(UTC)
+        await session.execute(
+            text(
+                """
+                insert into ops.shift_handover (
+                  id, org_id, property_id, shift_date, shift_label,
+                  summary_md, checklist_json,
+                  signed_by_user_id, signed_at, carry_forward_from_id,
+                  created_at, updated_at
+                )
+                values (
+                  :id, :org, :prop, :d, 'night',
+                  'Other day', '{}'::jsonb,
+                  null, null, null,
+                  :now, :now
+                )
+                """
+            ),
+            {"id": uuid.uuid4(), "org": org_id, "prop": prop_id, "d": date.today(), "now": now},
+        )
+        await session.commit()
+
+    async with _client_for_org(org_id=org_id) as client:
+        resp = await client.get(f"/api/operations/shift-handover/history?property_id={prop_id}&date={date.today()}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert "items" in body
+    assert all(it["shift_date"] == str(date.today()) for it in body["items"])
+
+

@@ -62,3 +62,7 @@ class ShiftHandoverUpdate(BaseModel):
     summary_md: str | None = None
     checklist_json: dict[str, Any] | None = None
 
+
+class ShiftHandoverHistoryList(BaseModel):
+    items: list[ShiftHandoverRead]
+

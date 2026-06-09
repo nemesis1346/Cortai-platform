@@ -13,6 +13,7 @@ from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.shift_handover_schemas import (
     ShiftHandoverCurrent,
+    ShiftHandoverHistoryList,
     ShiftHandoverRead,
     ShiftHandoverSignoffRequest,
     ShiftHandoverSignoffResponse,
@@ -83,6 +84,47 @@ async def get_current_shift_handover(
         shift_label=sl,
         handover=ShiftHandoverRead(**dict(row)) if row is not None else None,
     )
+
+
+@router.get("/history", response_model=ShiftHandoverHistoryList)
+async def list_shift_handover_history(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID | None = Query(default=None),
+    date: date | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
+) -> ShiftHandoverHistoryList:
+    filters = ["org_id = :org_id"]
+    params: dict[str, object] = {"org_id": str(principal.org_id), "limit": limit}
+
+    if property_id is not None:
+        filters.append("property_id = :property_id")
+        params["property_id"] = str(property_id)
+    if date is not None:
+        filters.append("shift_date = :shift_date")
+        params["shift_date"] = date
+
+    where = " and ".join(filters)
+    rows = (
+        await session.execute(
+            text(
+                f"""
+                select
+                  id, org_id, property_id, shift_date, shift_label,
+                  summary_md, checklist_json,
+                  signed_by_user_id, signed_at, carry_forward_from_id,
+                  created_at, updated_at
+                from ops.shift_handover
+                where {where}
+                order by shift_date desc, created_at desc
+                limit :limit
+                """  # noqa: S608
+            ),
+            params,
+        )
+    ).mappings().all()
+
+    return ShiftHandoverHistoryList(items=[ShiftHandoverRead(**dict(r)) for r in rows])
 
 
 def _next_shift(*, shift_date: date, shift_label: ShiftLabel) -> tuple[date, ShiftLabel]:
