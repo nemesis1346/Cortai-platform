@@ -32,6 +32,7 @@
     "commandCenter": "Centre de commande",
     "roomMonitor": "Surveillance des chambres",
     "frontDesk": "Réception",
+    "guestServices": "Services aux clients",
     "edgeLive": "Edge en direct",
     "property": "Propriété",
     "propertyLoading": "Chargement des propriétés…",
@@ -225,6 +226,47 @@
         "lastName": "Nom",
         "roomId": "ID chambre",
         "submit": "Enregistrer"
+      }
+    }
+    ,
+    "guestServices": {
+      "title": "Services aux clients",
+      "subtitle": "Créer et suivre les demandes clients (serviettes, oreillers, départ tardif, etc.).",
+      "selectProperty": "Sélectionnez une propriété pour voir les demandes.",
+      "refresh": "Actualiser",
+      "new": "Nouvelle demande",
+      "close": "Fermer",
+      "loading": "Chargement…",
+      "empty": "Aucune demande.",
+      "directory": "Demandes",
+      "filters": {
+        "allStatuses": "Tous les statuts",
+        "allTypes": "Tous les types",
+        "roomId": "ID chambre (UUID)",
+        "apply": "Filtrer"
+      },
+      "cols": {
+        "type": "Type",
+        "status": "Statut",
+        "room": "Chambre",
+        "note": "Note",
+        "created": "Créé",
+        "actions": "Actions"
+      },
+      "actions": {
+        "assignToMe": "Me l’assigner",
+        "complete": "Terminer"
+      },
+      "modal": {
+        "title": "Nouvelle demande",
+        "type": "Type de demande",
+        "roomId": "ID chambre (UUID optionnel)",
+        "note": "Note (optionnel)",
+        "submit": "Créer la demande"
+      },
+      "toast": {
+        "created": { "title": "Demande créée", "description": "Demande créée avec succès." },
+        "failed": { "title": "Échec", "description": "Impossible de créer la demande." }
       }
     }
   },

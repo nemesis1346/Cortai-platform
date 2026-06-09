@@ -146,6 +146,7 @@ export function Sidebar({ locale }: { locale: string }) {
           { id: "commandCenter", label: t("commandCenter"), href: (l) => `/${l}/dashboard/operations` },
           { id: "roomMonitor", label: t("roomMonitor"), href: (l) => `/${l}/dashboard/operations/room-monitor` },
           { id: "frontDesk", label: t("frontDesk"), href: (l) => `/${l}/dashboard/operations/front-desk` },
+          { id: "guestServices", label: t("guestServices"), href: (l) => `/${l}/dashboard/operations/guest-services` },
           { id: "live", label: t("live"), href: (l) => `/${l}/dashboard/live` },
           { id: "edgeLive", label: t("edgeLive"), href: (l) => `/${l}/dashboard/edge/live` },
           { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` }

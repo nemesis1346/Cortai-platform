@@ -32,6 +32,7 @@
     "commandCenter": "Command Center",
     "roomMonitor": "Room Monitor",
     "frontDesk": "Front Desk",
+    "guestServices": "Guest Services",
     "edgeLive": "Edge Live",
     "property": "Property",
     "propertyLoading": "Loading properties…",
@@ -225,6 +226,47 @@
         "lastName": "Last name",
         "roomId": "Room ID",
         "submit": "Check in"
+      }
+    }
+    ,
+    "guestServices": {
+      "title": "Guest Services",
+      "subtitle": "Create and track guest requests (towels, pillows, late checkout, etc.).",
+      "selectProperty": "Select a property to view Guest Services requests.",
+      "refresh": "Refresh",
+      "new": "New request",
+      "close": "Close",
+      "loading": "Loading…",
+      "empty": "No requests.",
+      "directory": "Requests",
+      "filters": {
+        "allStatuses": "All statuses",
+        "allTypes": "All types",
+        "roomId": "Room ID (UUID)",
+        "apply": "Filter"
+      },
+      "cols": {
+        "type": "Type",
+        "status": "Status",
+        "room": "Room",
+        "note": "Note",
+        "created": "Created",
+        "actions": "Actions"
+      },
+      "actions": {
+        "assignToMe": "Assign to me",
+        "complete": "Complete"
+      },
+      "modal": {
+        "title": "New guest service request",
+        "type": "Request type",
+        "roomId": "Room ID (optional UUID)",
+        "note": "Note (optional)",
+        "submit": "Create request"
+      },
+      "toast": {
+        "created": { "title": "Request created", "description": "Guest service request created successfully." },
+        "failed": { "title": "Request failed", "description": "Unable to create guest service request." }
       }
     }
   },
