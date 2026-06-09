@@ -29,6 +29,8 @@ type IncidentRead = {
   assigned_to?: string | null;
   created_at: string;
   resolved_at?: string | null;
+  sla_due_at?: string | null;
+  sla_escalated_at?: string | null;
 };
 
 type IncidentList = {
@@ -119,6 +121,65 @@ export function IncidentLogClient() {
     setSeverityFilter(effective.sev);
     void load(effective.q, effective.sev, effective.p, effective.ps);
   }, [effective, load]);
+
+  // WebSocket: refresh incidents list and show toasts for incident events.
+  useEffect(() => {
+    if (!propertyId) return;
+
+    type LiveMsg = { type: string } & Record<string, unknown>;
+    function parseLiveMsg(data: unknown): LiveMsg | null {
+      if (typeof data !== "string") return null;
+      try {
+        const parsed: unknown = JSON.parse(data);
+        if (!parsed || typeof parsed !== "object") return null;
+        if (!("type" in parsed)) return null;
+        if (typeof (parsed as Record<string, unknown>).type !== "string") return null;
+        return parsed as LiveMsg;
+      } catch {
+        return null;
+      }
+    }
+
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const wsUrl = `${proto}//${window.location.host}/ws/live`;
+    const ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ type: "subscribe", scope: "property", property_id: propertyId }));
+    };
+    ws.onmessage = (event) => {
+      const msg = parseLiveMsg(String(event.data));
+      if (!msg) return;
+      if (msg.type === "incident.assigned") {
+        notify({
+          title: t("toast.assigned.title"),
+          description: t("toast.assigned.description"),
+          tone: "success"
+        });
+        void load(effective.q, effective.sev, effective.p, effective.ps);
+      }
+      if (msg.type === "incident.sla_expired") {
+        notify({
+          title: t("toast.slaExpired.title"),
+          description: t("toast.slaExpired.description"),
+          tone: "error"
+        });
+        void load(effective.q, effective.sev, effective.p, effective.ps);
+      }
+      if (msg.type === "incident.escalated") {
+        notify({
+          title: t("toast.escalated.title"),
+          description: t("toast.escalated.description"),
+          tone: "error"
+        });
+        void load(effective.q, effective.sev, effective.p, effective.ps);
+      }
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [effective, load, notify, propertyId, t]);
 
   function pushQuery(next: { search?: string; severity?: IncidentSeverity | ""; page?: number; page_size?: number }) {
     const params = new URLSearchParams(searchParams.toString());
@@ -263,7 +324,7 @@ export function IncidentLogClient() {
           </form>
         }
       >
-        <Table headers={[t("createdAt"), t("titleCol"), t("severity"), t("status"), t("propertyId")]}>
+        <Table headers={[t("createdAt"), t("titleCol"), t("severity"), t("status"), t("slaDue"), t("propertyId")]}>
           {items.map((it) => (
             <tr key={it.id} className="hover:bg-white/[0.02]">
               <Td className="whitespace-nowrap">{fmtDate(it.created_at)}</Td>
@@ -276,6 +337,9 @@ export function IncidentLogClient() {
               </Td>
               <Td className="whitespace-nowrap">
                 <Badge tone={statusTone(it.status)}>{it.status}</Badge>
+              </Td>
+              <Td className="whitespace-nowrap text-[11px] text-cortai-text2">
+                {it.sla_due_at ? fmtDate(it.sla_due_at) : "—"}
               </Td>
               <Td className="font-mono text-[11px] text-cortai-text2">{it.property_id}</Td>
             </tr>

@@ -381,6 +381,7 @@
     "titleCol": "Titre",
     "description": "Description",
     "propertyId": "ID propriété",
+    "slaDue": "Échéance SLA",
     "rowsPerPage": "Lignes par page",
     "page": "Page",
     "of": "sur",
@@ -396,6 +397,18 @@
       "created": {
         "title": "Incident créé",
         "description": "Votre incident a été créé avec succès."
+      },
+      "assigned": {
+        "title": "Incident assigné",
+        "description": "Un incident a été assigné."
+      },
+      "escalated": {
+        "title": "Incident escaladé",
+        "description": "Un incident a été escaladé."
+      },
+      "slaExpired": {
+        "title": "SLA expiré",
+        "description": "Le délai SLA d’un incident a expiré."
       },
       "failed": {
         "title": "Impossible de créer l'incident",

@@ -1,0 +1,13 @@
+[Unit]
+Description=COrtai incident SLA expiry sweeper
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=cortai
+Group=cortai
+WorkingDirectory=/opt/cortai/apps/cortai-api
+EnvironmentFile=/opt/cortai/apps/cortai-api/.env
+ExecStart=/home/cortai/.local/bin/uv run python -m app.scripts.incident_sla_sweeper
+

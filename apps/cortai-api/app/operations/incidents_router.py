@@ -4,7 +4,7 @@ import csv
 import io
 import json
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import sqlalchemy as sa
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
@@ -31,6 +31,21 @@ from app.operations.incidents_schemas import (
 from app.notify.email import send_escalation_email
 from app.storage.s3 import incident_attachment_key, presign_put
 
+
+async def _maybe_send_assignment_email(*, incident: dict, assigned_to: str | None) -> None:
+    if not assigned_to:
+        return
+    subject = f"[COrtai] Incident assigned: {incident.get('title')}"
+    body_lines = [
+        f"Incident ID: {incident.get('id')}",
+        f"Property ID: {incident.get('property_id')}",
+        f"Assigned to user id: {assigned_to}",
+        f"Severity: {incident.get('severity')}",
+        f"Status: {incident.get('status')}",
+    ]
+    # Reuse escalation email channel for now.
+    await send_escalation_email(subject=subject, body_text="\n".join(body_lines))
+
 # Mounted under `app.operations.router` which already has `/api/operations` prefix.
 router = APIRouter(prefix="/incidents", tags=["operations-incidents"])
 
@@ -42,6 +57,32 @@ def _parse_dt(s: str | None) -> datetime | None:
         return datetime.fromisoformat(s.replace("Z", "+00:00"))
     except ValueError:
         return None
+
+
+async def _sla_due_at_for_severity(
+    *, session: SessionDep, org_id: uuid.UUID, severity: IncidentSeverity
+) -> datetime | None:
+    """
+    Computes SLA due timestamp based on ops.incident_sla_config.
+    If no config exists yet, return None (SLA disabled).
+    """
+    minutes = await session.scalar(
+        text(
+            """
+            select due_after_minutes
+            from ops.incident_sla_config
+            where org_id = :org_id and severity = :severity
+            """
+        ),
+        {"org_id": str(org_id), "severity": severity.value},
+    )
+    if minutes is None:
+        return None
+    try:
+        m = int(minutes)
+    except Exception:  # noqa: BLE001
+        return None
+    return datetime.now(UTC) + timedelta(minutes=m)
 
 
 @router.get("", response_model=IncidentList)
@@ -87,7 +128,7 @@ async def list_incidents(
         await session.execute(
             text(
                 f"""
-                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
                 from operations.incidents
                 where {where}
                 order by created_at desc
@@ -115,15 +156,18 @@ async def create_incident(
     stmt = text(
         """
         insert into operations.incidents (
-          id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+          id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
         )
         values (
-          :id, :org_id, :property_id, :severity, :status, :title, :description, :assigned_to, :created_at, :resolved_at
+          :id, :org_id, :property_id, :severity, :status, :title, :description, :assigned_to, :created_at, :resolved_at, :sla_due_at, null
         )
-        returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+        returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
         """
     )
     try:
+        sla_due_at = await _sla_due_at_for_severity(
+            session=session, org_id=principal.org_id, severity=payload.severity
+        )
         row = (
             await session.execute(
                 stmt,
@@ -138,6 +182,7 @@ async def create_incident(
                     "assigned_to": str(payload.assigned_to) if payload.assigned_to else None,
                     "created_at": now,
                     "resolved_at": None,
+                    "sla_due_at": sla_due_at,
                 },
             )
         ).mappings().one()
@@ -186,7 +231,7 @@ async def export_incidents_csv(
         await session.execute(
             text(
                 f"""
-                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
                 from operations.incidents
                 where {where}
                 order by created_at desc
@@ -232,7 +277,7 @@ async def get_incident(
         await session.execute(
             text(
                 """
-                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
                 from operations.incidents
                 where id = :id and org_id = :org_id
                 """
@@ -277,12 +322,21 @@ async def update_incident(
     if "status" in data and data.get("status") == IncidentStatus.RESOLVED and "resolved_at" not in data:
         sets.append("resolved_at = now()")
 
+    # Recompute SLA due when severity changes.
+    if "severity" in data and data.get("severity") is not None:
+        sev: IncidentSeverity = data["severity"]
+        sla_due_at = await _sla_due_at_for_severity(session=session, org_id=principal.org_id, severity=sev)
+        sets.append("sla_due_at = :sla_due_at")
+        params["sla_due_at"] = sla_due_at
+        # Reset escalation marker on severity change (fresh SLA cycle).
+        sets.append("sla_escalated_at = null")
+
     stmt = text(
         f"""
         update operations.incidents
         set {", ".join(sets)}
         where id = :id and org_id = :org_id
-        returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+        returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
         """  # noqa: S608
     )
     row = (await session.execute(stmt, params)).mappings().first()
@@ -315,7 +369,7 @@ async def assign_incident(
                 update operations.incidents
                 set assigned_to = :assigned_to
                 where id = :id and org_id = :org_id
-                returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
                 """
             ),
             {
@@ -341,6 +395,8 @@ async def assign_incident(
         text("select pg_notify('cortai_live', :payload)"),
         {"payload": json.dumps(jsonable_encoder(event))},
     )
+
+    await _maybe_send_assignment_email(incident=dict(row), assigned_to=str(payload.assigned_to) if payload.assigned_to else None)
 
     await session.commit()
     return IncidentRead(**dict(row))
@@ -408,18 +464,28 @@ async def escalate_incident(
 
     next_severity = payload.severity or IncidentSeverity.CRITICAL
 
+    sla_due_at = await _sla_due_at_for_severity(
+        session=session, org_id=principal.org_id, severity=next_severity
+    )
     updated = (
         await session.execute(
             text(
                 """
                 update operations.incidents
                 set severity = :severity,
-                    status = case when status = 'RESOLVED' then status else 'IN_PROGRESS' end
+                    status = case when status = 'RESOLVED' then status else 'IN_PROGRESS' end,
+                    sla_due_at = :sla_due_at,
+                    sla_escalated_at = null
                 where id = :id and org_id = :org_id
-                returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
+                returning id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at, sla_due_at, sla_escalated_at
                 """
             ),
-            {"id": str(incident_id), "org_id": str(principal.org_id), "severity": next_severity.value},
+            {
+                "id": str(incident_id),
+                "org_id": str(principal.org_id),
+                "severity": next_severity.value,
+                "sla_due_at": sla_due_at,
+            },
         )
     ).mappings().one()
 

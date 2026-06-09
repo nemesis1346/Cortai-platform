@@ -118,6 +118,12 @@ fi
 if [[ -f /opt/cortai/deploy/systemd/cortai-edge-ingest.service ]]; then
   sudo cp -f /opt/cortai/deploy/systemd/cortai-edge-ingest.service /etc/systemd/system/cortai-edge-ingest.service
 fi
+if [[ -f /opt/cortai/deploy/systemd/cortai-incident-sla-sweeper.service ]]; then
+  sudo cp -f /opt/cortai/deploy/systemd/cortai-incident-sla-sweeper.service /etc/systemd/system/cortai-incident-sla-sweeper.service
+fi
+if [[ -f /opt/cortai/deploy/systemd/cortai-incident-sla-sweeper.timer ]]; then
+  sudo cp -f /opt/cortai/deploy/systemd/cortai-incident-sla-sweeper.timer /etc/systemd/system/cortai-incident-sla-sweeper.timer
+fi
 if [[ -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf ]]; then
   sudo mkdir -p /etc/systemd/journald.conf.d
   sudo cp -f /opt/cortai/deploy/systemd/journald.conf.d/cortai.conf /etc/systemd/journald.conf.d/cortai.conf
@@ -134,6 +140,9 @@ sudo systemctl restart cortai-api cortai-frontend
 if systemctl list-unit-files | grep -q '^cortai-device-offline-sweeper\.timer'; then
   sudo systemctl enable --now cortai-device-offline-sweeper.timer
 fi
+if systemctl list-unit-files | grep -q '^cortai-incident-sla-sweeper\.timer'; then
+  sudo systemctl enable --now cortai-incident-sla-sweeper.timer
+fi
 if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
   sudo systemctl restart cortai-mqtt || true
 fi
@@ -143,6 +152,9 @@ fi
 sudo systemctl status --no-pager cortai-api cortai-frontend || true
 if systemctl list-unit-files | grep -q '^cortai-device-offline-sweeper\.timer'; then
   sudo systemctl status --no-pager cortai-device-offline-sweeper.timer || true
+fi
+if systemctl list-unit-files | grep -q '^cortai-incident-sla-sweeper\.timer'; then
+  sudo systemctl status --no-pager cortai-incident-sla-sweeper.timer || true
 fi
 if systemctl list-unit-files | grep -q '^cortai-mqtt\.service'; then
   sudo systemctl status --no-pager cortai-mqtt || true

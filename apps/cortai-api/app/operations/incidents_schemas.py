@@ -74,6 +74,8 @@ class IncidentRead(IncidentBase):
     org_id: uuid.UUID
     created_at: datetime
     resolved_at: datetime | None = None
+    sla_due_at: datetime | None = None
+    sla_escalated_at: datetime | None = None
 
 
 class IncidentList(BaseModel):
