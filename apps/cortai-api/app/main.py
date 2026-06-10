@@ -5,6 +5,7 @@ from app.auth.router import router as auth_router
 from app.config import get_settings
 from app.devices.router import router as devices_router
 from app.health import router as health_router
+from app.internal_messaging_router import router as internal_messaging_router
 from app.live import live_router
 from app.logging import configure_logging
 from app.middleware.audit import AuditLogMiddleware
@@ -39,6 +40,7 @@ def create_app() -> FastAPI:
     app.include_router(admin_devices_router)
     app.include_router(admin_properties_router)
     app.include_router(operations_router)
+    app.include_router(internal_messaging_router)
     app.include_router(bridges_router)
     app.include_router(live_router)
     return app

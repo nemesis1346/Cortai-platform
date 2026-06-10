@@ -7,7 +7,9 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import text
 
+from app.config import get_settings
 from app.db import SessionDep
+from app.internal_messaging_router import fake_dispatch_reply
 from app.live.publisher import publish_live_event
 from app.operations.messaging_dispatch import dispatch_outbound_message
 from app.operations.messaging_schemas import (
@@ -208,8 +210,12 @@ async def send_thread_message(
         {"id": str(thread_pk), "org_id": str(principal.org_id), "now": now},
     )
 
-    # Call internal dispatch (provided by user). Forward JWT cookie via request headers.
-    await dispatch(request=request, payload={"thread_id": thread_id, "message_id": message_id, "body": payload.body})
+    # Mock demo dispatch runs in the same transaction; real mode calls the provided service.
+    if get_settings().messaging_dispatch_mode.lower().strip() == "mock":
+        await fake_dispatch_reply(session=session, thread_id=thread_id, outbound_body=payload.body)
+    else:
+        # Call internal dispatch (provided by user). Forward JWT cookie via request headers.
+        await dispatch(request=request, payload={"thread_id": thread_id, "message_id": message_id, "body": payload.body})
 
     # Emit a replayable live event.
     await publish_live_event(

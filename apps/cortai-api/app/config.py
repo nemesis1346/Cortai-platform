@@ -39,6 +39,7 @@ class Settings(BaseSettings):
 
     # Internal service endpoints (provided by platform, not implemented here).
     internal_messaging_base_url: str | None = None
+    messaging_dispatch_mode: str = "mock"  # mock|real
 
     # Object storage (S3) for uploads (e.g., incident attachments).
     s3_mode: str = "mock"  # mock|real
