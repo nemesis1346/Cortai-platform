@@ -656,11 +656,43 @@
           "submit": "Enregistrer"
         }
       },
+      "bookings": {
+        "title": "Réservations",
+        "new": "Nouvelle réservation",
+        "empty": "Aucune réservation.",
+        "edit": "Modifier",
+        "markReady": "Prêt",
+        "markDone": "Terminé",
+        "cols": {
+          "title": "Titre",
+          "room": "Salle",
+          "time": "Heure",
+          "attendance": "Présence",
+          "status": "Installation",
+          "actions": "Actions"
+        },
+        "modal": {
+          "newTitle": "Nouvelle réservation",
+          "editTitle": "Modifier la réservation",
+          "roomId": "ID salle (UUID)",
+          "title": "Titre",
+          "organizer": "ID organisateur (UUID, optionnel)",
+          "attendees": "Participants",
+          "startsAt": "Début (ISO)",
+          "endsAt": "Fin (ISO)",
+          "status": "Statut d’installation",
+          "statusHint": "Autorisés : setup, ready, in_use, breakdown, done",
+          "submit": "Enregistrer"
+        }
+      },
       "toast": {
         "failed": { "title": "Échec", "description": "Veuillez réessayer." },
-        "created": { "title": "Salle créée", "description": "Salle créée avec succès." },
-        "updated": { "title": "Salle mise à jour", "description": "Salle mise à jour avec succès." },
-        "deleted": { "title": "Salle supprimée", "description": "Salle supprimée avec succès." }
+        "roomCreated": { "title": "Salle créée", "description": "Salle créée avec succès." },
+        "roomUpdated": { "title": "Salle mise à jour", "description": "Salle mise à jour avec succès." },
+        "roomDeleted": { "title": "Salle supprimée", "description": "Salle supprimée avec succès." },
+        "bookingCreated": { "title": "Réservation créée", "description": "Réservation créée avec succès." },
+        "bookingUpdated": { "title": "Réservation mise à jour", "description": "Réservation mise à jour avec succès." },
+        "setupUpdated": { "title": "Statut mis à jour", "description": "Statut d’installation mis à jour avec succès." }
       }
     }
   },

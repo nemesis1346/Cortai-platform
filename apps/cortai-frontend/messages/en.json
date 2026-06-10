@@ -656,11 +656,43 @@
           "submit": "Save"
         }
       },
+      "bookings": {
+        "title": "Bookings",
+        "new": "New booking",
+        "empty": "No bookings.",
+        "edit": "Edit",
+        "markReady": "Ready",
+        "markDone": "Done",
+        "cols": {
+          "title": "Title",
+          "room": "Room",
+          "time": "Time",
+          "attendance": "Attendance",
+          "status": "Setup",
+          "actions": "Actions"
+        },
+        "modal": {
+          "newTitle": "New booking",
+          "editTitle": "Edit booking",
+          "roomId": "Meeting room ID (UUID)",
+          "title": "Title",
+          "organizer": "Organizer ID (UUID, optional)",
+          "attendees": "Attendees",
+          "startsAt": "Starts at (ISO)",
+          "endsAt": "Ends at (ISO)",
+          "status": "Setup status",
+          "statusHint": "Allowed: setup, ready, in_use, breakdown, done",
+          "submit": "Save booking"
+        }
+      },
       "toast": {
         "failed": { "title": "Request failed", "description": "Please try again." },
-        "created": { "title": "Room created", "description": "Meeting room created successfully." },
-        "updated": { "title": "Room updated", "description": "Meeting room updated successfully." },
-        "deleted": { "title": "Room deleted", "description": "Meeting room deleted successfully." }
+        "roomCreated": { "title": "Room created", "description": "Meeting room created successfully." },
+        "roomUpdated": { "title": "Room updated", "description": "Meeting room updated successfully." },
+        "roomDeleted": { "title": "Room deleted", "description": "Meeting room deleted successfully." },
+        "bookingCreated": { "title": "Booking created", "description": "Meeting booking created successfully." },
+        "bookingUpdated": { "title": "Booking updated", "description": "Meeting booking updated successfully." },
+        "setupUpdated": { "title": "Setup status updated", "description": "Meeting setup status updated successfully." }
       }
     }
   },
