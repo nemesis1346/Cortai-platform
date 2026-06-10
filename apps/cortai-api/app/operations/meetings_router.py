@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
+from app.bridges import iot_client
 from app.db import SessionDep
 from app.operations.meetings_schemas import (
     MeetingBookingCreate,
@@ -372,4 +373,25 @@ async def update_meeting_booking(
 
     await session.commit()
     return MeetingBookingRead(**dict(row))
+
+
+@router.get("/bookings/{booking_id}/attendance")
+async def get_meeting_booking_attendance(
+    request: Request,
+    booking_id: uuid.UUID,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> object:
+    """
+    Proxy attendance count from IoT bridge (door counter).
+    """
+
+    exists = await session.scalar(
+        text("select 1 from ops.meeting_bookings where id = :id and org_id = :org_id"),
+        {"id": str(booking_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+    return await iot_client.get_meeting_booking_attendance(request=request, booking_id=booking_id)
 
