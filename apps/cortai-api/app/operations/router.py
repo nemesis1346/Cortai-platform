@@ -32,6 +32,7 @@ from app.operations.pool_router import router as pool_router
 from app.operations.spa_router import router as spa_router
 from app.operations.meetings_router import router as meetings_router
 from app.operations.messaging_router import router as messaging_router
+from app.operations.iot_sensors_router import router as iot_sensors_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
@@ -235,6 +236,7 @@ router.include_router(pool_router)
 router.include_router(spa_router)
 router.include_router(meetings_router)
 router.include_router(messaging_router)
+router.include_router(iot_sensors_router)
 router.include_router(housekeeping_router)
 router.include_router(header_router)
 

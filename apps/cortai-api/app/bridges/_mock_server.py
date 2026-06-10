@@ -32,6 +32,11 @@ async def mock_iot_hvac_rooms() -> Any:
     return load_fixture("iot_hvac_rooms.json")
 
 
+@mock_app.get("/api/iot/v1/sensors")
+async def mock_iot_sensors() -> Any:
+    return load_fixture("iot_sensors.json")
+
+
 @mock_app.post("/api/iot/v1/hvac/rooms/{room_id}/control")
 async def mock_iot_hvac_room_control(room_id: str) -> Any:
     room_id  # ignored in mock
