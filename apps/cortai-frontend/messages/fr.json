@@ -290,6 +290,52 @@
       }
     }
     ,
+    "guestMessaging": {
+      "title": "Messagerie client",
+      "subtitle": "Conversations client en direct avec modèles et réponses WebSocket.",
+      "selectProperty": "Sélectionnez une propriété pour voir la messagerie client.",
+      "refresh": "Actualiser",
+      "socket": {
+        "idle": "INACTIF",
+        "connecting": "CONNEXION",
+        "connected": "EN DIRECT",
+        "error": "ERREUR"
+      },
+      "filters": {
+        "guest": "Client",
+        "channel": "Canal",
+        "status": "Statut",
+        "allChannels": "Tous les canaux",
+        "allStatuses": "Tous les statuts"
+      },
+      "threads": {
+        "title": "Fils",
+        "empty": "Aucun fil trouvé.",
+        "assigned": "Assigné",
+        "unassigned": "Non assigné"
+      },
+      "conversation": {
+        "title": "Conversation",
+        "empty": "Sélectionnez un fil pour voir les messages.",
+        "noMessages": "Aucun message.",
+        "inbound": "Client",
+        "outbound": "Équipe"
+      },
+      "composer": {
+        "title": "Composer",
+        "english": "Anglais",
+        "french": "Français",
+        "template": "Modèle",
+        "noTemplate": "Aucun modèle",
+        "message": "Message",
+        "placeholder": "Écrire une réponse...",
+        "send": "Envoyer"
+      },
+      "toast": {
+        "sent": { "title": "Message envoyé", "description": "Le message sortant a été envoyé." }
+      }
+    }
+    ,
     "shiftHandover": {
       "title": "Passation de quart",
       "subtitle": "Clôturez le quart avec les KPI, le travail ouvert et les éléments à reporter.",

@@ -193,8 +193,8 @@ export function Sidebar({ locale }: { locale: string }) {
         id: "guestMessaging",
         label: t("guestMessaging"),
         icon: <IconMessage />,
-        href: (l) => `/${l}/dashboard/guest-messaging`,
-        items: [{ id: "overview", label: t("overview"), href: (l) => `/${l}/dashboard/guest-messaging` }]
+        href: (l) => `/${l}/dashboard/operations/guest-messaging`,
+        items: [{ id: "overview", label: t("overview"), href: (l) => `/${l}/dashboard/operations/guest-messaging` }]
       },
       {
         id: "sales",

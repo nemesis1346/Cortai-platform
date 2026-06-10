@@ -290,6 +290,52 @@
       }
     }
     ,
+    "guestMessaging": {
+      "title": "Guest Messaging",
+      "subtitle": "Live guest conversations with templates and WebSocket replies.",
+      "selectProperty": "Select a property to view guest messaging.",
+      "refresh": "Refresh",
+      "socket": {
+        "idle": "IDLE",
+        "connecting": "CONNECTING",
+        "connected": "LIVE",
+        "error": "ERROR"
+      },
+      "filters": {
+        "guest": "Guest",
+        "channel": "Channel",
+        "status": "Status",
+        "allChannels": "All channels",
+        "allStatuses": "All statuses"
+      },
+      "threads": {
+        "title": "Threads",
+        "empty": "No threads found.",
+        "assigned": "Assigned",
+        "unassigned": "Unassigned"
+      },
+      "conversation": {
+        "title": "Conversation",
+        "empty": "Select a thread to view messages.",
+        "noMessages": "No messages yet.",
+        "inbound": "Guest",
+        "outbound": "Team"
+      },
+      "composer": {
+        "title": "Composer",
+        "english": "English",
+        "french": "French",
+        "template": "Template",
+        "noTemplate": "No template",
+        "message": "Message",
+        "placeholder": "Write a reply...",
+        "send": "Send"
+      },
+      "toast": {
+        "sent": { "title": "Message sent", "description": "The outbound message was dispatched." }
+      }
+    }
+    ,
     "shiftHandover": {
       "title": "Shift Handover",
       "subtitle": "Sign off the current shift with KPI context, open work, and carry-forward checklist items.",
