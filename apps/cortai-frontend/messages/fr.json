@@ -39,6 +39,7 @@
     "meetingsEvents": "Réunions & Événements",
     "shiftHandover": "Passation de quart",
     "hvac": "CVC",
+    "iotSensors": "Capteurs IoT",
     "liveBadge": "EN DIRECT",
     "edgeLive": "Edge en direct",
     "property": "Propriété",
@@ -341,6 +342,42 @@
         "sent": { "title": "Message envoyé", "description": "Le message sortant a été envoyé." },
         "assigned": { "title": "Assigné", "description": "Fil assigné avec succès." },
         "unassigned": { "title": "Désassigné", "description": "Fil désassigné avec succès." }
+      }
+    }
+    ,
+    "iotSensors": {
+      "title": "Capteurs IoT",
+      "subtitle": "Inventaire des capteurs en direct avec historique.",
+      "selectProperty": "Sélectionnez une propriété pour voir les capteurs IoT.",
+      "refresh": "Actualiser",
+      "socket": {
+        "idle": "INACTIF",
+        "connecting": "CONNEXION",
+        "connected": "EN DIRECT",
+        "error": "ERREUR"
+      },
+      "filters": {
+        "title": "Filtres",
+        "type": "Type",
+        "allTypes": "Tous les types",
+        "search": "Rechercher",
+        "searchPlaceholder": "device_id ou chambre"
+      },
+      "empty": "Aucun capteur trouvé.",
+      "card": {
+        "room": "Chambre",
+        "type": "Type",
+        "last": "Dernière valeur",
+        "updated": "Mis à jour"
+      },
+      "drawer": {
+        "title": "Capteur",
+        "close": "Fermer",
+        "noRoom": "Aucune chambre",
+        "lastSeen": "Dernière activité",
+        "historyTitle": "Dernières 24 heures",
+        "loading": "Chargement…",
+        "noData": "Aucune donnée."
       }
     }
     ,

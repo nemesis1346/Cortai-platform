@@ -39,6 +39,7 @@
     "meetingsEvents": "Meetings & Events",
     "shiftHandover": "Shift Handover",
     "hvac": "HVAC",
+    "iotSensors": "IoT Sensors",
     "liveBadge": "LIVE",
     "edgeLive": "Edge Live",
     "property": "Property",
@@ -341,6 +342,42 @@
         "sent": { "title": "Message sent", "description": "The outbound message was dispatched." },
         "assigned": { "title": "Assigned", "description": "Thread assigned successfully." },
         "unassigned": { "title": "Unassigned", "description": "Thread unassigned successfully." }
+      }
+    }
+    ,
+    "iotSensors": {
+      "title": "IoT Sensors",
+      "subtitle": "Live sensor inventory with history.",
+      "selectProperty": "Select a property to view IoT sensors.",
+      "refresh": "Refresh",
+      "socket": {
+        "idle": "IDLE",
+        "connecting": "CONNECTING",
+        "connected": "LIVE",
+        "error": "ERROR"
+      },
+      "filters": {
+        "title": "Filters",
+        "type": "Type",
+        "allTypes": "All types",
+        "search": "Search",
+        "searchPlaceholder": "device_id or room"
+      },
+      "empty": "No sensors found.",
+      "card": {
+        "room": "Room",
+        "type": "Type",
+        "last": "Last",
+        "updated": "Updated"
+      },
+      "drawer": {
+        "title": "Sensor",
+        "close": "Close",
+        "noRoom": "No room",
+        "lastSeen": "Last seen",
+        "historyTitle": "Last 24 hours",
+        "loading": "Loading…",
+        "noData": "No data."
       }
     }
     ,
