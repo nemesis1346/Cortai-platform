@@ -52,3 +52,41 @@ class FbMenuItemUpdate(BaseModel):
     allergens: list[str] | None = None
     available: bool | None = None
 
+
+class RoomServiceOrderStatus(enum.StrEnum):
+    RECEIVED = "received"
+    PREPARING = "preparing"
+    EN_ROUTE = "en_route"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
+
+class RoomServiceOrderRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    room_id: uuid.UUID
+    guest_id: uuid.UUID | None = None
+    items_json: dict | list
+    status: RoomServiceOrderStatus
+    created_at: datetime
+    updated_at: datetime
+
+
+class RoomServiceOrderList(BaseModel):
+    items: list[RoomServiceOrderRead]
+
+
+class RoomServiceOrderCreate(BaseModel):
+    property_id: uuid.UUID
+    room_id: uuid.UUID
+    guest_id: uuid.UUID | None = None
+    items_json: dict | list = Field(default_factory=dict)
+    status: RoomServiceOrderStatus | None = None
+
+
+class RoomServiceOrderUpdate(BaseModel):
+    room_id: uuid.UUID | None = None
+    guest_id: uuid.UUID | None = None
+    items_json: dict | list | None = None
+    status: RoomServiceOrderStatus | None = None
+
