@@ -34,6 +34,7 @@
     "frontDesk": "Front Desk",
     "guestServices": "Guest Services",
     "foodBreakfast": "Food & Breakfast",
+    "poolSpa": "Pool & Spa",
     "shiftHandover": "Shift Handover",
     "hvac": "HVAC",
     "liveBadge": "LIVE",
@@ -497,6 +498,72 @@
         "menuUpdated": { "title": "Menu item updated", "description": "Menu item updated successfully." },
         "orderCreated": { "title": "Order created", "description": "Room service order created successfully." },
         "invalidJson": { "title": "Invalid JSON", "description": "Items JSON must be valid JSON." }
+      }
+    }
+    ,
+    "poolSpa": {
+      "title": "Pool & Spa",
+      "subtitle": "Pool capacity and spa services & appointments.",
+      "selectProperty": "Select a property to view Pool & Spa.",
+      "refresh": "Refresh",
+      "loading": "Loading…",
+      "empty": "No data.",
+      "close": "Close",
+      "yes": "Yes",
+      "no": "No",
+      "pool": {
+        "title": "Pool capacity",
+        "count": "{count} guests",
+        "capacity": "Capacity {capacity}",
+        "level": { "quiet": "Quiet", "moderate": "Moderate", "busy": "Busy" }
+      },
+      "services": {
+        "title": "Spa services",
+        "new": "New service",
+        "empty": "No services.",
+        "minutes": "{minutes} min",
+        "cols": { "name": "Name", "duration": "Duration", "price": "Price", "available": "Available", "updated": "Updated" },
+        "modal": {
+          "title": "New spa service",
+          "name": "Name",
+          "description": "Description",
+          "durationMinutes": "Duration (minutes)",
+          "priceCents": "Price (cents)",
+          "available": "Available",
+          "submit": "Create service"
+        }
+      },
+      "appointments": {
+        "title": "Spa appointments",
+        "new": "New appointment",
+        "empty": "No appointments.",
+        "detail": "Detail",
+        "edit": "Edit",
+        "view": { "list": "List", "calendar": "Calendar" },
+        "status": { "unknown": "Unknown" },
+        "cols": { "service": "Service", "guest": "Guest", "starts": "Starts", "ends": "Ends", "status": "Status", "actions": "Actions" },
+        "modal": {
+          "newTitle": "New appointment",
+          "editTitle": "Edit appointment",
+          "guestId": "Guest ID (UUID)",
+          "service": "Service",
+          "startsAt": "Starts at (ISO)",
+          "endsAt": "Ends at (ISO)",
+          "status": "Status",
+          "submit": "Save appointment"
+        },
+        "detailTitle": "Appointment {id}",
+        "detailGuest": "Guest {guest}",
+        "detailStarts": "Starts: {value}",
+        "detailEnds": "Ends: {value}",
+        "detailStatus": "Status: {status}",
+        "actions": { "markCompleted": "Mark completed" }
+      },
+      "toast": {
+        "failed": { "title": "Request failed", "description": "Please try again." },
+        "serviceCreated": { "title": "Service created", "description": "Spa service created successfully." },
+        "apptCreated": { "title": "Appointment created", "description": "Spa appointment created successfully." },
+        "apptUpdated": { "title": "Appointment updated", "description": "Spa appointment updated successfully." }
       }
     }
   },

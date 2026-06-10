@@ -34,6 +34,7 @@
     "frontDesk": "Réception",
     "guestServices": "Services aux clients",
     "foodBreakfast": "Restauration & Petit-déjeuner",
+    "poolSpa": "Piscine & Spa",
     "shiftHandover": "Passation de quart",
     "hvac": "CVC",
     "liveBadge": "EN DIRECT",
@@ -497,6 +498,72 @@
         "menuUpdated": { "title": "Article mis à jour", "description": "Article de menu mis à jour avec succès." },
         "orderCreated": { "title": "Commande créée", "description": "Commande créée avec succès." },
         "invalidJson": { "title": "JSON invalide", "description": "Le JSON des articles doit être valide." }
+      }
+    }
+    ,
+    "poolSpa": {
+      "title": "Piscine & Spa",
+      "subtitle": "Capacité piscine et services & rendez-vous spa.",
+      "selectProperty": "Sélectionnez une propriété pour voir Piscine & Spa.",
+      "refresh": "Actualiser",
+      "loading": "Chargement…",
+      "empty": "Aucune donnée.",
+      "close": "Fermer",
+      "yes": "Oui",
+      "no": "Non",
+      "pool": {
+        "title": "Capacité piscine",
+        "count": "{count} clients",
+        "capacity": "Capacité {capacity}",
+        "level": { "quiet": "Calme", "moderate": "Modéré", "busy": "Achalandé" }
+      },
+      "services": {
+        "title": "Services spa",
+        "new": "Nouveau service",
+        "empty": "Aucun service.",
+        "minutes": "{minutes} min",
+        "cols": { "name": "Nom", "duration": "Durée", "price": "Prix", "available": "Disponible", "updated": "Maj" },
+        "modal": {
+          "title": "Nouveau service spa",
+          "name": "Nom",
+          "description": "Description",
+          "durationMinutes": "Durée (minutes)",
+          "priceCents": "Prix (cents)",
+          "available": "Disponible",
+          "submit": "Créer le service"
+        }
+      },
+      "appointments": {
+        "title": "Rendez-vous spa",
+        "new": "Nouveau rendez-vous",
+        "empty": "Aucun rendez-vous.",
+        "detail": "Détail",
+        "edit": "Modifier",
+        "view": { "list": "Liste", "calendar": "Calendrier" },
+        "status": { "unknown": "Inconnu" },
+        "cols": { "service": "Service", "guest": "Client", "starts": "Début", "ends": "Fin", "status": "Statut", "actions": "Actions" },
+        "modal": {
+          "newTitle": "Nouveau rendez-vous",
+          "editTitle": "Modifier le rendez-vous",
+          "guestId": "ID client (UUID)",
+          "service": "Service",
+          "startsAt": "Début (ISO)",
+          "endsAt": "Fin (ISO)",
+          "status": "Statut",
+          "submit": "Enregistrer"
+        },
+        "detailTitle": "Rendez-vous {id}",
+        "detailGuest": "Client {guest}",
+        "detailStarts": "Début : {value}",
+        "detailEnds": "Fin : {value}",
+        "detailStatus": "Statut : {status}",
+        "actions": { "markCompleted": "Marquer terminé" }
+      },
+      "toast": {
+        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
+        "serviceCreated": { "title": "Service créé", "description": "Service spa créé avec succès." },
+        "apptCreated": { "title": "Rendez-vous créé", "description": "Rendez-vous spa créé avec succès." },
+        "apptUpdated": { "title": "Rendez-vous mis à jour", "description": "Rendez-vous spa mis à jour avec succès." }
       }
     }
   },
