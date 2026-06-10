@@ -43,6 +43,11 @@ class GuestMessageDirection(enum.StrEnum):
     OUTBOUND = "out"
 
 
+class GuestMessageLanguage(enum.StrEnum):
+    EN = "en"
+    FR = "fr"
+
+
 class GuestMessageRead(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
@@ -54,6 +59,7 @@ class GuestMessageRead(BaseModel):
     body: str
     status: str | None = Field(default=None, max_length=32)
     sent_at: datetime
+    language: str
 
     created_at: datetime
     updated_at: datetime
@@ -61,4 +67,13 @@ class GuestMessageRead(BaseModel):
 
 class GuestMessageList(BaseModel):
     items: list[GuestMessageRead]
+
+
+class GuestMessageSendRequest(BaseModel):
+    body: str = Field(min_length=1)
+    language: GuestMessageLanguage | None = None
+
+
+class GuestMessageSendResponse(BaseModel):
+    message: GuestMessageRead
 

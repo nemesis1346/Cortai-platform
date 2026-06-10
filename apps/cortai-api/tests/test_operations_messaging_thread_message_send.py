@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 import pytest_asyncio
@@ -11,6 +11,7 @@ from app.auth.schemas import Principal
 from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
 from app.models import Organization, UserRole
+from app.operations import messaging_dispatch
 
 
 def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
@@ -24,23 +25,29 @@ def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
             await set_current_org(session, str(org_id))
             yield session
 
+    async def fake_dispatch(*, request, payload):  # type: ignore[no-untyped-def]
+        # Deterministic stub for tests.
+        assert "thread_id" in payload
+        assert "message_id" in payload
+        assert "body" in payload
+        return {"ok": True}
+
     app.dependency_overrides[get_principal] = override_principal
     app.dependency_overrides[get_session] = override_session
+    app.dependency_overrides[messaging_dispatch.dispatch_outbound_message] = fake_dispatch
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
 
 @pytest_asyncio.fixture
-async def seeded_org_thread_with_messages() -> dict[str, uuid.UUID]:
+async def seeded_org_thread_for_send() -> dict[str, uuid.UUID]:
     org_id = uuid.uuid4()
     now = datetime.now(UTC)
     prop_id = uuid.uuid4()
     guest_id = uuid.uuid4()
     thread_pk = uuid.uuid4()
-    msg_1 = uuid.uuid4()
-    msg_2 = uuid.uuid4()
 
     async with SessionLocal() as session:
-        session.add(Organization(id=org_id, name="Messaging Org 2", slug=f"msg2-{org_id}"))
+        session.add(Organization(id=org_id, name="Messaging Org 3", slug=f"msg3-{org_id}"))
         await session.commit()
 
     async with SessionLocal() as session:
@@ -49,16 +56,16 @@ async def seeded_org_thread_with_messages() -> dict[str, uuid.UUID]:
             text(
                 """
                 insert into properties (id, org_id, name, slug, created_at, updated_at, status, room_count)
-                values (:p, :org, 'Hotel Msg2', :slug, :now, :now, 'ACTIVE', 200)
+                values (:p, :org, 'Hotel Msg3', :slug, :now, :now, 'ACTIVE', 200)
                 """
             ),
-            {"p": prop_id, "org": org_id, "slug": f"hotel-msg2-{org_id}", "now": now},
+            {"p": prop_id, "org": org_id, "slug": f"hotel-msg3-{org_id}", "now": now},
         )
         await session.execute(
             text(
                 """
                 insert into ops.guests (id, org_id, first_name, last_name, vip, language, phone_e164, email, preferences_json, created_at, updated_at)
-                values (:g, :org, 'Ana', 'Lopez', false, 'en', null, 'ana@example.com', '{}'::jsonb, :now, :now)
+                values (:g, :org, 'Zoe', 'Chen', false, 'fr', null, 'zoe@example.com', '{}'::jsonb, :now, :now)
                 """
             ),
             {"g": guest_id, "org": org_id, "now": now},
@@ -71,31 +78,10 @@ async def seeded_org_thread_with_messages() -> dict[str, uuid.UUID]:
                   assigned_to_user_id, unread_count, last_message_at, created_at, updated_at
                 )
                 values
-                  (:tpk, :org, :prop, 'thread-x', :g, 'sms', 'open', null, 1, :last, :now, :now)
+                  (:tpk, :org, :prop, 'thread-send', :g, 'sms', 'open', null, 0, null, :now, :now)
                 """
             ),
-            {"tpk": thread_pk, "org": org_id, "prop": prop_id, "g": guest_id, "last": now, "now": now},
-        )
-        await session.execute(
-            text(
-                """
-                insert into ops.guest_messages (
-                  id, org_id, thread_id, channel, direction, guest_id, body, status, sent_at, language, created_at, updated_at
-                )
-                values
-                  (:m1, :org, 'thread-x', 'sms', 'in', :g, 'Hello', null, :t1, 'en', :now, :now),
-                  (:m2, :org, 'thread-x', 'sms', 'out', :g, 'Hi there', null, :t2, 'en', :now, :now)
-                """
-            ),
-            {
-                "m1": msg_1,
-                "m2": msg_2,
-                "org": org_id,
-                "g": guest_id,
-                "t1": now - timedelta(minutes=3),
-                "t2": now - timedelta(minutes=1),
-                "now": now,
-            },
+            {"tpk": thread_pk, "org": org_id, "prop": prop_id, "g": guest_id, "now": now},
         )
         await session.commit()
 
@@ -103,6 +89,7 @@ async def seeded_org_thread_with_messages() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        await session.execute(text("delete from realtime.event_log where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.guest_messages where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.guest_message_threads where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.guests where org_id = :org"), {"org": org_id})
@@ -112,25 +99,25 @@ async def seeded_org_thread_with_messages() -> dict[str, uuid.UUID]:
 
 
 @pytest.mark.asyncio
-async def test_messaging_thread_messages_list(seeded_org_thread_with_messages) -> None:  # type: ignore[no-untyped-def]
-    org_id = seeded_org_thread_with_messages["org_id"]
-    thread_pk = seeded_org_thread_with_messages["thread_pk"]
+async def test_messaging_send_message_uses_accept_language_fallback(seeded_org_thread_for_send) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_org_thread_for_send["org_id"]
+    thread_pk = seeded_org_thread_for_send["thread_pk"]
     async with _client_for_org(org_id=org_id) as client:
-        resp = await client.get(f"/api/operations/messaging/threads/{thread_pk}/messages")
-    assert resp.status_code == 200
+        resp = await client.post(
+            f"/api/operations/messaging/threads/{thread_pk}/messages",
+            headers={"accept-language": "fr-CA,fr;q=0.9,en;q=0.8"},
+            json={"body": "Bonjour"},
+        )
+    assert resp.status_code == 201
     body = resp.json()
-    assert isinstance(body["items"], list)
-    assert len(body["items"]) == 2
-    assert body["items"][0]["direction"] == "in"
-    assert body["items"][1]["direction"] == "out"
-    assert body["items"][0]["language"] == "en"
+    assert body["message"]["direction"] == "out"
+    assert body["message"]["language"] == "fr"
 
-
-@pytest.mark.asyncio
-async def test_messaging_thread_messages_404_when_thread_missing(seeded_org_thread_with_messages) -> None:  # type: ignore[no-untyped-def]
-    org_id = seeded_org_thread_with_messages["org_id"]
-    missing = uuid.uuid4()
-    async with _client_for_org(org_id=org_id) as client:
-        resp = await client.get(f"/api/operations/messaging/threads/{missing}/messages")
-    assert resp.status_code == 404
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_id))
+        count = await session.scalar(
+            text("select count(*) from realtime.event_log where org_id = :org and type = 'message.sent'"),
+            {"org": org_id},
+        )
+    assert int(count or 0) == 1
 

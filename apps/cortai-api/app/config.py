@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     iot_bridge_base_url: str | None = None
     ai_bridge_base_url: str | None = None
 
+    # Internal service endpoints (provided by platform, not implemented here).
+    internal_messaging_base_url: str | None = None
+
     # Object storage (S3) for uploads (e.g., incident attachments).
     s3_mode: str = "mock"  # mock|real
     s3_bucket: str | None = None

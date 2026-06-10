@@ -2,13 +2,19 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Query, status
+from datetime import UTC, datetime
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.live.publisher import publish_live_event
+from app.operations.messaging_dispatch import dispatch_outbound_message
 from app.operations.messaging_schemas import (
     GuestMessageList,
     GuestMessageRead,
+    GuestMessageSendRequest,
+    GuestMessageSendResponse,
     GuestMessageThreadList,
     GuestMessageThreadRead,
 )
@@ -93,6 +99,7 @@ async def list_thread_messages(
                 select
                   id, org_id, thread_id, channel, direction, guest_id,
                   body, status, sent_at,
+                  language,
                   created_at, updated_at
                 from ops.guest_messages
                 where org_id = :org_id and thread_id = :thread_id
@@ -104,4 +111,116 @@ async def list_thread_messages(
         )
     ).mappings().all()
     return GuestMessageList(items=[GuestMessageRead(**dict(r)) for r in rows])
+
+
+def _infer_language(*, request: Request, explicit: str | None) -> str:
+    if explicit and explicit.strip():
+        return explicit.strip().lower()
+    header = str(request.headers.get("accept-language") or "").strip().lower()
+    if header.startswith("fr"):
+        return "fr"
+    return "en"
+
+
+DispatchDep = Depends(lambda: dispatch_outbound_message)
+
+
+@router.post("/threads/{thread_pk}/messages", response_model=GuestMessageSendResponse, status_code=201)
+async def send_thread_message(
+    thread_pk: uuid.UUID,
+    payload: GuestMessageSendRequest,
+    request: Request,
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+    dispatch=DispatchDep,  # type: ignore[assignment]
+) -> GuestMessageSendResponse:
+    # Ensure the thread exists and fetch stable identifiers.
+    thread_row = (
+        await session.execute(
+            text(
+                """
+                select id, thread_id, guest_id, property_id, channel
+                from ops.guest_message_threads
+                where id = :id and org_id = :org_id
+                """
+            ),
+            {"id": str(thread_pk), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if thread_row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    thread_id = str(thread_row["thread_id"])
+    guest_id = str(thread_row["guest_id"])
+    property_id = str(thread_row["property_id"])
+    channel = str(thread_row["channel"])
+
+    language = _infer_language(request=request, explicit=(payload.language.value if payload.language else None))
+    now = datetime.now(UTC)
+    message_id = str(uuid.uuid4())
+
+    # Persist message first for auditability/debugging; dispatch is external.
+    row = (
+        await session.execute(
+            text(
+                """
+                insert into ops.guest_messages (
+                  id, org_id, thread_id, channel, direction, guest_id, body, status, sent_at, language,
+                  created_at, updated_at
+                )
+                values (
+                  :id, :org_id, :thread_id, :channel, 'out', :guest_id, :body, null, :sent_at, :language,
+                  :now, :now
+                )
+                returning
+                  id, org_id, thread_id, channel, direction, guest_id, body, status, sent_at, language,
+                  created_at, updated_at
+                """
+            ),
+            {
+                "id": message_id,
+                "org_id": str(principal.org_id),
+                "thread_id": thread_id,
+                "channel": channel,
+                "guest_id": guest_id,
+                "body": payload.body,
+                "sent_at": now,
+                "language": language,
+                "now": now,
+            },
+        )
+    ).mappings().one()
+
+    # Update thread last_message_at (keep unread_count untouched for outbound).
+    await session.execute(
+        text(
+            """
+            update ops.guest_message_threads
+            set last_message_at = :now
+            where id = :id and org_id = :org_id
+            """
+        ),
+        {"id": str(thread_pk), "org_id": str(principal.org_id), "now": now},
+    )
+
+    # Call internal dispatch (provided by user). Forward JWT cookie via request headers.
+    await dispatch(request=request, payload={"thread_id": thread_id, "message_id": message_id, "body": payload.body})
+
+    # Emit a replayable live event.
+    await publish_live_event(
+        session,
+        {
+            "type": "message.sent",
+            "org_id": str(principal.org_id),
+            "property_id": property_id,
+            "thread_id": thread_id,
+            "message_id": message_id,
+            "channel": channel,
+            "language": language,
+            "direction": "out",
+        },
+    )
+
+    await session.commit()
+    return GuestMessageSendResponse(message=GuestMessageRead(**dict(row)))
 
