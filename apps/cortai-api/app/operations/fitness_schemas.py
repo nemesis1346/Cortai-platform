@@ -51,3 +51,29 @@ class FitnessClassUpdate(BaseModel):
     description: str | None = Field(default=None, max_length=500)
     status: str | None = Field(default=None, max_length=32)
 
+
+class FitnessCheckinRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    property_id: uuid.UUID
+    guest_id: uuid.UUID
+    class_id: uuid.UUID | None = None
+    checked_in_at: datetime
+    source: str = Field(min_length=1, max_length=32)
+    notes: str | None = Field(default=None, max_length=500)
+    created_at: datetime
+    updated_at: datetime
+
+
+class FitnessCheckinList(BaseModel):
+    items: list[FitnessCheckinRead]
+
+
+class FitnessCheckinCreate(BaseModel):
+    property_id: uuid.UUID
+    guest_id: uuid.UUID
+    class_id: uuid.UUID | None = None
+    checked_in_at: datetime | None = None
+    source: str = Field(default="manual", min_length=1, max_length=32)
+    notes: str | None = Field(default=None, max_length=500)
+

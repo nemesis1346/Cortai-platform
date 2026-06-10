@@ -15,6 +15,9 @@ from app.operations.fitness_schemas import (
     FitnessClassList,
     FitnessClassRead,
     FitnessClassUpdate,
+    FitnessCheckinCreate,
+    FitnessCheckinList,
+    FitnessCheckinRead,
 )
 
 router = APIRouter(prefix="/fitness", tags=["operations-fitness"])
@@ -212,4 +215,118 @@ async def update_fitness_class(
 
     await session.commit()
     return FitnessClassRead(**dict(row))
+
+
+@router.get("/checkins", response_model=FitnessCheckinList)
+async def list_fitness_checkins(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID = Query(...),
+    guest_id: uuid.UUID | None = Query(default=None),
+) -> FitnessCheckinList:
+    exists = await session.scalar(
+        text("select 1 from properties where id = :id and org_id = :org_id"),
+        {"id": str(property_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+
+    where = ["org_id = :org_id", "property_id = :property_id"]
+    params: dict[str, object] = {"org_id": str(principal.org_id), "property_id": str(property_id)}
+    if guest_id is not None:
+        where.append("guest_id = :guest_id")
+        params["guest_id"] = str(guest_id)
+
+    rows = (
+        await session.execute(
+            text(
+                f"""
+                select
+                  id, org_id, property_id, guest_id, class_id,
+                  checked_in_at, source, notes,
+                  created_at, updated_at
+                from ops.fitness_checkins
+                where {" and ".join(where)}
+                order by checked_in_at desc, id desc
+                """  # noqa: S608
+            ),
+            params,
+        )
+    ).mappings().all()
+    return FitnessCheckinList(items=[FitnessCheckinRead(**dict(r)) for r in rows])
+
+
+@router.post("/checkins", response_model=FitnessCheckinRead, status_code=status.HTTP_201_CREATED)
+async def create_fitness_checkin(
+    payload: FitnessCheckinCreate,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> FitnessCheckinRead:
+    exists = await session.scalar(
+        text("select 1 from properties where id = :id and org_id = :org_id"),
+        {"id": str(payload.property_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+
+    guest_ok = await session.scalar(
+        text("select 1 from ops.guests where id = :id and org_id = :org_id"),
+        {"id": str(payload.guest_id), "org_id": str(principal.org_id)},
+    )
+    if guest_ok is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guest not found")
+
+    if payload.class_id is not None:
+        class_ok = await session.scalar(
+            text(
+                """
+                select 1
+                from ops.fitness_classes
+                where id = :id and org_id = :org_id and property_id = :property_id
+                """
+            ),
+            {
+                "id": str(payload.class_id),
+                "org_id": str(principal.org_id),
+                "property_id": str(payload.property_id),
+            },
+        )
+        if class_ok is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Class not found")
+
+    checked_in_at = payload.checked_in_at or datetime.now(UTC)
+
+    row = (
+        await session.execute(
+            text(
+                """
+                insert into ops.fitness_checkins (
+                  id, org_id, property_id, guest_id, class_id,
+                  checked_in_at, source, notes,
+                  created_at, updated_at
+                )
+                values (
+                  gen_random_uuid(), :org_id, :property_id, :guest_id, :class_id,
+                  :checked_in_at, :source, :notes,
+                  now(), now()
+                )
+                returning
+                  id, org_id, property_id, guest_id, class_id,
+                  checked_in_at, source, notes,
+                  created_at, updated_at
+                """
+            ),
+            {
+                "org_id": str(principal.org_id),
+                "property_id": str(payload.property_id),
+                "guest_id": str(payload.guest_id),
+                "class_id": str(payload.class_id) if payload.class_id else None,
+                "checked_in_at": checked_in_at,
+                "source": payload.source,
+                "notes": payload.notes,
+            },
+        )
+    ).mappings().one()
+    await session.commit()
+    return FitnessCheckinRead(**dict(row))
 
