@@ -35,6 +35,7 @@
     "guestServices": "Services aux clients",
     "foodBreakfast": "Restauration & Petit-déjeuner",
     "poolSpa": "Piscine & Spa",
+    "fitness": "Fitness",
     "shiftHandover": "Passation de quart",
     "hvac": "CVC",
     "liveBadge": "EN DIRECT",
@@ -564,6 +565,69 @@
         "serviceCreated": { "title": "Service créé", "description": "Service spa créé avec succès." },
         "apptCreated": { "title": "Rendez-vous créé", "description": "Rendez-vous spa créé avec succès." },
         "apptUpdated": { "title": "Rendez-vous mis à jour", "description": "Rendez-vous spa mis à jour avec succès." }
+      }
+    }
+    ,
+    "fitness": {
+      "title": "Fitness",
+      "subtitle": "Capacité, équipement, cours et entrées.",
+      "selectProperty": "Sélectionnez une propriété pour voir Fitness.",
+      "refresh": "Actualiser",
+      "loading": "Chargement…",
+      "empty": "Aucune donnée.",
+      "close": "Fermer",
+      "capacity": {
+        "title": "Capacité fitness",
+        "count": "{count} clients",
+        "capacity": "Capacité {capacity}",
+        "level": { "quiet": "Calme", "moderate": "Modéré", "busy": "Achalandé" }
+      },
+      "equipment": {
+        "title": "Équipement",
+        "empty": "Aucun équipement.",
+        "cols": { "equipment": "Équipement", "type": "Type", "status": "Statut", "updated": "Maj" }
+      },
+      "classes": {
+        "title": "Cours",
+        "new": "Nouveau cours",
+        "empty": "Aucun cours.",
+        "edit": "Modifier",
+        "instructor": "Instructeur : {name}",
+        "cols": { "name": "Nom", "time": "Heure", "capacity": "Réservés", "status": "Statut", "actions": "Actions" },
+        "modal": {
+          "newTitle": "Nouveau cours",
+          "editTitle": "Modifier le cours",
+          "name": "Nom",
+          "instructor": "Instructeur",
+          "startsAt": "Début (ISO)",
+          "endsAt": "Fin (ISO)",
+          "capacity": "Capacité",
+          "booked": "Réservés",
+          "location": "Lieu",
+          "description": "Description",
+          "status": "Statut",
+          "submit": "Enregistrer"
+        }
+      },
+      "checkins": {
+        "title": "Entrées",
+        "new": "Nouvelle entrée",
+        "empty": "Aucune entrée.",
+        "cols": { "guest": "Client", "class": "Cours", "time": "Heure", "source": "Source" },
+        "modal": {
+          "title": "Nouvelle entrée",
+          "guestId": "ID client (UUID)",
+          "classId": "ID cours (UUID, optionnel)",
+          "source": "Source",
+          "notes": "Notes",
+          "submit": "Créer l’entrée"
+        }
+      },
+      "toast": {
+        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
+        "classCreated": { "title": "Cours créé", "description": "Cours fitness créé avec succès." },
+        "classUpdated": { "title": "Cours mis à jour", "description": "Cours fitness mis à jour avec succès." },
+        "checkinCreated": { "title": "Entrée créée", "description": "Entrée fitness créée avec succès." }
       }
     }
   },

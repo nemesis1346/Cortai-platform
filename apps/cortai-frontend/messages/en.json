@@ -35,6 +35,7 @@
     "guestServices": "Guest Services",
     "foodBreakfast": "Food & Breakfast",
     "poolSpa": "Pool & Spa",
+    "fitness": "Fitness",
     "shiftHandover": "Shift Handover",
     "hvac": "HVAC",
     "liveBadge": "LIVE",
@@ -564,6 +565,69 @@
         "serviceCreated": { "title": "Service created", "description": "Spa service created successfully." },
         "apptCreated": { "title": "Appointment created", "description": "Spa appointment created successfully." },
         "apptUpdated": { "title": "Appointment updated", "description": "Spa appointment updated successfully." }
+      }
+    }
+    ,
+    "fitness": {
+      "title": "Fitness",
+      "subtitle": "Capacity, equipment status, classes, and check-ins.",
+      "selectProperty": "Select a property to view Fitness.",
+      "refresh": "Refresh",
+      "loading": "Loading…",
+      "empty": "No data.",
+      "close": "Close",
+      "capacity": {
+        "title": "Fitness capacity",
+        "count": "{count} guests",
+        "capacity": "Capacity {capacity}",
+        "level": { "quiet": "Quiet", "moderate": "Moderate", "busy": "Busy" }
+      },
+      "equipment": {
+        "title": "Equipment",
+        "empty": "No equipment.",
+        "cols": { "equipment": "Equipment", "type": "Type", "status": "Status", "updated": "Updated" }
+      },
+      "classes": {
+        "title": "Classes",
+        "new": "New class",
+        "empty": "No classes.",
+        "edit": "Edit",
+        "instructor": "Instructor: {name}",
+        "cols": { "name": "Name", "time": "Time", "capacity": "Booked", "status": "Status", "actions": "Actions" },
+        "modal": {
+          "newTitle": "New class",
+          "editTitle": "Edit class",
+          "name": "Name",
+          "instructor": "Instructor",
+          "startsAt": "Starts at (ISO)",
+          "endsAt": "Ends at (ISO)",
+          "capacity": "Capacity",
+          "booked": "Booked",
+          "location": "Location",
+          "description": "Description",
+          "status": "Status",
+          "submit": "Save class"
+        }
+      },
+      "checkins": {
+        "title": "Check-ins",
+        "new": "New check-in",
+        "empty": "No check-ins.",
+        "cols": { "guest": "Guest", "class": "Class", "time": "Time", "source": "Source" },
+        "modal": {
+          "title": "New check-in",
+          "guestId": "Guest ID (UUID)",
+          "classId": "Class ID (UUID, optional)",
+          "source": "Source",
+          "notes": "Notes",
+          "submit": "Create check-in"
+        }
+      },
+      "toast": {
+        "failed": { "title": "Request failed", "description": "Please try again." },
+        "classCreated": { "title": "Class created", "description": "Fitness class created successfully." },
+        "classUpdated": { "title": "Class updated", "description": "Fitness class updated successfully." },
+        "checkinCreated": { "title": "Check-in created", "description": "Fitness check-in created successfully." }
       }
     }
   },
