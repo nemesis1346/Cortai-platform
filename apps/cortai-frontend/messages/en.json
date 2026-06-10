@@ -386,6 +386,8 @@
       },
       "toast": {
         "sent": { "title": "Command sent", "description": "Awaiting ack (≤ {seconds}s)." },
+        "acked": { "title": "Ack received", "description": "HVAC controller accepted the command." },
+        "ackFailed": { "title": "Ack failed", "description": "HVAC controller rejected the command." },
         "failed": { "title": "HVAC command failed", "description": "Please try again." }
       },
       "cols": {
@@ -502,6 +504,9 @@
     "description": "Description",
     "propertyId": "Property ID",
     "slaDue": "SLA due",
+    "slaTimer": "SLA timer",
+    "slaRemaining": "{hours}h {minutes}m {seconds}s",
+    "slaOverdue": "Overdue {hours}h {minutes}m {seconds}s",
     "rowsPerPage": "Rows per page",
     "page": "Page",
     "of": "of",
@@ -513,6 +518,20 @@
     "close": "Close",
     "exportCsv": "Export CSV",
     "selectPropertyFirst": "Select a property first.",
+    "actions": "Actions",
+    "aiTriage": "AI triage",
+    "triage": {
+      "title": "AI triage",
+      "loading": "Loading triage suggestion…",
+      "priority": "Suggested priority",
+      "category": "Suggested category",
+      "assignee": "Suggested assignee",
+      "reasoning": "Reasoning",
+      "accept": "Accept suggestion",
+      "cancel": "Cancel",
+      "noAssignee": "No assignee",
+      "noDescription": "No description"
+    },
     "toast": {
       "created": {
         "title": "Incident created",
@@ -533,6 +552,14 @@
       "failed": {
         "title": "Unable to create incident",
         "description": "Please try again."
+      },
+      "triageFailed": {
+        "title": "AI triage failed",
+        "description": "Unable to load triage suggestion."
+      },
+      "assignFailed": {
+        "title": "Assignment failed",
+        "description": "Unable to assign the incident."
       }
     }
   }

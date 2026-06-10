@@ -38,6 +38,12 @@ async def mock_iot_hvac_room_control(room_id: str) -> Any:
     return load_fixture("iot_hvac_room_control.json")
 
 
+@mock_app.get("/api/iot/v1/hvac/rooms/{room_id}/commands/{command_id}")
+async def mock_iot_hvac_command_ack(room_id: str, command_id: str) -> Any:
+    room_id, command_id  # ignored in mock
+    return load_fixture("iot_hvac_command_ack.json")
+
+
 @mock_app.get("/api/iot/v1/edge-events")
 async def mock_iot_edge_events(type: str | None = Query(default=None)) -> Any:  # noqa: A002
     if (type or "").strip().lower() == "hvac_fault":

@@ -87,6 +87,7 @@ export function PropertySwitcher() {
           const next = e.target.value;
           setSelectedId(next);
           setCookie("cortai_property_id", next);
+          window.dispatchEvent(new CustomEvent("cortai:property-changed", { detail: { propertyId: next } }));
           // Soft refresh to let server components re-render (and to refetch any property-scoped data).
           router.refresh();
           // If already on a property-scoped page in the future, refreshing is enough.

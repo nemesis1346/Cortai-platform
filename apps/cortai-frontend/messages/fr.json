@@ -386,6 +386,8 @@
       },
       "toast": {
         "sent": { "title": "Commande envoyée", "description": "Attente d’ack (≤ {seconds}s)." },
+        "acked": { "title": "Ack reçu", "description": "Le contrôleur CVC a accepté la commande." },
+        "ackFailed": { "title": "Échec ack", "description": "Le contrôleur CVC a rejeté la commande." },
         "failed": { "title": "Échec commande CVC", "description": "Veuillez réessayer." }
       },
       "cols": {
@@ -502,6 +504,9 @@
     "description": "Description",
     "propertyId": "ID propriété",
     "slaDue": "Échéance SLA",
+    "slaTimer": "Minuteur SLA",
+    "slaRemaining": "{hours} h {minutes} min {seconds} s",
+    "slaOverdue": "En retard {hours} h {minutes} min {seconds} s",
     "rowsPerPage": "Lignes par page",
     "page": "Page",
     "of": "sur",
@@ -513,6 +518,20 @@
     "close": "Fermer",
     "exportCsv": "Exporter CSV",
     "selectPropertyFirst": "Sélectionnez d'abord une propriété.",
+    "actions": "Actions",
+    "aiTriage": "Triage IA",
+    "triage": {
+      "title": "Triage IA",
+      "loading": "Chargement de la suggestion…",
+      "priority": "Priorité suggérée",
+      "category": "Catégorie suggérée",
+      "assignee": "Assigné suggéré",
+      "reasoning": "Raisonnement",
+      "accept": "Accepter la suggestion",
+      "cancel": "Annuler",
+      "noAssignee": "Aucun assigné",
+      "noDescription": "Aucune description"
+    },
     "toast": {
       "created": {
         "title": "Incident créé",
@@ -533,6 +552,14 @@
       "failed": {
         "title": "Impossible de créer l'incident",
         "description": "Veuillez réessayer."
+      },
+      "triageFailed": {
+        "title": "Échec du triage IA",
+        "description": "Impossible de charger la suggestion."
+      },
+      "assignFailed": {
+        "title": "Échec de l’assignation",
+        "description": "Impossible d’assigner l’incident."
       }
     }
   }

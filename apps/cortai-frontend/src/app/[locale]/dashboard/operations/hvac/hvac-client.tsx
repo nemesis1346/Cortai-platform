@@ -28,6 +28,7 @@ type EdgeEvent = {
 };
 
 type ControlResponse = { command_id: string; accepted_at: string; expected_ack_within_s: number };
+type AckResponse = { command_id: string; room_id: string; accepted: boolean; error?: string | null; acked_at?: string | null };
 
 function getCookie(name: string) {
   if (typeof document === "undefined") return null;
@@ -53,6 +54,10 @@ function fmtTemp(value: number | null, dash: string, unit: string) {
 
 function toneForFault(code: string | null) {
   return code ? "red" : "green";
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 export function HvacClient({ initialPropertyId }: { initialPropertyId: string }) {
@@ -159,6 +164,19 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
         description: t("toast.sent.description", { seconds: resp.expected_ack_within_s }),
         tone: "success"
       });
+      let ack: AckResponse | null = null;
+      for (let i = 0; i < 4; i += 1) {
+        await sleep(500);
+        ack = await apiFetch<AckResponse>(
+          `/api/operations/hvac/rooms/${encodeURIComponent(selected.room_id)}/commands/${encodeURIComponent(resp.command_id)}`
+        );
+        if (ack.accepted || ack.error) break;
+      }
+      if (ack?.accepted) {
+        notify({ title: t("toast.acked.title"), description: t("toast.acked.description"), tone: "success" });
+      } else if (ack?.error) {
+        notify({ title: t("toast.ackFailed.title"), description: ack.error, tone: "error" });
+      }
       setModalOpen(false);
       // best-effort refresh
       await load();

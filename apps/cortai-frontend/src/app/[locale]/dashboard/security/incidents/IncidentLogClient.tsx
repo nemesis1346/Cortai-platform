@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { Table, Td } from "@/components/ui/Table";
 import { useToast } from "@/components/ui/Toast";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { apiFetch } from "@/lib/api";
 
 type IncidentSeverity = "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
@@ -40,6 +41,14 @@ type IncidentList = {
   page_size: number;
 };
 
+type IncidentTriageResponse = {
+  suggested_priority: string;
+  suggested_category: string;
+  suggested_assignee_id: string | null;
+  confidence: number | null;
+  reasoning_md: string;
+};
+
 function clampInt(value: string | null, fallback: number, min: number, max: number): number {
   const n = Number.parseInt(String(value ?? ""), 10);
   if (!Number.isFinite(n)) return fallback;
@@ -62,6 +71,19 @@ function fmtDate(value: string) {
   return d.toLocaleString();
 }
 
+function fmtSla(value: string | null | undefined, nowMs: number, t: (key: string, values?: Record<string, number>) => string) {
+  if (!value) return "—";
+  const due = new Date(value).getTime();
+  if (Number.isNaN(due)) return value;
+  const diff = due - nowMs;
+  const abs = Math.abs(diff);
+  const hours = Math.floor(abs / 3_600_000);
+  const minutes = Math.floor((abs % 3_600_000) / 60_000);
+  const seconds = Math.floor((abs % 60_000) / 1000);
+  if (diff < 0) return t("slaOverdue", { hours, minutes, seconds });
+  return t("slaRemaining", { hours, minutes, seconds });
+}
+
 function severityTone(sev: IncidentSeverity) {
   if (sev === "CRITICAL") return "red";
   if (sev === "HIGH") return "amber";
@@ -81,8 +103,26 @@ export function IncidentLogClient() {
   const pathname = usePathname() ?? "";
   const searchParams = useSearchParams();
   const { notify } = useToast();
+  const { user } = useAuth();
 
-  const propertyId = useMemo(() => getCookie("cortai_property_id") ?? "", []);
+  const [propertyId, setPropertyId] = useState("");
+  useEffect(() => {
+    setPropertyId(getCookie("cortai_property_id") ?? "");
+  }, [searchParams]);
+  useEffect(() => {
+    function onPropertyChanged(event: Event) {
+      const detail = (event as CustomEvent<{ propertyId?: string }>).detail;
+      const next = detail?.propertyId ?? getCookie("cortai_property_id") ?? "";
+      setItems([]);
+      setTotal(0);
+      setPage(1);
+      setPropertyId(next);
+      pushQuery({ page: 1 });
+    }
+    window.addEventListener("cortai:property-changed", onPropertyChanged);
+    return () => window.removeEventListener("cortai:property-changed", onPropertyChanged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [items, setItems] = useState<IncidentRead[]>([]);
   const [total, setTotal] = useState(0);
@@ -92,6 +132,16 @@ export function IncidentLogClient() {
   const [loading, setLoading] = useState(false);
   const [severityFilter, setSeverityFilter] = useState<IncidentSeverity | "">("");
   const [search, setSearch] = useState("");
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  const [triageOpen, setTriageOpen] = useState(false);
+  const [triageLoading, setTriageLoading] = useState(false);
+  const [triageIncident, setTriageIncident] = useState<IncidentRead | null>(null);
+  const [triage, setTriage] = useState<IncidentTriageResponse | null>(null);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const effective = useMemo(() => {
     const q = searchParams.get("search") ?? "";
@@ -269,6 +319,48 @@ export function IncidentLogClient() {
     }
   }
 
+  async function runTriage(incident: IncidentRead) {
+    setTriageIncident(incident);
+    setTriage(null);
+    setTriageOpen(true);
+    setTriageLoading(true);
+    try {
+      const resp = await apiFetch<IncidentTriageResponse>(`/api/operations/incidents/${incident.id}/triage`, {
+        method: "POST"
+      });
+      setTriage(resp);
+    } catch {
+      notify({ title: t("toast.triageFailed.title"), description: t("toast.triageFailed.description"), tone: "error" });
+    } finally {
+      setTriageLoading(false);
+    }
+  }
+
+  async function acceptTriage() {
+    if (!triageIncident) return;
+    const assigneeId = triage?.suggested_assignee_id ?? user?.id ?? null;
+    if (!assigneeId) {
+      notify({ title: t("toast.assignFailed.title"), description: t("toast.assignFailed.description"), tone: "error" });
+      return;
+    }
+    setTriageLoading(true);
+    try {
+      await apiFetch<IncidentRead>(`/api/operations/incidents/${triageIncident.id}/assign`, {
+        method: "PATCH",
+        body: JSON.stringify({ assigned_to: assigneeId })
+      });
+      setTriageOpen(false);
+      setTriageIncident(null);
+      setTriage(null);
+      notify({ title: t("toast.assigned.title"), description: t("toast.assigned.description"), tone: "success" });
+      await load(effective.q, effective.sev, effective.p, effective.ps);
+    } catch {
+      notify({ title: t("toast.assignFailed.title"), description: t("toast.assignFailed.description"), tone: "error" });
+    } finally {
+      setTriageLoading(false);
+    }
+  }
+
   return (
     <div className="grid gap-4" data-testid="incidents-page">
       <div className="flex flex-wrap items-center gap-3">
@@ -324,7 +416,7 @@ export function IncidentLogClient() {
           </form>
         }
       >
-        <Table headers={[t("createdAt"), t("titleCol"), t("severity"), t("status"), t("slaDue"), t("propertyId")]}>
+        <Table headers={[t("createdAt"), t("titleCol"), t("severity"), t("status"), t("slaTimer"), t("propertyId"), t("actions")]}>
           {items.map((it) => (
             <tr key={it.id} className="hover:bg-white/[0.02]">
               <Td className="whitespace-nowrap">{fmtDate(it.created_at)}</Td>
@@ -339,9 +431,14 @@ export function IncidentLogClient() {
                 <Badge tone={statusTone(it.status)}>{it.status}</Badge>
               </Td>
               <Td className="whitespace-nowrap text-[11px] text-cortai-text2">
-                {it.sla_due_at ? fmtDate(it.sla_due_at) : "—"}
+                {fmtSla(it.sla_due_at, nowMs, t)}
               </Td>
               <Td className="font-mono text-[11px] text-cortai-text2">{it.property_id}</Td>
+              <Td>
+                <Button type="button" variant="ghost" onClick={() => void runTriage(it)} disabled={loading || triageLoading}>
+                  {t("aiTriage")}
+                </Button>
+              </Td>
             </tr>
           ))}
         </Table>
@@ -421,6 +518,53 @@ export function IncidentLogClient() {
             {loading ? t("saving") : t("create")}
           </Button>
         </form>
+      </Modal>
+
+      <Modal open={triageOpen} title={t("triage.title")} closeLabel={t("close")} onClose={() => setTriageOpen(false)}>
+        <div className="grid gap-3">
+          {triageIncident ? (
+            <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3">
+              <div className="text-xs font-semibold text-cortai-text">{triageIncident.title}</div>
+              <div className="mt-1 text-[11px] text-cortai-text2">{triageIncident.description ?? t("triage.noDescription")}</div>
+            </div>
+          ) : null}
+
+          {triageLoading && !triage ? <p className="text-xs text-cortai-text2">{t("triage.loading")}</p> : null}
+
+          {triage ? (
+            <div className="grid gap-2 text-xs">
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-2">
+                  <div className="text-cortai-text3">{t("triage.priority")}</div>
+                  <div className="mt-1 font-semibold text-cortai-text">{triage.suggested_priority}</div>
+                </div>
+                <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-2">
+                  <div className="text-cortai-text3">{t("triage.category")}</div>
+                  <div className="mt-1 font-semibold text-cortai-text">{triage.suggested_category}</div>
+                </div>
+              </div>
+              <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-2">
+                <div className="text-cortai-text3">{t("triage.assignee")}</div>
+                <div className="mt-1 font-mono text-[11px] text-cortai-text">
+                  {triage.suggested_assignee_id ?? user?.id ?? t("triage.noAssignee")}
+                </div>
+              </div>
+              <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-2">
+                <div className="text-cortai-text3">{t("triage.reasoning")}</div>
+                <div className="mt-1 whitespace-pre-wrap text-cortai-text2">{triage.reasoning_md}</div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" onClick={() => setTriageOpen(false)} disabled={triageLoading}>
+              {t("triage.cancel")}
+            </Button>
+            <Button type="button" onClick={() => void acceptTriage()} disabled={!triage || triageLoading}>
+              {t("triage.accept")}
+            </Button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
