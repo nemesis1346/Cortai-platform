@@ -1,0 +1,6 @@
+[
+  { "ts": "2026-06-08T00:00:00Z", "type": "temperature", "value": 22.1, "unit": "C" },
+  { "ts": "2026-06-08T01:00:00Z", "type": "temperature", "value": 21.9, "unit": "C" },
+  { "ts": "2026-06-08T02:00:00Z", "type": "temperature", "value": 22.0, "unit": "C" }
+]
+

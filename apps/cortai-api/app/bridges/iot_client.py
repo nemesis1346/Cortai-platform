@@ -64,6 +64,36 @@ async def get_sensors(request: Request) -> Any:
     return _decode_json_response(resp)
 
 
+async def get_device_readings(
+    request: Request, *, device_id: str, params_override: dict[str, Any] | None = None
+) -> Any:
+    settings = get_settings()
+    mode = settings.bridges_mode.lower().strip()
+    params = params_override if params_override is not None else dict(request.query_params)
+    if mode == "mock":
+        return load_fixture("iot_device_readings.json")
+    if mode != "real":
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invalid BRIDGES_MODE",
+        )
+    if not settings.iot_bridge_base_url:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="IOT_BRIDGE_BASE_URL not set",
+        )
+
+    headers = _forward_headers(request)
+    timeout = httpx.Timeout(10.0, connect=5.0)
+    async with httpx.AsyncClient(base_url=settings.iot_bridge_base_url, timeout=timeout) as client:
+        resp = await client.get(
+            f"/api/iot/v1/devices/{device_id}/readings",
+            params=params,
+            headers=headers,
+        )
+    return _decode_json_response(resp)
+
+
 async def get_room_iot(*, request: Request, room_id: uuid.UUID) -> Any:
     settings = get_settings()
     mode = settings.bridges_mode.lower().strip()
