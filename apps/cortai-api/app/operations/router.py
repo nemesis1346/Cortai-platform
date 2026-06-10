@@ -27,6 +27,7 @@ from app.operations.guest_services_router import router as guest_services_router
 from app.operations.shift_handover_router import router as shift_handover_router
 from app.operations.hvac_router import router as hvac_router
 from app.operations.fb_router import router as fb_router
+from app.operations.fitness_router import router as fitness_router
 from app.operations.pool_router import router as pool_router
 from app.operations.spa_router import router as spa_router
 
@@ -227,6 +228,7 @@ router.include_router(guest_services_router)
 router.include_router(shift_handover_router)
 router.include_router(hvac_router)
 router.include_router(fb_router)
+router.include_router(fitness_router)
 router.include_router(pool_router)
 router.include_router(spa_router)
 router.include_router(housekeeping_router)
