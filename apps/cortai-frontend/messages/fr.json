@@ -36,6 +36,7 @@
     "foodBreakfast": "Restauration & Petit-déjeuner",
     "poolSpa": "Piscine & Spa",
     "fitness": "Fitness",
+    "meetingsEvents": "Réunions & Événements",
     "shiftHandover": "Passation de quart",
     "hvac": "CVC",
     "liveBadge": "EN DIRECT",
@@ -628,6 +629,38 @@
         "classCreated": { "title": "Cours créé", "description": "Cours fitness créé avec succès." },
         "classUpdated": { "title": "Cours mis à jour", "description": "Cours fitness mis à jour avec succès." },
         "checkinCreated": { "title": "Entrée créée", "description": "Entrée fitness créée avec succès." }
+      }
+    }
+    ,
+    "meetingsEvents": {
+      "title": "Réunions & Événements",
+      "subtitle": "Salles de réunion et inventaire.",
+      "selectProperty": "Sélectionnez une propriété pour voir Réunions & Événements.",
+      "refresh": "Actualiser",
+      "loading": "Chargement…",
+      "close": "Fermer",
+      "rooms": {
+        "title": "Salles de réunion",
+        "new": "Nouvelle salle",
+        "empty": "Aucune salle.",
+        "noEquipment": "—",
+        "edit": "Modifier",
+        "delete": "Supprimer",
+        "cols": { "name": "Nom", "capacity": "Capacité", "equipment": "Équipement", "actions": "Actions" },
+        "modal": {
+          "newTitle": "Nouvelle salle",
+          "editTitle": "Modifier la salle",
+          "name": "Nom",
+          "capacity": "Capacité",
+          "equipment": "Équipement (séparé par des virgules)",
+          "submit": "Enregistrer"
+        }
+      },
+      "toast": {
+        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
+        "created": { "title": "Salle créée", "description": "Salle créée avec succès." },
+        "updated": { "title": "Salle mise à jour", "description": "Salle mise à jour avec succès." },
+        "deleted": { "title": "Salle supprimée", "description": "Salle supprimée avec succès." }
       }
     }
   },

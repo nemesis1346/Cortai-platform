@@ -30,6 +30,7 @@ from app.operations.fb_router import router as fb_router
 from app.operations.fitness_router import router as fitness_router
 from app.operations.pool_router import router as pool_router
 from app.operations.spa_router import router as spa_router
+from app.operations.meetings_router import router as meetings_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
@@ -231,6 +232,7 @@ router.include_router(fb_router)
 router.include_router(fitness_router)
 router.include_router(pool_router)
 router.include_router(spa_router)
+router.include_router(meetings_router)
 router.include_router(housekeeping_router)
 router.include_router(header_router)
 

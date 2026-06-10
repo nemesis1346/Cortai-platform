@@ -166,6 +166,7 @@ export function Sidebar({ locale }: { locale: string }) {
           { id: "foodBreakfast", label: t("foodBreakfast"), href: (l) => `/${l}/dashboard/operations/food-breakfast` },
           { id: "poolSpa", label: t("poolSpa"), href: (l) => `/${l}/dashboard/operations/pool-spa` },
           { id: "fitness", label: t("fitness"), href: (l) => `/${l}/dashboard/operations/fitness` },
+          { id: "meetingsEvents", label: t("meetingsEvents"), href: (l) => `/${l}/dashboard/operations/meetings-events` },
           { id: "shiftHandover", label: t("shiftHandover"), href: (l) => `/${l}/dashboard/operations/shift-handover` },
           { id: "hvac", label: t("hvac"), href: (l) => `/${l}/dashboard/operations/hvac` },
           { id: "live", label: t("live"), href: (l) => `/${l}/dashboard/live` },

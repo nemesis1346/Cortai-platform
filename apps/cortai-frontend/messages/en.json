@@ -36,6 +36,7 @@
     "foodBreakfast": "Food & Breakfast",
     "poolSpa": "Pool & Spa",
     "fitness": "Fitness",
+    "meetingsEvents": "Meetings & Events",
     "shiftHandover": "Shift Handover",
     "hvac": "HVAC",
     "liveBadge": "LIVE",
@@ -628,6 +629,38 @@
         "classCreated": { "title": "Class created", "description": "Fitness class created successfully." },
         "classUpdated": { "title": "Class updated", "description": "Fitness class updated successfully." },
         "checkinCreated": { "title": "Check-in created", "description": "Fitness check-in created successfully." }
+      }
+    }
+    ,
+    "meetingsEvents": {
+      "title": "Meetings & Events",
+      "subtitle": "Meeting rooms setup and inventory.",
+      "selectProperty": "Select a property to view Meetings & Events.",
+      "refresh": "Refresh",
+      "loading": "Loading…",
+      "close": "Close",
+      "rooms": {
+        "title": "Meeting rooms",
+        "new": "New room",
+        "empty": "No meeting rooms.",
+        "noEquipment": "—",
+        "edit": "Edit",
+        "delete": "Delete",
+        "cols": { "name": "Name", "capacity": "Capacity", "equipment": "Equipment", "actions": "Actions" },
+        "modal": {
+          "newTitle": "New meeting room",
+          "editTitle": "Edit meeting room",
+          "name": "Name",
+          "capacity": "Capacity",
+          "equipment": "Equipment (comma-separated)",
+          "submit": "Save"
+        }
+      },
+      "toast": {
+        "failed": { "title": "Request failed", "description": "Please try again." },
+        "created": { "title": "Room created", "description": "Meeting room created successfully." },
+        "updated": { "title": "Room updated", "description": "Meeting room updated successfully." },
+        "deleted": { "title": "Room deleted", "description": "Meeting room deleted successfully." }
       }
     }
   },
