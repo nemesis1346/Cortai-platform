@@ -77,3 +77,34 @@ class GuestMessageSendRequest(BaseModel):
 class GuestMessageSendResponse(BaseModel):
     message: GuestMessageRead
 
+
+class GuestMessageTemplateRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+
+    name: str = Field(min_length=1, max_length=180)
+    language: GuestMessageLanguage
+    body_template: str = Field(min_length=1)
+    variables: list[str] = Field(default_factory=list)
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class GuestMessageTemplateList(BaseModel):
+    items: list[GuestMessageTemplateRead]
+
+
+class GuestMessageTemplateCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=180)
+    language: GuestMessageLanguage
+    body_template: str = Field(min_length=1)
+    variables: list[str] = Field(default_factory=list)
+
+
+class GuestMessageTemplateUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=180)
+    language: GuestMessageLanguage | None = None
+    body_template: str | None = Field(default=None, min_length=1)
+    variables: list[str] | None = None
+

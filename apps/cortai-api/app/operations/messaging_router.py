@@ -15,6 +15,10 @@ from app.operations.messaging_schemas import (
     GuestMessageRead,
     GuestMessageSendRequest,
     GuestMessageSendResponse,
+    GuestMessageTemplateCreate,
+    GuestMessageTemplateList,
+    GuestMessageTemplateRead,
+    GuestMessageTemplateUpdate,
     GuestMessageThreadList,
     GuestMessageThreadRead,
 )
@@ -223,4 +227,122 @@ async def send_thread_message(
 
     await session.commit()
     return GuestMessageSendResponse(message=GuestMessageRead(**dict(row)))
+
+
+@router.get("/templates", response_model=GuestMessageTemplateList)
+async def list_message_templates(
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+    language: str | None = Query(default=None),
+    name: str | None = Query(default=None),
+) -> GuestMessageTemplateList:
+    filters = ["org_id = :org_id"]
+    params: dict[str, object] = {"org_id": str(principal.org_id)}
+    if language is not None and str(language).strip():
+        filters.append("language = :language")
+        params["language"] = str(language).strip().lower()
+    if name is not None and str(name).strip():
+        filters.append("name ilike :name")
+        params["name"] = f"%{str(name).strip()}%"
+    where = " and ".join(filters)
+
+    rows = (
+        await session.execute(
+            text(
+                f"""
+                select
+                  id, org_id, name, language, body_template, variables,
+                  created_at, updated_at
+                from ops.guest_message_templates
+                where {where}
+                order by name asc, language asc, id asc
+                """  # noqa: S608
+            ),
+            params,
+        )
+    ).mappings().all()
+    return GuestMessageTemplateList(items=[GuestMessageTemplateRead(**dict(r)) for r in rows])
+
+
+@router.post("/templates", response_model=GuestMessageTemplateRead, status_code=status.HTTP_201_CREATED)
+async def create_message_template(
+    payload: GuestMessageTemplateCreate,
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+) -> GuestMessageTemplateRead:
+    row = (
+        await session.execute(
+            text(
+                """
+                insert into ops.guest_message_templates (
+                  id, org_id, name, language, body_template, variables,
+                  created_at, updated_at
+                )
+                values (
+                  gen_random_uuid(), :org_id, :name, :language, :body_template, :variables,
+                  now(), now()
+                )
+                returning
+                  id, org_id, name, language, body_template, variables,
+                  created_at, updated_at
+                """
+            ),
+            {
+                "org_id": str(principal.org_id),
+                "name": payload.name,
+                "language": payload.language.value,
+                "body_template": payload.body_template,
+                "variables": payload.variables,
+            },
+        )
+    ).mappings().one()
+    await session.commit()
+    return GuestMessageTemplateRead(**dict(row))
+
+
+@router.patch("/templates/{template_id}", response_model=GuestMessageTemplateRead)
+async def update_message_template(
+    template_id: uuid.UUID,
+    payload: GuestMessageTemplateUpdate,
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+) -> GuestMessageTemplateRead:
+    data = payload.model_dump(exclude_unset=True)
+    if not data:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+
+    sets: list[str] = []
+    params: dict[str, object] = {"id": str(template_id), "org_id": str(principal.org_id)}
+    if "name" in data:
+        sets.append("name = :name")
+        params["name"] = data["name"]
+    if "language" in data and data["language"] is not None:
+        sets.append("language = :language")
+        params["language"] = data["language"].value
+    if "body_template" in data:
+        sets.append("body_template = :body_template")
+        params["body_template"] = data["body_template"]
+    if "variables" in data:
+        sets.append("variables = :variables")
+        params["variables"] = data["variables"]
+
+    row = (
+        await session.execute(
+            text(
+                f"""
+                update ops.guest_message_templates
+                set {", ".join(sets)}
+                where id = :id and org_id = :org_id
+                returning
+                  id, org_id, name, language, body_template, variables,
+                  created_at, updated_at
+                """  # noqa: S608
+            ),
+            params,
+        )
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
+    await session.commit()
+    return GuestMessageTemplateRead(**dict(row))
 
