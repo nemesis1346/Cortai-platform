@@ -45,6 +45,23 @@ async def get_breakfast_status(
     return await iot_client.get_fb_breakfast_status(request)
 
 
+@router.get("/restaurant/tables")
+async def list_restaurant_tables(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID = Query(...),
+) -> Any:
+    exists = await session.scalar(
+        text("select 1 from properties where id = :id and org_id = :org_id"),
+        {"id": str(property_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+
+    return await iot_client.get_fb_restaurant_tables(request)
+
+
 @router.get("/menu", response_model=FbMenuList)
 async def list_menu_items(
     principal: PrincipalDep,

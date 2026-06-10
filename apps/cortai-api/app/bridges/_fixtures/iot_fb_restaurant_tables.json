@@ -1,0 +1,19 @@
+[
+  {
+    "table_id": "t1",
+    "zone": "main",
+    "seats": 4,
+    "occupied": true,
+    "party_size": 2,
+    "last_updated": "2026-01-01T00:00:00Z"
+  },
+  {
+    "table_id": "t2",
+    "zone": "window",
+    "seats": 2,
+    "occupied": false,
+    "party_size": 0,
+    "last_updated": "2026-01-01T00:00:00Z"
+  }
+]
+
