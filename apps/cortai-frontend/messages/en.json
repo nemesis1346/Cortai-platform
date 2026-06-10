@@ -33,6 +33,7 @@
     "roomMonitor": "Room Monitor",
     "frontDesk": "Front Desk",
     "guestServices": "Guest Services",
+    "foodBreakfast": "Food & Breakfast",
     "shiftHandover": "Shift Handover",
     "hvac": "HVAC",
     "liveBadge": "LIVE",
@@ -398,6 +399,104 @@
         "fan": "Fan",
         "fault": "Fault",
         "updated": "Updated"
+      }
+    }
+    ,
+    "foodBreakfast": {
+      "title": "Food & Breakfast",
+      "subtitle": "Breakfast status, restaurant tables, menu items, and room service orders.",
+      "selectProperty": "Select a property to view Food & Breakfast.",
+      "refresh": "Refresh",
+      "loading": "Loading…",
+      "empty": "No data.",
+      "close": "Close",
+      "save": "Save",
+      "breakfastStatus": {
+        "title": "Breakfast status",
+        "count": "{count} guests",
+        "capacity": "Capacity {capacity}",
+        "level": { "quiet": "Quiet", "moderate": "Moderate", "busy": "Busy" }
+      },
+      "tables": {
+        "title": "Restaurant tables",
+        "summary": "{occupied}/{total} occupied",
+        "empty": "No table sensor data yet.",
+        "occupied": "Occupied",
+        "free": "Free",
+        "meta": "{zone} · seats {seats} · party {party}"
+      },
+      "menu": {
+        "title": "Menu",
+        "new": "New item",
+        "edit": "Edit",
+        "yes": "Yes",
+        "no": "No",
+        "empty": "No menu items.",
+        "service": { "breakfast": "Breakfast", "restaurant": "Restaurant", "room_service": "Room service", "roomService": "Room service" },
+        "filters": {
+          "allServices": "All services",
+          "allAvailability": "All availability",
+          "available": "Available",
+          "unavailable": "Unavailable",
+          "apply": "Apply"
+        },
+        "cols": {
+          "service": "Service",
+          "name": "Name",
+          "price": "Price",
+          "allergens": "Allergens",
+          "available": "Available",
+          "updated": "Updated",
+          "actions": "Actions"
+        },
+        "modal": {
+          "newTitle": "New menu item",
+          "editTitle": "Edit menu item",
+          "service": "Service",
+          "nameEn": "Name (EN)",
+          "nameFr": "Name (FR)",
+          "priceCents": "Price (cents)",
+          "allergens": "Allergens (comma-separated)",
+          "available": "Available"
+        }
+      },
+      "roomService": {
+        "title": "Room service orders",
+        "new": "New order",
+        "empty": "No room service orders.",
+        "detail": "Detail",
+        "detailTitle": "Order {id}",
+        "detailRoom": "Room {room}",
+        "detailStatus": "Status: {status}",
+        "filters": { "allStatuses": "All statuses", "apply": "Apply" },
+        "status": {
+          "received": "Received",
+          "preparing": "Preparing",
+          "en_route": "En route",
+          "delivered": "Delivered",
+          "cancelled": "Cancelled"
+        },
+        "cols": { "room": "Room", "status": "Status", "items": "Items", "updated": "Updated", "actions": "Actions" },
+        "actions": {
+          "received": "Received",
+          "preparing": "Preparing",
+          "enRoute": "En route",
+          "delivered": "Delivered",
+          "cancelled": "Cancel"
+        },
+        "modal": {
+          "newTitle": "New room service order",
+          "roomId": "Room ID (UUID)",
+          "itemsJson": "Items JSON",
+          "submit": "Create order"
+        }
+      },
+      "toast": {
+        "failed": { "title": "Request failed", "description": "Please try again." },
+        "menuCreated": { "title": "Menu item created", "description": "Menu item created successfully." },
+        "menuUpdated": { "title": "Menu item updated", "description": "Menu item updated successfully." },
+        "orderCreated": { "title": "Order created", "description": "Room service order created successfully." },
+        "invalidJson": { "title": "Invalid JSON", "description": "Items JSON must be valid JSON." }
       }
     }
   },

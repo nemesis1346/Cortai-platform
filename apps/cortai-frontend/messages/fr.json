@@ -33,6 +33,7 @@
     "roomMonitor": "Surveillance des chambres",
     "frontDesk": "Réception",
     "guestServices": "Services aux clients",
+    "foodBreakfast": "Restauration & Petit-déjeuner",
     "shiftHandover": "Passation de quart",
     "hvac": "CVC",
     "liveBadge": "EN DIRECT",
@@ -398,6 +399,104 @@
         "fan": "Ventil.",
         "fault": "Défaut",
         "updated": "Maj"
+      }
+    }
+    ,
+    "foodBreakfast": {
+      "title": "Restauration & Petit-déjeuner",
+      "subtitle": "Statut du petit-déjeuner, tables du restaurant, menu et service de chambre.",
+      "selectProperty": "Sélectionnez une propriété pour voir la restauration.",
+      "refresh": "Actualiser",
+      "loading": "Chargement…",
+      "empty": "Aucune donnée.",
+      "close": "Fermer",
+      "save": "Enregistrer",
+      "breakfastStatus": {
+        "title": "Statut du petit-déjeuner",
+        "count": "{count} clients",
+        "capacity": "Capacité {capacity}",
+        "level": { "quiet": "Calme", "moderate": "Modéré", "busy": "Achalandé" }
+      },
+      "tables": {
+        "title": "Tables du restaurant",
+        "summary": "{occupied}/{total} occupées",
+        "empty": "Aucune donnée capteur pour le moment.",
+        "occupied": "Occupée",
+        "free": "Libre",
+        "meta": "{zone} · places {seats} · groupe {party}"
+      },
+      "menu": {
+        "title": "Menu",
+        "new": "Nouvel article",
+        "edit": "Modifier",
+        "yes": "Oui",
+        "no": "Non",
+        "empty": "Aucun article de menu.",
+        "service": { "breakfast": "Petit-déjeuner", "restaurant": "Restaurant", "room_service": "Service de chambre", "roomService": "Service de chambre" },
+        "filters": {
+          "allServices": "Tous les services",
+          "allAvailability": "Toutes disponibilités",
+          "available": "Disponible",
+          "unavailable": "Indisponible",
+          "apply": "Appliquer"
+        },
+        "cols": {
+          "service": "Service",
+          "name": "Nom",
+          "price": "Prix",
+          "allergens": "Allergènes",
+          "available": "Disponible",
+          "updated": "Maj",
+          "actions": "Actions"
+        },
+        "modal": {
+          "newTitle": "Nouvel article de menu",
+          "editTitle": "Modifier l’article",
+          "service": "Service",
+          "nameEn": "Nom (EN)",
+          "nameFr": "Nom (FR)",
+          "priceCents": "Prix (cents)",
+          "allergens": "Allergènes (séparés par des virgules)",
+          "available": "Disponible"
+        }
+      },
+      "roomService": {
+        "title": "Commandes service de chambre",
+        "new": "Nouvelle commande",
+        "empty": "Aucune commande.",
+        "detail": "Détail",
+        "detailTitle": "Commande {id}",
+        "detailRoom": "Chambre {room}",
+        "detailStatus": "Statut : {status}",
+        "filters": { "allStatuses": "Tous les statuts", "apply": "Appliquer" },
+        "status": {
+          "received": "Reçue",
+          "preparing": "Préparation",
+          "en_route": "En route",
+          "delivered": "Livrée",
+          "cancelled": "Annulée"
+        },
+        "cols": { "room": "Chambre", "status": "Statut", "items": "Articles", "updated": "Maj", "actions": "Actions" },
+        "actions": {
+          "received": "Reçue",
+          "preparing": "Préparation",
+          "enRoute": "En route",
+          "delivered": "Livrée",
+          "cancelled": "Annuler"
+        },
+        "modal": {
+          "newTitle": "Nouvelle commande service de chambre",
+          "roomId": "ID chambre (UUID)",
+          "itemsJson": "JSON des articles",
+          "submit": "Créer la commande"
+        }
+      },
+      "toast": {
+        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
+        "menuCreated": { "title": "Article créé", "description": "Article de menu créé avec succès." },
+        "menuUpdated": { "title": "Article mis à jour", "description": "Article de menu mis à jour avec succès." },
+        "orderCreated": { "title": "Commande créée", "description": "Commande créée avec succès." },
+        "invalidJson": { "title": "JSON invalide", "description": "Le JSON des articles doit être valide." }
       }
     }
   },
