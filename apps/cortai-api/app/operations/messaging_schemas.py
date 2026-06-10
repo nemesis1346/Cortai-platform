@@ -37,3 +37,28 @@ class GuestMessageThreadRead(BaseModel):
 class GuestMessageThreadList(BaseModel):
     items: list[GuestMessageThreadRead]
 
+
+class GuestMessageDirection(enum.StrEnum):
+    INBOUND = "in"
+    OUTBOUND = "out"
+
+
+class GuestMessageRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+
+    thread_id: str = Field(min_length=1, max_length=128)
+    channel: GuestMessageChannel
+    direction: GuestMessageDirection
+    guest_id: uuid.UUID
+    body: str
+    status: str | None = Field(default=None, max_length=32)
+    sent_at: datetime
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class GuestMessageList(BaseModel):
+    items: list[GuestMessageRead]
+

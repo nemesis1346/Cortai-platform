@@ -1,10 +1,17 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Query
+import uuid
+
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import text
 
 from app.db import SessionDep
-from app.operations.messaging_schemas import GuestMessageThreadList, GuestMessageThreadRead
+from app.operations.messaging_schemas import (
+    GuestMessageList,
+    GuestMessageRead,
+    GuestMessageThreadList,
+    GuestMessageThreadRead,
+)
 from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/messaging", tags=["operations-messaging"])
@@ -56,4 +63,45 @@ async def list_message_threads(
         )
     ).mappings().all()
     return GuestMessageThreadList(items=[GuestMessageThreadRead(**dict(r)) for r in rows])
+
+
+@router.get("/threads/{thread_pk}/messages", response_model=GuestMessageList)
+async def list_thread_messages(
+    thread_pk: uuid.UUID,
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+    limit: int = Query(default=200, ge=1, le=500),
+) -> GuestMessageList:
+    # Ensure the thread exists in this org (RLS-scoped) and fetch its thread_id.
+    thread_id = await session.scalar(
+        text(
+            """
+            select thread_id
+            from ops.guest_message_threads
+            where id = :id and org_id = :org_id
+            """
+        ),
+        {"id": str(thread_pk), "org_id": str(principal.org_id)},
+    )
+    if thread_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    rows = (
+        await session.execute(
+            text(
+                """
+                select
+                  id, org_id, thread_id, channel, direction, guest_id,
+                  body, status, sent_at,
+                  created_at, updated_at
+                from ops.guest_messages
+                where org_id = :org_id and thread_id = :thread_id
+                order by sent_at asc, id asc
+                limit :limit
+                """
+            ),
+            {"org_id": str(principal.org_id), "thread_id": str(thread_id), "limit": limit},
+        )
+    ).mappings().all()
+    return GuestMessageList(items=[GuestMessageRead(**dict(r)) for r in rows])
 
