@@ -314,6 +314,12 @@
         "assigned": "Assigned",
         "unassigned": "Unassigned"
       },
+      "actions": {
+        "markRead": "Mark read",
+        "markUnread": "Mark unread",
+        "assignToMe": "Assign to me",
+        "unassign": "Unassign"
+      },
       "conversation": {
         "title": "Conversation",
         "empty": "Select a thread to view messages.",
@@ -332,7 +338,9 @@
         "send": "Send"
       },
       "toast": {
-        "sent": { "title": "Message sent", "description": "The outbound message was dispatched." }
+        "sent": { "title": "Message sent", "description": "The outbound message was dispatched." },
+        "assigned": { "title": "Assigned", "description": "Thread assigned successfully." },
+        "unassigned": { "title": "Unassigned", "description": "Thread unassigned successfully." }
       }
     }
     ,

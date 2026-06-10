@@ -405,3 +405,87 @@ async def assign_message_thread(
     await session.commit()
     return GuestMessageThreadRead(**dict(row))
 
+
+@router.post("/threads/{thread_pk}/read", response_model=GuestMessageThreadRead)
+async def mark_thread_read(
+    thread_pk: uuid.UUID,
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+) -> GuestMessageThreadRead:
+    row = (
+        await session.execute(
+            text(
+                """
+                update ops.guest_message_threads
+                set unread_count = 0
+                where id = :id and org_id = :org_id
+                returning
+                  id, org_id, property_id,
+                  thread_id, guest_id,
+                  channel, status, assigned_to_user_id,
+                  unread_count, last_message_at,
+                  created_at, updated_at
+                """
+            ),
+            {"id": str(thread_pk), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    await publish_live_event(
+        session,
+        {
+            "type": "message.thread.read",
+            "org_id": str(principal.org_id),
+            "property_id": str(row["property_id"]),
+            "thread_id": str(row["thread_id"]),
+            "thread_pk": str(row["id"]),
+        },
+    )
+
+    await session.commit()
+    return GuestMessageThreadRead(**dict(row))
+
+
+@router.post("/threads/{thread_pk}/unread", response_model=GuestMessageThreadRead)
+async def mark_thread_unread(
+    thread_pk: uuid.UUID,
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+) -> GuestMessageThreadRead:
+    row = (
+        await session.execute(
+            text(
+                """
+                update ops.guest_message_threads
+                set unread_count = 1
+                where id = :id and org_id = :org_id
+                returning
+                  id, org_id, property_id,
+                  thread_id, guest_id,
+                  channel, status, assigned_to_user_id,
+                  unread_count, last_message_at,
+                  created_at, updated_at
+                """
+            ),
+            {"id": str(thread_pk), "org_id": str(principal.org_id)},
+        )
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    await publish_live_event(
+        session,
+        {
+            "type": "message.thread.unread",
+            "org_id": str(principal.org_id),
+            "property_id": str(row["property_id"]),
+            "thread_id": str(row["thread_id"]),
+            "thread_pk": str(row["id"]),
+        },
+    )
+
+    await session.commit()
+    return GuestMessageThreadRead(**dict(row))
+

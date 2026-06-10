@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { useRealtimeSocket } from "@/hooks/use-realtime-socket";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 type Thread = {
   id: string;
@@ -135,6 +136,7 @@ export function GuestMessagingClient({ initialPropertyId }: { initialPropertyId:
   const t = useTranslations("operations.guestMessaging");
   const tc = useTranslations("operations.common");
   const { notify } = useToast();
+  const { user } = useAuth();
   const [propertyId, setPropertyId] = useState(initialPropertyId);
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
@@ -260,6 +262,42 @@ export function GuestMessagingClient({ initialPropertyId }: { initialPropertyId:
     notify({ title: t("toast.sent.title"), description: t("toast.sent.description"), tone: "success" });
   }
 
+  async function assignToMe() {
+    if (!selectedThread || !user) return;
+    const updated = await apiFetch<Thread>(`/api/operations/messaging/threads/${encodeURIComponent(selectedThread.id)}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ assigned_to_user_id: user.id })
+    });
+    setThreads((prev) => prev.map((th) => (th.id === updated.id ? { ...th, ...updated } : th)));
+    notify({ title: t("toast.assigned.title"), description: t("toast.assigned.description"), tone: "success" });
+  }
+
+  async function unassign() {
+    if (!selectedThread) return;
+    const updated = await apiFetch<Thread>(`/api/operations/messaging/threads/${encodeURIComponent(selectedThread.id)}/assign`, {
+      method: "POST",
+      body: JSON.stringify({ assigned_to_user_id: null })
+    });
+    setThreads((prev) => prev.map((th) => (th.id === updated.id ? { ...th, ...updated } : th)));
+    notify({ title: t("toast.unassigned.title"), description: t("toast.unassigned.description"), tone: "success" });
+  }
+
+  async function markRead() {
+    if (!selectedThread) return;
+    const updated = await apiFetch<Thread>(`/api/operations/messaging/threads/${encodeURIComponent(selectedThread.id)}/read`, {
+      method: "POST"
+    });
+    setThreads((prev) => prev.map((th) => (th.id === updated.id ? { ...th, ...updated } : th)));
+  }
+
+  async function markUnread() {
+    if (!selectedThread) return;
+    const updated = await apiFetch<Thread>(`/api/operations/messaging/threads/${encodeURIComponent(selectedThread.id)}/unread`, {
+      method: "POST"
+    });
+    setThreads((prev) => prev.map((th) => (th.id === updated.id ? { ...th, ...updated } : th)));
+  }
+
   if (!propertyId) {
     return (
       <div className="rounded-lg border border-cortai-border bg-cortai-bg2 p-4">
@@ -360,7 +398,49 @@ export function GuestMessagingClient({ initialPropertyId }: { initialPropertyId:
           </div>
         </Card>
 
-        <Card title={selectedThread ? displayGuest(selectedThread) : t("conversation.title")}>
+        <Card
+          title={selectedThread ? displayGuest(selectedThread) : t("conversation.title")}
+          action={
+            selectedThread ? (
+              <div className="flex flex-wrap gap-2" data-testid="guest-messaging-thread-actions">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => void markRead()}
+                  disabled={selectedThread.unread_count === 0}
+                  data-testid="guest-messaging-mark-read"
+                >
+                  {t("actions.markRead")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => void markUnread()}
+                  data-testid="guest-messaging-mark-unread"
+                >
+                  {t("actions.markUnread")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => void assignToMe()}
+                  disabled={!user}
+                  data-testid="guest-messaging-assign-to-me"
+                >
+                  {t("actions.assignToMe")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => void unassign()}
+                  data-testid="guest-messaging-unassign"
+                >
+                  {t("actions.unassign")}
+                </Button>
+              </div>
+            ) : null
+          }
+        >
           {!selectedThread ? (
             <p className="text-xs text-cortai-text2">{t("conversation.empty")}</p>
           ) : (

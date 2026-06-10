@@ -314,6 +314,12 @@
         "assigned": "Assigné",
         "unassigned": "Non assigné"
       },
+      "actions": {
+        "markRead": "Marquer comme lu",
+        "markUnread": "Marquer comme non lu",
+        "assignToMe": "Me l’assigner",
+        "unassign": "Désassigner"
+      },
       "conversation": {
         "title": "Conversation",
         "empty": "Sélectionnez un fil pour voir les messages.",
@@ -332,7 +338,9 @@
         "send": "Envoyer"
       },
       "toast": {
-        "sent": { "title": "Message envoyé", "description": "Le message sortant a été envoyé." }
+        "sent": { "title": "Message envoyé", "description": "Le message sortant a été envoyé." },
+        "assigned": { "title": "Assigné", "description": "Fil assigné avec succès." },
+        "unassigned": { "title": "Désassigné", "description": "Fil désassigné avec succès." }
       }
     }
     ,
