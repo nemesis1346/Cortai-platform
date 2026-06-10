@@ -108,3 +108,7 @@ class GuestMessageTemplateUpdate(BaseModel):
     body_template: str | None = Field(default=None, min_length=1)
     variables: list[str] | None = None
 
+
+class GuestMessageThreadAssignRequest(BaseModel):
+    assigned_to_user_id: uuid.UUID | None = None
+

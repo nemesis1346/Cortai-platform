@@ -19,6 +19,7 @@ from app.operations.messaging_schemas import (
     GuestMessageTemplateList,
     GuestMessageTemplateRead,
     GuestMessageTemplateUpdate,
+    GuestMessageThreadAssignRequest,
     GuestMessageThreadList,
     GuestMessageThreadRead,
 )
@@ -345,4 +346,62 @@ async def update_message_template(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
     await session.commit()
     return GuestMessageTemplateRead(**dict(row))
+
+
+@router.post("/threads/{thread_pk}/assign", response_model=GuestMessageThreadRead)
+async def assign_message_thread(
+    thread_pk: uuid.UUID,
+    payload: GuestMessageThreadAssignRequest,
+    principal: OperationsPrincipalDep,
+    session: SessionDep,
+) -> GuestMessageThreadRead:
+    # Validate assignee exists in this org (avoid FK 500s).
+    if payload.assigned_to_user_id is not None:
+        exists = await session.scalar(
+            text("select 1 from users where id = :id and org_id = :org_id"),
+            {"id": str(payload.assigned_to_user_id), "org_id": str(principal.org_id)},
+        )
+        if exists is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignee user not found")
+
+    row = (
+        await session.execute(
+            text(
+                """
+                update ops.guest_message_threads
+                set assigned_to_user_id = :assigned_to_user_id
+                where id = :id and org_id = :org_id
+                returning
+                  id, org_id, property_id,
+                  thread_id, guest_id,
+                  channel, status, assigned_to_user_id,
+                  unread_count, last_message_at,
+                  created_at, updated_at
+                """
+            ),
+            {
+                "id": str(thread_pk),
+                "org_id": str(principal.org_id),
+                "assigned_to_user_id": str(payload.assigned_to_user_id) if payload.assigned_to_user_id else None,
+            },
+        )
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+
+    # Emit replayable event.
+    await publish_live_event(
+        session,
+        {
+            "type": "message.thread.assigned",
+            "org_id": str(principal.org_id),
+            "property_id": str(row["property_id"]),
+            "thread_id": str(row["thread_id"]),
+            "thread_pk": str(row["id"]),
+            "assigned_to_user_id": str(payload.assigned_to_user_id) if payload.assigned_to_user_id else None,
+        },
+    )
+
+    await session.commit()
+    return GuestMessageThreadRead(**dict(row))
 
