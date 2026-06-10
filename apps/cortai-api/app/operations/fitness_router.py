@@ -40,6 +40,23 @@ async def get_fitness_capacity(
     return await iot_client.get_fitness_capacity(request)
 
 
+@router.get("/equipment")
+async def get_fitness_equipment(
+    request: Request,
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID = Query(...),
+) -> Any:
+    exists = await session.scalar(
+        text("select 1 from properties where id = :id and org_id = :org_id"),
+        {"id": str(property_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+
+    return await iot_client.get_fitness_equipment(request)
+
+
 @router.get("/classes", response_model=FitnessClassList)
 async def list_fitness_classes(
     principal: PrincipalDep,
