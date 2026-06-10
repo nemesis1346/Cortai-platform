@@ -5,7 +5,6 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.bridges import iot_client
 from app.db import SessionDep
 from app.operations.meetings_schemas import (
@@ -19,13 +18,14 @@ from app.operations.meetings_schemas import (
     MeetingRoomRead,
     MeetingRoomUpdate,
 )
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/meetings", tags=["operations-meetings"])
 
 
 @router.get("/rooms", response_model=MeetingRoomList)
 async def list_meeting_rooms(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> MeetingRoomList:
@@ -58,7 +58,7 @@ async def list_meeting_rooms(
 @router.post("/rooms", response_model=MeetingRoomRead, status_code=status.HTTP_201_CREATED)
 async def create_meeting_room(
     payload: MeetingRoomCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> MeetingRoomRead:
     exists = await session.scalar(
@@ -105,7 +105,7 @@ async def create_meeting_room(
 async def update_meeting_room(
     room_id: uuid.UUID,
     payload: MeetingRoomUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> MeetingRoomRead:
     data = payload.model_dump(exclude_unset=True)
@@ -160,7 +160,7 @@ async def update_meeting_room(
 @router.delete("/rooms/{room_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_meeting_room(
     room_id: uuid.UUID,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> None:
     deleted = await session.execute(
@@ -175,7 +175,7 @@ async def delete_meeting_room(
 
 @router.get("/bookings", response_model=MeetingBookingList)
 async def list_meeting_bookings(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     meeting_room_id: uuid.UUID | None = Query(default=None),
@@ -235,7 +235,7 @@ async def list_meeting_bookings(
 @router.post("/bookings", response_model=MeetingBookingRead, status_code=status.HTTP_201_CREATED)
 async def create_meeting_booking(
     payload: MeetingBookingCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> MeetingBookingRead:
     exists = await session.scalar(
@@ -301,7 +301,7 @@ async def create_meeting_booking(
 async def update_meeting_booking(
     booking_id: uuid.UUID,
     payload: MeetingBookingUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> MeetingBookingRead:
     data = payload.model_dump(exclude_unset=True)
@@ -380,7 +380,7 @@ async def update_meeting_booking(
 async def set_meeting_booking_setup_status(
     booking_id: uuid.UUID,
     payload: MeetingBookingSetupStatusUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> MeetingBookingRead:
     row = (
@@ -410,7 +410,7 @@ async def set_meeting_booking_setup_status(
 async def get_meeting_booking_attendance(
     request: Request,
     booking_id: uuid.UUID,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> object:
     """

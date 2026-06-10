@@ -87,6 +87,44 @@ async def test_meetings_rooms_crud(seeded_property_for_meetings_rooms) -> None: 
 
 
 @pytest.mark.asyncio
+async def test_meetings_rooms_mutation_writes_audit_log(seeded_property_for_meetings_rooms) -> None:  # type: ignore[no-untyped-def]
+    org_id = seeded_property_for_meetings_rooms["org_id"]
+    prop_id = seeded_property_for_meetings_rooms["property_id"]
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_id))
+        await session.execute(text("truncate table audit.change_log"))
+        await session.commit()
+
+    async with _client_for_org(org_id=org_id) as client:
+        created = await client.post(
+            "/api/operations/meetings/rooms",
+            json={"property_id": str(prop_id), "name": "Audit Room", "capacity": 12, "equipment": []},
+        )
+    assert created.status_code == 201
+
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_id))
+        row = (
+            await session.execute(
+                text(
+                    """
+                    select action, entity_type, after_json
+                    from audit.change_log
+                    where org_id = :org_id
+                    order by ts desc
+                    limit 1
+                    """
+                ),
+                {"org_id": str(org_id)},
+            )
+        ).mappings().one()
+
+    assert row["action"] == "post"
+    assert row["entity_type"] == "operations"
+    assert row["after_json"]["name"] == "Audit Room"
+
+
+@pytest.mark.asyncio
 async def test_meetings_rooms_404_when_property_missing(seeded_property_for_meetings_rooms) -> None:  # type: ignore[no-untyped-def]
     org_id = seeded_property_for_meetings_rooms["org_id"]
     missing = uuid.uuid4()

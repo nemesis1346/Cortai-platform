@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import json
 import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 
 from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
+from app.live.publisher import publish_live_event
 from app.operations.rooms_schemas import RoomListItem, RoomStatus, RoomUpdate
 
 router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
@@ -126,7 +125,7 @@ async def patch_room(
         "_server_published_at": now.isoformat(),
         "_server_published_at_ms": int(now.timestamp() * 1000),
     }
-    await session.execute(text("select pg_notify('cortai_live', :payload)"), {"payload": json.dumps(jsonable_encoder(event))})
+    await publish_live_event(session, event)
     await session.commit()
     return RoomListItem(**dict(room_row))
 

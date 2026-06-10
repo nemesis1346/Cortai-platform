@@ -105,6 +105,9 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
   const [equipment, setEquipment] = useState<FitnessEquipment[]>([]);
   const [classes, setClasses] = useState<FitnessClass[]>([]);
   const [checkins, setCheckins] = useState<FitnessCheckin[]>([]);
+  const [classesView, setClassesView] = useState<"list" | "calendar">("list");
+  const [classDetail, setClassDetail] = useState<FitnessClass | null>(null);
+  const [checkinDetail, setCheckinDetail] = useState<FitnessCheckin | null>(null);
 
   const loadAll = useCallback(async () => {
     if (!propertyId) return;
@@ -132,6 +135,16 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  const classCalendarGroups = useMemo(() => {
+    const groups = new Map<string, FitnessClass[]>();
+    for (const item of classes) {
+      const d = new Date(item.starts_at);
+      const key = Number.isNaN(d.getTime()) ? item.starts_at.slice(0, 10) : d.toISOString().slice(0, 10);
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    }
+    return Array.from(groups.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  }, [classes]);
 
   // Classes modal (create/edit)
   const [classOpen, setClassOpen] = useState(false);
@@ -312,7 +325,7 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
           <p className="text-xs text-cortai-text2">{t("subtitle")}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button type="button" variant="ghost" onClick={() => void loadAll()} disabled={loading}>
+          <Button type="button" variant="ghost" onClick={() => void loadAll()} disabled={loading} data-testid="fitness-refresh">
             {t("refresh")}
           </Button>
         </div>
@@ -366,52 +379,103 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
       <Card
         title={t("classes.title")}
         action={
-          <Button type="button" onClick={openNewClass} data-testid="fitness-class-new">
-            {t("classes.new")}
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant={classesView === "list" ? "primary" : "ghost"}
+              onClick={() => setClassesView("list")}
+              data-testid="fitness-classes-view-list"
+            >
+              {t("classes.view.list")}
+            </Button>
+            <Button
+              type="button"
+              variant={classesView === "calendar" ? "primary" : "ghost"}
+              onClick={() => setClassesView("calendar")}
+              data-testid="fitness-classes-view-calendar"
+            >
+              {t("classes.view.calendar")}
+            </Button>
+            <Button type="button" onClick={openNewClass} data-testid="fitness-class-new">
+              {t("classes.new")}
+            </Button>
+          </div>
         }
       >
-        <Table
-          headers={[
-            t("classes.cols.name"),
-            t("classes.cols.time"),
-            t("classes.cols.capacity"),
-            t("classes.cols.status"),
-            t("classes.cols.actions")
-          ]}
-        >
-          {classes.length === 0 ? (
-            <tr>
-              <Td className="text-cortai-text3" colSpan={5}>
-                {loading ? t("loading") : t("classes.empty")}
-              </Td>
-            </tr>
-          ) : null}
-          {classes.map((c) => (
-            <tr key={c.id} className="hover:bg-white/[0.02]">
-              <Td>
-                <div className="font-semibold">{c.name}</div>
-                <div className="text-[11px] text-cortai-text3">
-                  {c.instructor_name ? t("classes.instructor", { name: c.instructor_name }) : tc("dash")}
+        {classesView === "calendar" ? (
+          classCalendarGroups.length === 0 ? (
+            <p className="text-xs text-cortai-text3">{loading ? t("loading") : t("classes.empty")}</p>
+          ) : (
+            <div className="grid gap-3" data-testid="fitness-classes-calendar">
+              {classCalendarGroups.map(([day, items]) => (
+                <div key={day} className="rounded-md border border-cortai-border bg-cortai-bg2 p-3">
+                  <div className="mb-2 text-xs font-semibold text-cortai-text">{day}</div>
+                  <div className="grid gap-2">
+                    {items.map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setClassDetail(item)}
+                        className="flex flex-wrap items-center gap-2 rounded-md border border-cortai-border bg-cortai-bg px-3 py-2 text-left transition hover:border-cortai-teal/25 hover:bg-cortai-bg3"
+                      >
+                        <Badge tone="neutral">{item.status}</Badge>
+                        <span className="text-xs font-semibold">{item.name}</span>
+                        <span className="ml-auto text-[11px] text-cortai-text3">{fmtTs(item.starts_at, tc("dash"))}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </Td>
-              <Td className="text-cortai-text2">
-                {fmtTs(c.starts_at, tc("dash"))} → {fmtTs(c.ends_at, tc("dash"))}
-              </Td>
-              <Td className="text-cortai-text2">
-                {c.booked}/{c.capacity}
-              </Td>
-              <Td>
-                <Badge tone="neutral">{c.status}</Badge>
-              </Td>
-              <Td>
-                <Button type="button" variant="ghost" onClick={() => openEditClass(c)} data-testid="fitness-class-edit">
-                  {t("classes.edit")}
-                </Button>
-              </Td>
-            </tr>
-          ))}
-        </Table>
+              ))}
+            </div>
+          )
+        ) : (
+          <Table
+            headers={[
+              t("classes.cols.name"),
+              t("classes.cols.time"),
+              t("classes.cols.capacity"),
+              t("classes.cols.status"),
+              t("classes.cols.actions")
+            ]}
+          >
+            {classes.length === 0 ? (
+              <tr>
+                <Td className="text-cortai-text3" colSpan={5}>
+                  {loading ? t("loading") : t("classes.empty")}
+                </Td>
+              </tr>
+            ) : null}
+            {classes.map((c) => (
+              <tr key={c.id} className="hover:bg-white/[0.02]">
+                <Td>
+                  <div className="font-semibold">{c.name}</div>
+                  <div className="text-[11px] text-cortai-text3">
+                    {c.instructor_name ? t("classes.instructor", { name: c.instructor_name }) : tc("dash")}
+                  </div>
+                </Td>
+                <Td className="text-cortai-text2">
+                  {fmtTs(c.starts_at, tc("dash"))} → {fmtTs(c.ends_at, tc("dash"))}
+                </Td>
+                <Td className="text-cortai-text2">
+                  {c.booked}/{c.capacity}
+                </Td>
+                <Td>
+                  <Badge tone="neutral">{c.status}</Badge>
+                </Td>
+                <Td>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="ghost" onClick={() => setClassDetail(c)} data-testid="fitness-class-detail">
+                      {t("classes.detail")}
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => openEditClass(c)} data-testid="fitness-class-edit">
+                      {t("classes.edit")}
+                    </Button>
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </Table>
+        )}
       </Card>
 
       <Card
@@ -431,7 +495,7 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
             </tr>
           ) : null}
           {checkins.map((c) => (
-            <tr key={c.id} className="hover:bg-white/[0.02]">
+            <tr key={c.id} className="cursor-pointer hover:bg-white/[0.02]" onClick={() => setCheckinDetail(c)}>
               <Td className="text-cortai-text2">{c.guest_id.slice(0, 8)}</Td>
               <Td className="text-cortai-text2">{c.class_id ? c.class_id.slice(0, 8) : tc("dash")}</Td>
               <Td className="text-cortai-text2">{fmtTs(c.checked_in_at, tc("dash"))}</Td>
@@ -480,10 +544,10 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
           />
           <Input label={t("classes.modal.status")} error={classForm.formState.errors.status?.message} {...classForm.register("status")} />
           <div className="flex items-center gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setClassOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setClassOpen(false)} data-testid="fitness-class-modal-close">
               {t("close")}
             </Button>
-            <Button type="submit" className="ml-auto" disabled={loading}>
+            <Button type="submit" className="ml-auto" disabled={loading} data-testid="fitness-class-modal-submit">
               {t("classes.modal.submit")}
             </Button>
           </div>
@@ -497,14 +561,56 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
           <Input label={t("checkins.modal.source")} error={checkinForm.formState.errors.source?.message} {...checkinForm.register("source")} />
           <Input label={t("checkins.modal.notes")} error={checkinForm.formState.errors.notes?.message} {...checkinForm.register("notes")} />
           <div className="flex items-center gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setCheckinOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setCheckinOpen(false)} data-testid="fitness-checkin-modal-close">
               {t("close")}
             </Button>
-            <Button type="submit" className="ml-auto" disabled={loading}>
+            <Button type="submit" className="ml-auto" disabled={loading} data-testid="fitness-checkin-modal-submit">
               {t("checkins.modal.submit")}
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={classDetail !== null}
+        title={t("classes.detailTitle", { id: classDetail?.id.slice(0, 8) ?? "" })}
+        closeLabel={t("close")}
+        onClose={() => setClassDetail(null)}
+      >
+        {!classDetail ? null : (
+          <div className="grid gap-3" data-testid="fitness-class-detail-modal">
+            <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3 text-xs text-cortai-text2">
+              <div className="font-semibold text-cortai-text">{classDetail.name}</div>
+              <div>{t("classes.detailInstructor", { value: classDetail.instructor_name ?? tc("dash") })}</div>
+              <div>{t("classes.detailTime", { start: fmtTs(classDetail.starts_at, tc("dash")), end: fmtTs(classDetail.ends_at, tc("dash")) })}</div>
+              <div>{t("classes.detailCapacity", { booked: classDetail.booked, capacity: classDetail.capacity })}</div>
+              <div>{t("classes.detailLocation", { value: classDetail.location ?? tc("dash") })}</div>
+              <div>{t("classes.detailStatus", { status: classDetail.status })}</div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="ghost" onClick={() => openEditClass(classDetail)} data-testid="fitness-class-detail-edit">
+                {t("classes.edit")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      <Modal
+        open={checkinDetail !== null}
+        title={t("checkins.detailTitle", { id: checkinDetail?.id.slice(0, 8) ?? "" })}
+        closeLabel={t("close")}
+        onClose={() => setCheckinDetail(null)}
+      >
+        {!checkinDetail ? null : (
+          <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3 text-xs text-cortai-text2" data-testid="fitness-checkin-detail-modal">
+            <div>{t("checkins.detailGuest", { guest: checkinDetail.guest_id.slice(0, 8) })}</div>
+            <div>{t("checkins.detailClass", { value: checkinDetail.class_id?.slice(0, 8) ?? tc("dash") })}</div>
+            <div>{t("checkins.detailTime", { value: fmtTs(checkinDetail.checked_in_at, tc("dash")) })}</div>
+            <div>{t("checkins.detailSource", { source: checkinDetail.source })}</div>
+            <div>{t("checkins.detailNotes", { value: checkinDetail.notes ?? tc("dash") })}</div>
+          </div>
+        )}
       </Modal>
     </div>
   );

@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useRealtimeSocket } from "@/hooks/use-realtime-socket";
 import { Button } from "@/components/ui/Button";
 import {
   ActionQueueTable,
@@ -44,19 +45,6 @@ function getCookie(name: string) {
     if (p.startsWith(prefix)) return decodeURIComponent(p.slice(prefix.length));
   }
   return null;
-}
-
-function toWsUrl(apiBaseUrl: string) {
-  const base = apiBaseUrl?.trim();
-  if (!base) {
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${proto}//${window.location.host}/ws/live`;
-  }
-  const u = new URL(base);
-  u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
-  u.pathname = "/ws/live";
-  u.search = "";
-  return u.toString();
 }
 
 function fmtSeconds(n: number, labels: { dash: string; seconds: string; minutes: string }) {
@@ -104,10 +92,7 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const wsRef = useRef<WebSocket | null>(null);
   const lastKpiRef = useRef<number>(0);
-
-  const wsUrl = useMemo(() => toWsUrl(process.env.NEXT_PUBLIC_API_BASE_URL ?? ""), []);
 
   // Sync propertyId with cookie on soft refresh.
   useEffect(() => {
@@ -192,27 +177,9 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
     void refreshAll();
   }, [refreshAll]);
 
-  // WebSocket: primary live updates
-  useEffect(() => {
-    if (!user) return;
-    if (!propertyId) return;
-
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "subscribe", scope: "property", property_id: propertyId }));
-    };
-    ws.onerror = () => {
-      // fall back to periodic refresh
-    };
-    ws.onmessage = (event) => {
-      let msg: LiveMsg | null = null;
-      try {
-        msg = JSON.parse(String(event.data)) as LiveMsg;
-      } catch {
-        return;
-      }
+  const handleLiveMessage = useCallback(
+    (message: Record<string, unknown>) => {
+      const msg = message as LiveMsg;
       if (!msg) return;
       if (msg.type === "kpi.tick") {
         void refreshKpis();
@@ -258,24 +225,17 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
           }
           return [item, ...prev].sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
         });
-        return;
       }
-    };
+    },
+    [refreshAiInsights, refreshElevators, refreshFrontDesk, refreshHousekeeping, refreshKpis]
+  );
 
-    return () => {
-      ws.close();
-      wsRef.current = null;
-    };
-  }, [
-    user,
-    wsUrl,
+  useRealtimeSocket({
+    enabled: Boolean(user && propertyId),
     propertyId,
-    refreshAiInsights,
-    refreshElevators,
-    refreshFrontDesk,
-    refreshHousekeeping,
-    refreshKpis
-  ]);
+    onMessage: handleLiveMessage,
+    onReconnect: refreshAll
+  });
 
   if (!propertyId) {
     return (

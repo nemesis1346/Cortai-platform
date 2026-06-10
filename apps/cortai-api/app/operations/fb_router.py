@@ -9,7 +9,6 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
-from app.auth.dependencies import PrincipalDep
 from app.bridges import iot_client
 from app.db import SessionDep
 from app.operations.fb_schemas import (
@@ -24,6 +23,7 @@ from app.operations.fb_schemas import (
     RoomServiceOrderStatus,
     RoomServiceOrderUpdate,
 )
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/fb", tags=["operations-fb"])
 
@@ -31,7 +31,7 @@ router = APIRouter(prefix="/fb", tags=["operations-fb"])
 @router.get("/breakfast/status")
 async def get_breakfast_status(
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:
@@ -48,7 +48,7 @@ async def get_breakfast_status(
 @router.get("/restaurant/tables")
 async def list_restaurant_tables(
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:
@@ -64,7 +64,7 @@ async def list_restaurant_tables(
 
 @router.get("/menu", response_model=FbMenuList)
 async def list_menu_items(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     service: FbMenuService | None = Query(default=None),
     available: bool | None = Query(default=None),
@@ -114,7 +114,7 @@ async def list_menu_items(
 @router.post("/menu", response_model=FbMenuItemRead, status_code=status.HTTP_201_CREATED)
 async def create_menu_item(
     payload: FbMenuItemCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FbMenuItemRead:
     row = (
@@ -154,7 +154,7 @@ async def create_menu_item(
 async def update_menu_item(
     item_id: uuid.UUID,
     payload: FbMenuItemUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FbMenuItemRead:
     data = payload.model_dump(exclude_unset=True)
@@ -208,7 +208,7 @@ async def update_menu_item(
 
 @router.get("/room-service", response_model=RoomServiceOrderList)
 async def list_room_service_orders(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     status: RoomServiceOrderStatus | None = Query(default=None),
@@ -256,7 +256,7 @@ async def list_room_service_orders(
 @router.post("/room-service", response_model=RoomServiceOrderRead, status_code=status.HTTP_201_CREATED)
 async def create_room_service_order(
     payload: RoomServiceOrderCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> RoomServiceOrderRead:
     # Validate property belongs to org.
@@ -318,7 +318,7 @@ async def create_room_service_order(
 async def update_room_service_order(
     order_id: uuid.UUID,
     payload: RoomServiceOrderUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> RoomServiceOrderRead:
     data = payload.model_dump(exclude_unset=True)

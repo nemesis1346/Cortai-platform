@@ -99,6 +99,8 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
   const [rooms, setRooms] = useState<MeetingRoom[]>([]);
   const [bookings, setBookings] = useState<MeetingBooking[]>([]);
   const [attendance, setAttendance] = useState<Record<string, Attendance>>({});
+  const [bookingsView, setBookingsView] = useState<"list" | "calendar">("list");
+  const [bookingDetail, setBookingDetail] = useState<MeetingBooking | null>(null);
 
   const loadAll = useCallback(async () => {
     if (!propertyId) return;
@@ -136,6 +138,16 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
   useEffect(() => {
     void loadAll();
   }, [loadAll]);
+
+  const bookingCalendarGroups = useMemo(() => {
+    const groups = new Map<string, MeetingBooking[]>();
+    for (const item of bookings) {
+      const d = new Date(item.starts_at);
+      const key = Number.isNaN(d.getTime()) ? item.starts_at.slice(0, 10) : d.toISOString().slice(0, 10);
+      groups.set(key, [...(groups.get(key) ?? []), item]);
+    }
+    return Array.from(groups.entries()).sort((a, b) => (a[0] < b[0] ? 1 : -1));
+  }, [bookings]);
 
   const [roomOpen, setRoomOpen] = useState(false);
   const [roomEditing, setRoomEditing] = useState<MeetingRoom | null>(null);
@@ -349,7 +361,7 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
           <p className="text-xs text-cortai-text2">{t("subtitle")}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button type="button" variant="ghost" onClick={() => void loadAll()} disabled={loading}>
+          <Button type="button" variant="ghost" onClick={() => void loadAll()} disabled={loading} data-testid="meetings-events-refresh">
             {t("refresh")}
           </Button>
           <Button type="button" onClick={openNewBooking} data-testid="meeting-booking-new">
@@ -367,65 +379,119 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
         </div>
       ) : null}
 
-      <Card title={t("bookings.title")}>
-        <Table
-          headers={[
-            t("bookings.cols.title"),
-            t("bookings.cols.room"),
-            t("bookings.cols.time"),
-            t("bookings.cols.attendance"),
-            t("bookings.cols.status"),
-            t("bookings.cols.actions")
-          ]}
-        >
-          {bookings.length === 0 ? (
-            <tr>
-              <Td className="text-cortai-text3" colSpan={6}>
-                {loading ? t("loading") : t("bookings.empty")}
-              </Td>
-            </tr>
-          ) : null}
-          {bookings.map((booking) => (
-            <tr key={booking.id} className="hover:bg-white/[0.02]">
-              <Td>
-                <div className="font-semibold">{booking.title}</div>
-                <div className="text-[11px] text-cortai-text3">{booking.id.slice(0, 8)}</div>
-              </Td>
-              <Td className="text-cortai-text2">{roomName(booking.meeting_room_id)}</Td>
-              <Td className="text-cortai-text2">
-                {fmtTs(booking.starts_at, tc("dash"))} → {fmtTs(booking.ends_at, tc("dash"))}
-              </Td>
-              <Td className="text-cortai-text2">
-                {attendance[booking.id] ? (
-                  <span>
-                    {attendance[booking.id].count}
-                    <span className="ml-1 text-[11px] text-cortai-text3">
-                      {fmtTs(attendance[booking.id].last_updated, tc("dash"))}
-                    </span>
-                  </span>
-                ) : (
-                  tc("dash")
-                )}
-              </Td>
-              <Td>
-                <Badge tone={statusTone(booking.setup_status)}>{booking.setup_status}</Badge>
-              </Td>
-              <Td>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" variant="ghost" onClick={() => openEditBooking(booking)} data-testid="meeting-booking-edit">
-                    {t("bookings.edit")}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => void setSetupStatus(booking, "ready")} data-testid="meeting-booking-ready">
-                    {t("bookings.markReady")}
-                  </Button>
-                  <Button type="button" variant="ghost" onClick={() => void setSetupStatus(booking, "done")} data-testid="meeting-booking-done">
-                    {t("bookings.markDone")}
-                  </Button>
+      <Card
+        title={t("bookings.title")}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              variant={bookingsView === "list" ? "primary" : "ghost"}
+              onClick={() => setBookingsView("list")}
+              data-testid="meeting-bookings-view-list"
+            >
+              {t("bookings.view.list")}
+            </Button>
+            <Button
+              type="button"
+              variant={bookingsView === "calendar" ? "primary" : "ghost"}
+              onClick={() => setBookingsView("calendar")}
+              data-testid="meeting-bookings-view-calendar"
+            >
+              {t("bookings.view.calendar")}
+            </Button>
+          </div>
+        }
+      >
+        {bookingsView === "calendar" ? (
+          bookingCalendarGroups.length === 0 ? (
+            <p className="text-xs text-cortai-text3">{loading ? t("loading") : t("bookings.empty")}</p>
+          ) : (
+            <div className="grid gap-3" data-testid="meeting-bookings-calendar">
+              {bookingCalendarGroups.map(([day, items]) => (
+                <div key={day} className="rounded-md border border-cortai-border bg-cortai-bg2 p-3">
+                  <div className="mb-2 text-xs font-semibold text-cortai-text">{day}</div>
+                  <div className="grid gap-2">
+                    {items.map((booking) => (
+                      <button
+                        key={booking.id}
+                        type="button"
+                        onClick={() => setBookingDetail(booking)}
+                        className="flex flex-wrap items-center gap-2 rounded-md border border-cortai-border bg-cortai-bg px-3 py-2 text-left transition hover:border-cortai-teal/25 hover:bg-cortai-bg3"
+                      >
+                        <Badge tone={statusTone(booking.setup_status)}>{booking.setup_status}</Badge>
+                        <span className="text-xs font-semibold">{booking.title}</span>
+                        <span className="text-[11px] text-cortai-text3">{roomName(booking.meeting_room_id)}</span>
+                        <span className="ml-auto text-[11px] text-cortai-text3">{fmtTs(booking.starts_at, tc("dash"))}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </Td>
-            </tr>
-          ))}
-        </Table>
+              ))}
+            </div>
+          )
+        ) : (
+          <Table
+            headers={[
+              t("bookings.cols.title"),
+              t("bookings.cols.room"),
+              t("bookings.cols.time"),
+              t("bookings.cols.attendance"),
+              t("bookings.cols.status"),
+              t("bookings.cols.actions")
+            ]}
+          >
+            {bookings.length === 0 ? (
+              <tr>
+                <Td className="text-cortai-text3" colSpan={6}>
+                  {loading ? t("loading") : t("bookings.empty")}
+                </Td>
+              </tr>
+            ) : null}
+            {bookings.map((booking) => (
+              <tr key={booking.id} className="hover:bg-white/[0.02]">
+                <Td>
+                  <div className="font-semibold">{booking.title}</div>
+                  <div className="text-[11px] text-cortai-text3">{booking.id.slice(0, 8)}</div>
+                </Td>
+                <Td className="text-cortai-text2">{roomName(booking.meeting_room_id)}</Td>
+                <Td className="text-cortai-text2">
+                  {fmtTs(booking.starts_at, tc("dash"))} → {fmtTs(booking.ends_at, tc("dash"))}
+                </Td>
+                <Td className="text-cortai-text2">
+                  {attendance[booking.id] ? (
+                    <span>
+                      {attendance[booking.id].count}
+                      <span className="ml-1 text-[11px] text-cortai-text3">
+                        {fmtTs(attendance[booking.id].last_updated, tc("dash"))}
+                      </span>
+                    </span>
+                  ) : (
+                    tc("dash")
+                  )}
+                </Td>
+                <Td>
+                  <Badge tone={statusTone(booking.setup_status)}>{booking.setup_status}</Badge>
+                </Td>
+                <Td>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="ghost" onClick={() => setBookingDetail(booking)} data-testid="meeting-booking-detail">
+                      {t("bookings.detail")}
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => openEditBooking(booking)} data-testid="meeting-booking-edit">
+                      {t("bookings.edit")}
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => void setSetupStatus(booking, "ready")} data-testid="meeting-booking-ready">
+                      {t("bookings.markReady")}
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={() => void setSetupStatus(booking, "done")} data-testid="meeting-booking-done">
+                      {t("bookings.markDone")}
+                    </Button>
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </Table>
+        )}
       </Card>
 
       <Card title={t("rooms.title")}>
@@ -477,10 +543,10 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
             {...roomForm.register("equipment_csv")}
           />
           <div className="flex items-center gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setRoomOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setRoomOpen(false)} data-testid="meeting-room-modal-close">
               {t("close")}
             </Button>
-            <Button type="submit" className="ml-auto" disabled={loading}>
+            <Button type="submit" className="ml-auto" disabled={loading} data-testid="meeting-room-modal-submit">
               {t("rooms.modal.submit")}
             </Button>
           </div>
@@ -524,14 +590,45 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
           />
           <div className="text-[11px] text-cortai-text3">{t("bookings.modal.statusHint")}</div>
           <div className="flex items-center gap-2 pt-2">
-            <Button type="button" variant="ghost" onClick={() => setBookingOpen(false)}>
+            <Button type="button" variant="ghost" onClick={() => setBookingOpen(false)} data-testid="meeting-booking-modal-close">
               {t("close")}
             </Button>
-            <Button type="submit" className="ml-auto" disabled={loading}>
+            <Button type="submit" className="ml-auto" disabled={loading} data-testid="meeting-booking-modal-submit">
               {t("bookings.modal.submit")}
             </Button>
           </div>
         </form>
+      </Modal>
+
+      <Modal
+        open={bookingDetail !== null}
+        title={t("bookings.detailTitle", { id: bookingDetail?.id.slice(0, 8) ?? "" })}
+        closeLabel={t("close")}
+        onClose={() => setBookingDetail(null)}
+      >
+        {!bookingDetail ? null : (
+          <div className="grid gap-3" data-testid="meeting-booking-detail-modal">
+            <div className="rounded-md border border-cortai-border bg-cortai-bg2 p-3 text-xs text-cortai-text2">
+              <div className="font-semibold text-cortai-text">{bookingDetail.title}</div>
+              <div>{t("bookings.detailRoom", { room: roomName(bookingDetail.meeting_room_id) })}</div>
+              <div>{t("bookings.detailTime", { start: fmtTs(bookingDetail.starts_at, tc("dash")), end: fmtTs(bookingDetail.ends_at, tc("dash")) })}</div>
+              <div>{t("bookings.detailAttendees", { value: bookingDetail.attendees_count ?? 0 })}</div>
+              <div>{t("bookings.detailAttendance", { value: attendance[bookingDetail.id]?.count ?? 0 })}</div>
+              <div>{t("bookings.detailStatus", { status: bookingDetail.setup_status })}</div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="ghost" onClick={() => openEditBooking(bookingDetail)} data-testid="meeting-booking-detail-edit">
+                {t("bookings.edit")}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => void setSetupStatus(bookingDetail, "ready")} data-testid="meeting-booking-detail-ready">
+                {t("bookings.markReady")}
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => void setSetupStatus(bookingDetail, "done")} data-testid="meeting-booking-detail-done">
+                {t("bookings.markDone")}
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

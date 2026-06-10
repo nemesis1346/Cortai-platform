@@ -7,7 +7,6 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.bridges import iot_client
 from app.db import SessionDep
 from app.operations.fitness_schemas import (
@@ -19,6 +18,7 @@ from app.operations.fitness_schemas import (
     FitnessCheckinList,
     FitnessCheckinRead,
 )
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/fitness", tags=["operations-fitness"])
 
@@ -26,7 +26,7 @@ router = APIRouter(prefix="/fitness", tags=["operations-fitness"])
 @router.get("/capacity")
 async def get_fitness_capacity(
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:
@@ -43,7 +43,7 @@ async def get_fitness_capacity(
 @router.get("/equipment")
 async def get_fitness_equipment(
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:
@@ -59,7 +59,7 @@ async def get_fitness_equipment(
 
 @router.get("/classes", response_model=FitnessClassList)
 async def list_fitness_classes(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> FitnessClassList:
@@ -96,7 +96,7 @@ async def list_fitness_classes(
 @router.post("/classes", response_model=FitnessClassRead, status_code=status.HTTP_201_CREATED)
 async def create_fitness_class(
     payload: FitnessClassCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FitnessClassRead:
     exists = await session.scalar(
@@ -167,7 +167,7 @@ async def create_fitness_class(
 async def update_fitness_class(
     class_id: uuid.UUID,
     payload: FitnessClassUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FitnessClassRead:
     data = payload.model_dump(exclude_unset=True)
@@ -236,7 +236,7 @@ async def update_fitness_class(
 
 @router.get("/checkins", response_model=FitnessCheckinList)
 async def list_fitness_checkins(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     guest_id: uuid.UUID | None = Query(default=None),
@@ -276,7 +276,7 @@ async def list_fitness_checkins(
 @router.post("/checkins", response_model=FitnessCheckinRead, status_code=status.HTTP_201_CREATED)
 async def create_fitness_checkin(
     payload: FitnessCheckinCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FitnessCheckinRead:
     exists = await session.scalar(

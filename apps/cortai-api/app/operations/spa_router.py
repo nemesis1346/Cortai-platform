@@ -6,8 +6,8 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 from app.operations.spa_schemas import (
     SpaAppointmentCreate,
     SpaAppointmentList,
@@ -23,7 +23,7 @@ router = APIRouter(prefix="/spa", tags=["operations-spa"])
 
 @router.get("/services", response_model=SpaServiceList)
 async def list_spa_services(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     available: bool | None = Query(default=None),
@@ -64,7 +64,7 @@ async def list_spa_services(
 @router.post("/services", response_model=SpaServiceRead, status_code=status.HTTP_201_CREATED)
 async def create_spa_service(
     payload: SpaServiceCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> SpaServiceRead:
     exists = await session.scalar(
@@ -111,7 +111,7 @@ async def create_spa_service(
 
 @router.get("/appointments", response_model=SpaAppointmentList)
 async def list_spa_appointments(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     page: int = Query(default=1, ge=1),
@@ -169,7 +169,7 @@ async def list_spa_appointments(
 @router.post("/appointments", response_model=SpaAppointmentRead, status_code=status.HTTP_201_CREATED)
 async def create_spa_appointment(
     payload: SpaAppointmentCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> SpaAppointmentRead:
     # Validate property belongs to org.
@@ -238,7 +238,7 @@ async def create_spa_appointment(
 async def update_spa_appointment(
     appointment_id: uuid.UUID,
     payload: SpaAppointmentUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> SpaAppointmentRead:
     data = payload.model_dump(exclude_unset=True)

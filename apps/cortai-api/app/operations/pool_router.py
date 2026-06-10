@@ -6,9 +6,9 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query, Request, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.bridges import iot_client
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/pool", tags=["operations-pool"])
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/pool", tags=["operations-pool"])
 @router.get("/capacity")
 async def get_pool_capacity(
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:

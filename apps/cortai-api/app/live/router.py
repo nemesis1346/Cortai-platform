@@ -145,6 +145,50 @@ async def _listen_and_forward(
         await conn.close()
 
 
+async def _replay_events(
+    *,
+    ws: WebSocket,
+    org_id: str,
+    property_id: str | None,
+    scope: str,
+    last_sequence: int,
+    limit: int = 500,
+) -> int:
+    filters = ["org_id = :org_id", "sequence > :last_sequence"]
+    params: dict[str, Any] = {"org_id": org_id, "last_sequence": last_sequence, "limit": limit}
+    if scope == "property":
+        filters.append("property_id = :property_id")
+        params["property_id"] = property_id
+    else:
+        filters.append("type = 'device_offline'")
+
+    async with SessionLocal() as session:
+        await set_current_org(session, org_id)
+        rows = (
+            await session.execute(
+                text(
+                    f"""
+                    select sequence, payload_json
+                    from realtime.event_log
+                    where {" and ".join(filters)}
+                    order by sequence asc
+                    limit :limit
+                    """  # noqa: S608
+                ),
+                params,
+            )
+        ).mappings().all()
+
+    sent = 0
+    for row in rows:
+        msg = dict(row["payload_json"])
+        msg["sequence"] = int(row["sequence"])
+        msg["_replayed"] = True
+        await ws.send_json(msg)
+        sent += 1
+    return sent
+
+
 @router.websocket("/live")
 async def live_socket(ws: WebSocket) -> None:
     await ws.accept()
@@ -214,11 +258,18 @@ async def live_socket(ws: WebSocket) -> None:
 
             subscribed_scope = scope
             subscribed_property_id = property_id if scope == "property" else None
+            raw_last_sequence = data.get("last_sequence")
+            replay_requested = raw_last_sequence is not None
+            try:
+                last_sequence = int(raw_last_sequence) if raw_last_sequence is not None else 0
+            except (TypeError, ValueError):
+                last_sequence = 0
             await ws.send_json(
                 {
                     "type": "subscribed",
                     "scope": subscribed_scope,
                     "channel": f"cortai.live.{property_id}" if subscribed_property_id else "cortai.alerts",
+                    "last_sequence": last_sequence,
                 }
             )
             logger.info(
@@ -227,6 +278,22 @@ async def live_socket(ws: WebSocket) -> None:
                 property_id=subscribed_property_id,
                 scope=subscribed_scope,
             )
+            if replay_requested:
+                replayed = await _replay_events(
+                    ws=ws,
+                    org_id=str(principal.org_id),
+                    property_id=subscribed_property_id,
+                    scope=subscribed_scope,
+                    last_sequence=last_sequence,
+                )
+                logger.info(
+                    "live.ws.replayed",
+                    org_id=str(principal.org_id),
+                    property_id=subscribed_property_id,
+                    scope=subscribed_scope,
+                    last_sequence=last_sequence,
+                    replayed=replayed,
+                )
             task = asyncio.create_task(
                 _listen_and_forward(
                     ws=ws,
