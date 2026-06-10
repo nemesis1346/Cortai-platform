@@ -26,6 +26,7 @@ from app.operations.rooms_iot_router import router as rooms_iot_router
 from app.operations.guest_services_router import router as guest_services_router
 from app.operations.shift_handover_router import router as shift_handover_router
 from app.operations.hvac_router import router as hvac_router
+from app.operations.fb_router import router as fb_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
@@ -223,6 +224,7 @@ router.include_router(front_desk_router)
 router.include_router(guest_services_router)
 router.include_router(shift_handover_router)
 router.include_router(hvac_router)
+router.include_router(fb_router)
 router.include_router(housekeeping_router)
 router.include_router(header_router)
 
