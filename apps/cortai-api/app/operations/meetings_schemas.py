@@ -4,6 +4,7 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, Field
+from typing import Literal
 
 
 class MeetingRoomRead(BaseModel):
@@ -75,4 +76,11 @@ class MeetingBookingUpdate(BaseModel):
     starts_at: datetime | None = None
     ends_at: datetime | None = None
     setup_status: str | None = Field(default=None, max_length=32)
+
+
+MeetingSetupStatus = Literal["setup", "ready", "in_use", "breakdown", "done"]
+
+
+class MeetingBookingSetupStatusUpdate(BaseModel):
+    setup_status: MeetingSetupStatus
 

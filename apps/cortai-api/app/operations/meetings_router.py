@@ -12,6 +12,7 @@ from app.operations.meetings_schemas import (
     MeetingBookingCreate,
     MeetingBookingList,
     MeetingBookingRead,
+    MeetingBookingSetupStatusUpdate,
     MeetingBookingUpdate,
     MeetingRoomCreate,
     MeetingRoomList,
@@ -366,6 +367,36 @@ async def update_meeting_booking(
                 """  # noqa: S608
             ),
             params,
+        )
+    ).mappings().first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+    await session.commit()
+    return MeetingBookingRead(**dict(row))
+
+
+@router.post("/bookings/{booking_id}/setup-status", response_model=MeetingBookingRead)
+async def set_meeting_booking_setup_status(
+    booking_id: uuid.UUID,
+    payload: MeetingBookingSetupStatusUpdate,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> MeetingBookingRead:
+    row = (
+        await session.execute(
+            text(
+                """
+                update ops.meeting_bookings
+                set setup_status = :setup_status, updated_at = now()
+                where id = :id and org_id = :org_id
+                returning
+                  id, org_id, property_id, meeting_room_id, organizer_guest_id_or_user_id,
+                  title, attendees_count, starts_at, ends_at, setup_status,
+                  created_at, updated_at
+                """
+            ),
+            {"id": str(booking_id), "org_id": str(principal.org_id), "setup_status": payload.setup_status},
         )
     ).mappings().first()
     if row is None:
