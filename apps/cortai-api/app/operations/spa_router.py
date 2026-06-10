@@ -13,9 +13,100 @@ from app.operations.spa_schemas import (
     SpaAppointmentList,
     SpaAppointmentRead,
     SpaAppointmentUpdate,
+    SpaServiceCreate,
+    SpaServiceList,
+    SpaServiceRead,
 )
 
 router = APIRouter(prefix="/spa", tags=["operations-spa"])
+
+
+@router.get("/services", response_model=SpaServiceList)
+async def list_spa_services(
+    principal: PrincipalDep,
+    session: SessionDep,
+    property_id: uuid.UUID = Query(...),
+    available: bool | None = Query(default=None),
+) -> SpaServiceList:
+    exists = await session.scalar(
+        text("select 1 from properties where id = :id and org_id = :org_id"),
+        {"id": str(property_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+
+    filters = ["org_id = :org_id", "property_id = :property_id"]
+    params: dict[str, object] = {"org_id": str(principal.org_id), "property_id": str(property_id)}
+    if available is not None:
+        filters.append("available = :available")
+        params["available"] = bool(available)
+    where = " and ".join(filters)
+
+    rows = (
+        await session.execute(
+            text(
+                f"""
+                select
+                  id, org_id, property_id,
+                  name, description, duration_minutes, price_cents, available,
+                  created_at, updated_at
+                from ops.spa_services
+                where {where}
+                order by available desc, name asc, id asc
+                """  # noqa: S608
+            ),
+            params,
+        )
+    ).mappings().all()
+    return SpaServiceList(items=[SpaServiceRead(**dict(r)) for r in rows])
+
+
+@router.post("/services", response_model=SpaServiceRead, status_code=status.HTTP_201_CREATED)
+async def create_spa_service(
+    payload: SpaServiceCreate,
+    principal: PrincipalDep,
+    session: SessionDep,
+) -> SpaServiceRead:
+    exists = await session.scalar(
+        text("select 1 from properties where id = :id and org_id = :org_id"),
+        {"id": str(payload.property_id), "org_id": str(principal.org_id)},
+    )
+    if exists is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+
+    row = (
+        await session.execute(
+            text(
+                """
+                insert into ops.spa_services (
+                  id, org_id, property_id,
+                  name, description, duration_minutes, price_cents, available,
+                  created_at, updated_at
+                )
+                values (
+                  gen_random_uuid(), :org_id, :property_id,
+                  :name, :description, :duration_minutes, :price_cents, :available,
+                  now(), now()
+                )
+                returning
+                  id, org_id, property_id,
+                  name, description, duration_minutes, price_cents, available,
+                  created_at, updated_at
+                """
+            ),
+            {
+                "org_id": str(principal.org_id),
+                "property_id": str(payload.property_id),
+                "name": payload.name,
+                "description": payload.description,
+                "duration_minutes": payload.duration_minutes,
+                "price_cents": payload.price_cents,
+                "available": payload.available,
+            },
+        )
+    ).mappings().one()
+    await session.commit()
+    return SpaServiceRead(**dict(row))
 
 
 @router.get("/appointments", response_model=SpaAppointmentList)
