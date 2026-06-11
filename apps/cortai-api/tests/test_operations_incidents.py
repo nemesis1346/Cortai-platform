@@ -127,6 +127,7 @@ async def seeded_incidents() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        await session.execute(text("truncate table audit.change_log"))
         await session.execute(
             text("delete from operations.incidents where org_id = :org_id"), {"org_id": org_id}
         )

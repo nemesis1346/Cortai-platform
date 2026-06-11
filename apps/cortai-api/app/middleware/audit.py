@@ -131,30 +131,31 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         if not _should_audit(request):
             return await call_next(request)
 
-        principal: Principal | None = getattr(request.state, "principal", None)
-        if principal is None:
-            # Not authenticated.
-            return await call_next(request)
-
         path = request.url.path
         entity_type = _entity_type_for_path(path)
         entity_id = _entity_id_from_path(path)
         before_json: dict[str, Any] | None = None
 
         # Capture "before" snapshot in its own session to avoid depending on request DI.
+        principal: Principal | None = getattr(request.state, "principal", None)
         try:
-            async with SessionLocal() as snap_session:
-                await set_current_org(snap_session, str(principal.org_id))
-                before_json = await _best_effort_before_snapshot(
-                    session=snap_session,
-                    principal=principal,
-                    entity_type=entity_type,
-                    entity_id=entity_id,
-                )
+            if principal is not None:
+                async with SessionLocal() as snap_session:
+                    await set_current_org(snap_session, str(principal.org_id))
+                    before_json = await _best_effort_before_snapshot(
+                        session=snap_session,
+                        principal=principal,
+                        entity_type=entity_type,
+                        entity_id=entity_id,
+                    )
         except Exception:  # noqa: BLE001
             before_json = None
 
         response = await call_next(request)
+
+        principal = getattr(request.state, "principal", principal)
+        if principal is None:
+            return response
 
         # Only log successful mutations.
         if response.status_code >= 400:
@@ -189,6 +190,10 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
         # Use a dedicated session so audit doesn't depend on request dependencies.
         async with SessionLocal() as session:
             await set_current_org(session, str(principal.org_id))
+            audit_user_id = await session.scalar(
+                text("select id from users where id = :id and org_id = :org_id"),
+                {"id": str(principal.user_id), "org_id": str(principal.org_id)},
+            )
             stmt = text(
                 """
                 insert into audit.change_log (
@@ -209,7 +214,7 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
                 {
                     "id": str(uuid.uuid4()),
                     "org_id": str(principal.org_id),
-                    "user_id": str(principal.user_id),
+                    "user_id": str(audit_user_id) if audit_user_id is not None else None,
                     "action": action,
                     "entity_type": entity_type,
                     "entity_id": entity_id,

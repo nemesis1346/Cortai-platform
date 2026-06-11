@@ -94,12 +94,23 @@ async def test_demo_gate_send_message_creates_fake_inbound_reply(seeded_demo_gat
     org_id = seeded_demo_gate_thread["org_id"]
     thread_pk = seeded_demo_gate_thread["thread_pk"]
 
-    async with _client_for_org(org_id=org_id) as client:
-        resp = await client.post(
-            f"/api/operations/messaging/threads/{thread_pk}/messages",
-            headers={"accept-language": "en"},
-            json={"body": "Hello demo gate"},
-        )
+    import app.operations.messaging_router as messaging_router
+
+    original_get_settings = messaging_router.get_settings
+
+    class _Settings:
+        messaging_dispatch_mode = "mock"
+
+    try:
+        messaging_router.get_settings = lambda: _Settings()  # type: ignore[assignment]
+        async with _client_for_org(org_id=org_id) as client:
+            resp = await client.post(
+                f"/api/operations/messaging/threads/{thread_pk}/messages",
+                headers={"accept-language": "en"},
+                json={"body": "Hello demo gate"},
+            )
+    finally:
+        messaging_router.get_settings = original_get_settings  # type: ignore[assignment]
     assert resp.status_code == 201
 
     async with SessionLocal() as session:

@@ -6,9 +6,9 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.live.publisher import publish_live_event
+from app.operations.rbac import OperationsPrincipalDep
 from app.operations.rooms_schemas import RoomListItem, RoomStatus, RoomUpdate
 
 router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
@@ -18,7 +18,7 @@ router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
 async def patch_room(
     room_id: uuid.UUID,
     payload: RoomUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> RoomListItem:
     data = payload.model_dump(exclude_unset=True)

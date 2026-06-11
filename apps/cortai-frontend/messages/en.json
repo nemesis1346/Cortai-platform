@@ -315,6 +315,17 @@
         "assigned": "Assigned",
         "unassigned": "Unassigned"
       },
+      "channels": {
+        "sms": "SMS",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "in_app": "In-app"
+      },
+      "statuses": {
+        "open": "Open",
+        "pending": "Pending",
+        "closed": "Closed"
+      },
       "actions": {
         "markRead": "Mark read",
         "markUnread": "Mark unread",
@@ -364,6 +375,19 @@
         "searchPlaceholder": "device_id or room"
       },
       "empty": "No sensors found.",
+      "types": {
+        "temperature": "Temperature",
+        "motion": "Motion",
+        "door": "Door",
+        "water_leak": "Water leak",
+        "occupancy": "Occupancy",
+        "air_quality": "Air quality"
+      },
+      "statuses": {
+        "online": "Online",
+        "stale": "Stale",
+        "offline": "Offline"
+      },
       "card": {
         "room": "Room",
         "type": "Type",

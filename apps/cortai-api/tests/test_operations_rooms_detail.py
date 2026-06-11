@@ -64,10 +64,10 @@ async def seeded_room_detail() -> dict[str, uuid.UUID]:
                   created_at, updated_at, last_service_at,
                   current_reservation_id
                 )
-                values (:r101, :org, :p1, '101', 1, 'king', 'occupied', false, :now, :now, :now, :res)
+                values (:r101, :org, :p1, '101', 1, 'king', 'occupied', false, :now, :now, :now, null)
                 """
             ),
-            {"r101": room_101, "org": org_id, "p1": prop_a, "now": now, "res": res_1},
+            {"r101": room_101, "org": org_id, "p1": prop_a, "now": now},
         )
         await session.execute(
             text(
@@ -103,6 +103,10 @@ async def seeded_room_detail() -> dict[str, uuid.UUID]:
                 "out_at": now + timedelta(days=1),
                 "now": now,
             },
+        )
+        await session.execute(
+            text("update ops.rooms set current_reservation_id = :res where id = :room"),
+            {"res": res_1, "room": room_101},
         )
         await session.execute(
             text(

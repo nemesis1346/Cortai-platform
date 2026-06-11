@@ -5,8 +5,8 @@ import uuid
 from fastapi import APIRouter, Query
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 from app.operations.rooms_schemas import RoomList, RoomStatus
 
 router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
 
 @router.get("", response_model=RoomList)
 async def list_rooms(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     floor: int | None = None,

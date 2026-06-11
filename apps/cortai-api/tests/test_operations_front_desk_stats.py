@@ -33,7 +33,7 @@ def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
 async def seeded_front_desk_events() -> dict[str, uuid.UUID]:
     org_id = uuid.uuid4()
     other_org = uuid.uuid4()
-    now = datetime.now(UTC)
+    now = datetime.now(UTC).replace(hour=12, minute=0, second=0, microsecond=0)
     prop_id = uuid.uuid4()
 
     async with SessionLocal() as session:

@@ -202,7 +202,7 @@ export function ActionQueueTable({
             <Td className="text-cortai-text2">{item.assigned_to_user_id ? item.assigned_to_user_id.slice(0, 8) : dash}</Td>
             <Td>
               {!item.assigned_to_user_id && canAssign ? (
-                <Button type="button" variant="ghost" onClick={() => onAssign(item)}>
+                <Button type="button" variant="ghost" onClick={() => onAssign(item)} data-testid={`command-center-assign-${item.id}`}>
                   {assignLabel}
                 </Button>
               ) : null}

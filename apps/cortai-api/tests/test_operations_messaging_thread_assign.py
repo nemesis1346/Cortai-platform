@@ -56,8 +56,8 @@ async def seeded_org_thread_for_assign() -> dict[str, uuid.UUID]:
         await session.execute(
             text(
                 """
-                insert into users (id, org_id, email, full_name, role, status, created_at, updated_at)
-                values (:u, :org, 'assignee@example.com', 'Assignee', 'STAFF', 'ACTIVE', :now, :now)
+                insert into users (id, org_id, email, full_name, role, status, password_hash, created_at, updated_at)
+                values (:u, :org, 'assignee@example.com', 'Assignee', 'STAFF', 'ACTIVE', 'hash', :now, :now)
                 """
             ),
             {"u": user_id, "org": org_id, "now": now},

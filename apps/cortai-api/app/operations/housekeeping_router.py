@@ -6,16 +6,16 @@ from datetime import UTC, datetime, timedelta
 from fastapi import APIRouter, Query
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.housekeeping_schemas import HousekeepingSummary
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/housekeeping", tags=["operations-housekeeping"])
 
 
 @router.get("/summary", response_model=HousekeepingSummary)
 async def get_housekeeping_summary(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID | None = Query(default=None),
 ) -> HousekeepingSummary:

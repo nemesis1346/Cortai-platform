@@ -6,10 +6,10 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.live.publisher import publish_live_event
 from app.operations.action_queue_schemas import ActionQueueCreate, ActionQueueItem
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/action-queue", tags=["operations-action-queue"])
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/action-queue", tags=["operations-action-queue"])
 @router.post("", response_model=ActionQueueItem, status_code=status.HTTP_201_CREATED)
 async def create_action_queue_item(
     payload: ActionQueueCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> ActionQueueItem:
     now = datetime.now(UTC)

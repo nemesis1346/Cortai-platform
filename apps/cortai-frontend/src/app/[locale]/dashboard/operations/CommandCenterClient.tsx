@@ -265,7 +265,7 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
           <p className="text-xs text-cortai-text2">{t("subtitle")}</p>
         </div>
         <div className="ml-auto flex items-center gap-2 text-xs text-cortai-text2">
-          <Button type="button" variant="ghost" onClick={() => void refreshAll()}>
+          <Button type="button" variant="ghost" onClick={() => void refreshAll()} data-testid="command-center-refresh">
             {t("refresh")}
           </Button>
         </div>

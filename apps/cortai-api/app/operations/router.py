@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Annotated, Any
+from typing import Any
 
 import uuid
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Query
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.schemas import OperationsKpis
 from app.operations.action_queue_get_router import router as action_queue_get_router
@@ -33,14 +32,14 @@ from app.operations.spa_router import router as spa_router
 from app.operations.meetings_router import router as meetings_router
 from app.operations.messaging_router import router as messaging_router
 from app.operations.iot_sensors_router import router as iot_sensors_router
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
-AuthedPrincipalDep = Annotated[PrincipalDep, Depends()]
 
 
 @router.get("/kpis", response_model=OperationsKpis)
 async def get_kpis(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID | None = Query(default=None),
 ) -> OperationsKpis:

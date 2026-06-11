@@ -8,9 +8,9 @@ from datetime import datetime
 from fastapi import APIRouter, Query
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.action_queue_schemas import ActionQueueList, ActionQueueStatus, ActionQueueType
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/action-queue", tags=["operations-action-queue"])
 
@@ -38,7 +38,7 @@ def _decode_cursor(cursor: str) -> tuple[datetime, uuid.UUID] | None:
 
 @router.get("", response_model=ActionQueueList)
 async def list_action_queue(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID | None = None,
     status: ActionQueueStatus | None = None,

@@ -298,6 +298,14 @@ export function GuestMessagingClient({ initialPropertyId }: { initialPropertyId:
     setThreads((prev) => prev.map((th) => (th.id === updated.id ? { ...th, ...updated } : th)));
   }
 
+  function channelLabel(channel: string) {
+    return t(`channels.${channel}`);
+  }
+
+  function statusLabel(status: string) {
+    return t(`statuses.${status}`);
+  }
+
   if (!propertyId) {
     return (
       <div className="rounded-lg border border-cortai-border bg-cortai-bg2 p-4">
@@ -345,7 +353,7 @@ export function GuestMessagingClient({ initialPropertyId }: { initialPropertyId:
                   <option value="">{t("filters.allChannels")}</option>
                   {["sms", "whatsapp", "email", "in_app"].map((channel) => (
                     <option key={channel} value={channel}>
-                      {channel}
+                      {channelLabel(channel)}
                     </option>
                   ))}
                 </select>
@@ -361,7 +369,7 @@ export function GuestMessagingClient({ initialPropertyId }: { initialPropertyId:
                   <option value="">{t("filters.allStatuses")}</option>
                   {["open", "pending", "closed"].map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {statusLabel(status)}
                     </option>
                   ))}
                 </select>
@@ -386,8 +394,8 @@ export function GuestMessagingClient({ initialPropertyId }: { initialPropertyId:
                   {thread.unread_count > 0 ? <Badge tone="amber">{thread.unread_count}</Badge> : null}
                 </div>
                 <div className="mt-2 flex items-center gap-2">
-                  <Badge tone={threadTone(thread.status)}>{thread.status}</Badge>
-                  <Badge tone="neutral">{thread.channel}</Badge>
+                  <Badge tone={threadTone(thread.status)}>{statusLabel(thread.status)}</Badge>
+                  <Badge tone="neutral">{channelLabel(thread.channel)}</Badge>
                 </div>
                 <p className="mt-2 text-[11px] text-cortai-text2">{fmtTs(thread.last_message_at, tc("dash"))}</p>
                 <p className="mt-1 truncate text-[11px] text-cortai-text3">

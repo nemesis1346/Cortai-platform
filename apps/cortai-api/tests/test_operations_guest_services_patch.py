@@ -10,7 +10,7 @@ from app.auth.dependencies import get_principal
 from app.auth.schemas import Principal
 from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
-from app.models import Organization, UserRole
+from app.models import Organization, User, UserRole, UserStatus
 
 
 def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
@@ -45,6 +45,19 @@ async def seeded_gs_patch() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        session.add(
+            User(
+                id=assignee,
+                org_id=org_id,
+                email=f"gs-assignee-{org_id}@example.com",
+                full_name="GS Assignee",
+                role=UserRole.STAFF,
+                status=UserStatus.ACTIVE,
+                password_hash="hash",  # noqa: S106
+                created_at=now,
+                updated_at=now,
+            )
+        )
         await session.execute(
             text(
                 """
@@ -104,6 +117,7 @@ async def seeded_gs_patch() -> dict[str, uuid.UUID]:
         await session.execute(text("delete from ops.guest_service_requests where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.action_queue where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from ops.rooms where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from users where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from properties where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from organizations where id = :org"), {"org": org_id})
         await session.commit()

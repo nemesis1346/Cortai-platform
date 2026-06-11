@@ -33,6 +33,7 @@ def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
 async def test_operations_kpis_returns_expected_shape() -> None:
     org_id = uuid.uuid4()
     now = datetime.now(UTC)
+    start_of_day = now.replace(hour=0, minute=0, second=0, microsecond=0)
 
     room_1 = uuid.uuid4()
     room_2 = uuid.uuid4()
@@ -120,10 +121,10 @@ async def test_operations_kpis_returns_expected_shape() -> None:
                 "g2": guest_2,
                 "prop": prop_id,
                 "r1": room_1,
-                "check_in_1": now - timedelta(hours=2),
-                "check_out_1": now + timedelta(days=1),
-                "check_in_2": now + timedelta(hours=3),
-                "check_out_2": now + timedelta(days=2),
+                "check_in_1": start_of_day,
+                "check_out_1": start_of_day + timedelta(days=1),
+                "check_in_2": start_of_day + timedelta(hours=3),
+                "check_out_2": start_of_day + timedelta(days=2),
                 "now": now,
             },
         )

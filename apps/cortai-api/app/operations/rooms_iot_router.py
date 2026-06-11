@@ -6,9 +6,9 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.bridges import iot_client
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
 async def get_room_iot(
     room_id: uuid.UUID,
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> Any:
     exists = await session.scalar(

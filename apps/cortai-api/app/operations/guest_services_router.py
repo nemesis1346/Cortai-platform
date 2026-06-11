@@ -8,7 +8,6 @@ import json
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.guest_services_schemas import (
     GuestServiceRequestCreate,
@@ -17,13 +16,14 @@ from app.operations.guest_services_schemas import (
     GuestServiceType,
     GuestServiceRequestUpdate,
 )
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/guest-services", tags=["operations-guest-services"])
 
 
 @router.get("", response_model=GuestServiceRequestList)
 async def list_guest_services(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     status: GuestServiceStatus | None = None,
@@ -67,7 +67,7 @@ async def list_guest_services(
 @router.post("", status_code=201)
 async def create_guest_service_request(
     payload: GuestServiceRequestCreate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> dict:
     """
@@ -186,7 +186,7 @@ async def create_guest_service_request(
 async def update_guest_service_request(
     request_id: uuid.UUID,
     payload: GuestServiceRequestUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> dict:
     """

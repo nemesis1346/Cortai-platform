@@ -6,10 +6,9 @@ from typing import Any
 from fastapi import APIRouter, Body, HTTPException, Query, Request, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.bridges import iot_client
-from app.config import get_settings
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/hvac", tags=["operations-hvac"])
 
@@ -17,7 +16,7 @@ router = APIRouter(prefix="/hvac", tags=["operations-hvac"])
 @router.get("/rooms")
 async def list_hvac_rooms(
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:
@@ -35,7 +34,7 @@ async def list_hvac_rooms(
 async def control_hvac_room(
     room_id: uuid.UUID,
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     payload: dict[str, Any] = Body(default_factory=dict),
 ) -> Any:
@@ -44,7 +43,7 @@ async def control_hvac_room(
         text("select 1 from ops.rooms where id = :id and org_id = :org_id"),
         {"id": str(room_id), "org_id": str(principal.org_id)},
     )
-    if exists is None and get_settings().bridges_mode.lower().strip() != "mock":
+    if exists is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
 
     allowed = {"target_temp_c", "mode", "fan_speed"}
@@ -55,7 +54,7 @@ async def control_hvac_room(
 @router.get("/alerts")
 async def list_hvac_alerts(
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     since: str | None = Query(default=None),
@@ -81,14 +80,14 @@ async def get_hvac_room_command_ack(
     room_id: uuid.UUID,
     command_id: str,
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> Any:
     exists = await session.scalar(
         text("select 1 from ops.rooms where id = :id and org_id = :org_id"),
         {"id": str(room_id), "org_id": str(principal.org_id)},
     )
-    if exists is None and get_settings().bridges_mode.lower().strip() != "mock":
+    if exists is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
 
     return await iot_client.get_hvac_command_ack(request=request, room_id=room_id, command_id=command_id)

@@ -8,8 +8,8 @@ from fastapi import APIRouter, Query
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 from app.operations.front_desk_schemas import (
     FrontDeskArrivals,
     FrontDeskCheckInRequest,
@@ -32,7 +32,7 @@ router = APIRouter(prefix="/front-desk", tags=["operations-front-desk"])
 
 @router.get("/stats", response_model=FrontDeskStats)
 async def get_front_desk_stats(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID | None = Query(default=None),
 ) -> FrontDeskStats:
@@ -154,7 +154,7 @@ async def get_front_desk_stats(
 
 @router.get("/arrivals", response_model=FrontDeskArrivals)
 async def list_arrivals(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     date: date | None = Query(default=None),  # noqa: A002
@@ -218,7 +218,7 @@ async def list_arrivals(
 
 @router.get("/departures", response_model=FrontDeskDepartures)
 async def list_departures(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     date: date | None = Query(default=None),  # noqa: A002
@@ -282,7 +282,7 @@ async def list_departures(
 
 @router.get("/in-hotel", response_model=FrontDeskInHotel)
 async def list_in_hotel(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> FrontDeskInHotel:
@@ -340,7 +340,7 @@ async def list_in_hotel(
 
 @router.get("/queue", response_model=FrontDeskQueue)
 async def list_queue(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> FrontDeskQueue:
@@ -390,7 +390,7 @@ async def list_queue(
 async def check_in_reservation(
     reservation_id: uuid.UUID,
     payload: FrontDeskCheckInRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FrontDeskCheckInResult:
     """
@@ -545,7 +545,7 @@ async def check_in_reservation(
 @router.post("/check-out/{reservation_id}", response_model=FrontDeskCheckOutResult)
 async def check_out_reservation(
     reservation_id: uuid.UUID,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FrontDeskCheckOutResult:
     """
@@ -660,7 +660,7 @@ async def check_out_reservation(
 @router.post("/walk-in", response_model=FrontDeskWalkInResult)
 async def walk_in(
     payload: FrontDeskWalkInRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FrontDeskWalkInResult:
     """
@@ -867,7 +867,7 @@ async def walk_in(
 @router.post("/queue/join", response_model=FrontDeskQueueJoinResult)
 async def queue_join(
     payload: FrontDeskQueueJoinRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FrontDeskQueueJoinResult:
     """
@@ -1006,7 +1006,7 @@ async def queue_join(
 @router.post("/queue/serve", response_model=FrontDeskQueueServeResult)
 async def queue_serve(
     payload: FrontDeskQueueServeRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> FrontDeskQueueServeResult:
     """

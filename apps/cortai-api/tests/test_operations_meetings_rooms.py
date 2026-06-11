@@ -10,7 +10,7 @@ from app.auth.dependencies import get_principal
 from app.auth.schemas import Principal
 from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
-from app.models import Organization, UserRole
+from app.models import Organization, User, UserRole, UserStatus
 
 
 def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
@@ -25,6 +25,18 @@ def _client_for_org(*, org_id: uuid.UUID) -> AsyncClient:
             yield session
 
     app.dependency_overrides[get_principal] = override_principal
+    app.dependency_overrides[get_session] = override_session
+    return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+
+def _audit_client(*, org_id: uuid.UUID) -> AsyncClient:
+    app = create_app()
+
+    async def override_session():  # type: ignore[no-untyped-def]
+        async with SessionLocal() as session:
+            await set_current_org(session, str(org_id))
+            yield session
+
     app.dependency_overrides[get_session] = override_session
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
 
@@ -56,7 +68,9 @@ async def seeded_property_for_meetings_rooms() -> dict[str, uuid.UUID]:
 
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        await session.execute(text("truncate table audit.change_log"))
         await session.execute(text("delete from ops.meeting_rooms where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from users where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from properties where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from organizations where id = :org"), {"org": org_id})
         await session.commit()
@@ -92,13 +106,35 @@ async def test_meetings_rooms_mutation_writes_audit_log(seeded_property_for_meet
     prop_id = seeded_property_for_meetings_rooms["property_id"]
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
+        user_id = uuid.uuid4()
+        session.add(
+            User(
+                id=user_id,
+                org_id=org_id,
+                email=f"meetings-audit-{org_id}@example.com",
+                full_name="Meetings Auditor",
+                role=UserRole.STAFF,
+                status=UserStatus.ACTIVE,
+                password_hash="hash",  # noqa: S106
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            )
+        )
         await session.execute(text("truncate table audit.change_log"))
         await session.commit()
 
-    async with _client_for_org(org_id=org_id) as client:
+    def _fake_decode_token(_token: str):  # type: ignore[no-untyped-def]
+        return Principal(user_id=user_id, org_id=org_id, email="audit@example.com", role=UserRole.STAFF)
+
+    import app.middleware.tenant as tenant_mw
+
+    tenant_mw.decode_token = _fake_decode_token  # type: ignore[assignment]
+
+    async with _audit_client(org_id=org_id) as client:
         created = await client.post(
             "/api/operations/meetings/rooms",
             json={"property_id": str(prop_id), "name": "Audit Room", "capacity": 12, "equipment": []},
+            cookies={"cortai_access_token": "test-token"},
         )
     assert created.status_code == 201
 

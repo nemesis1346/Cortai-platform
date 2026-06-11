@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/Card";
 import { Drawer } from "@/components/ui/Drawer";
 import { Input } from "@/components/ui/Input";
 import { useRealtimeSocket } from "@/hooks/use-realtime-socket";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 type SensorStatus = "online" | "stale" | "offline";
 type SensorType = "temperature" | "motion" | "door" | "water_leak" | "occupancy" | "air_quality";
@@ -75,26 +76,17 @@ function toNumber(v: unknown): number | null {
 }
 
 function Sparkline({ points }: { points: ReadingPoint[] }) {
-  const width = 440;
-  const height = 96;
-  const pad = 8;
-  const ys = points.map((p) => p.value);
-  const min = Math.min(...ys);
-  const max = Math.max(...ys);
-  const span = max - min || 1;
-
-  const d = points
-    .map((p, idx) => {
-      const x = pad + (idx / Math.max(1, points.length - 1)) * (width - pad * 2);
-      const y = pad + (1 - (p.value - min) / span) * (height - pad * 2);
-      return `${idx === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(" ");
-
   return (
-    <svg width="100%" viewBox={`0 0 ${width} ${height}`} className="rounded-md border border-cortai-border bg-cortai-bg2">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="2" className="text-cortai-teal" />
-    </svg>
+    <div className="h-32 rounded-md border border-cortai-border bg-cortai-bg2 p-2" data-testid="iot-sensors-sparkline">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={points}>
+          <XAxis dataKey="ts" hide />
+          <YAxis hide domain={["auto", "auto"]} />
+          <Tooltip />
+          <Line type="monotone" dataKey="value" stroke="currentColor" dot={false} strokeWidth={2} />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -224,6 +216,14 @@ export function IotSensorsClient({ initialPropertyId }: { initialPropertyId: str
     onReconnect: loadInventory
   });
 
+  function typeLabel(type: string) {
+    return t(`types.${type}`);
+  }
+
+  function sensorStatusLabel(status: string) {
+    return t(`statuses.${status}`);
+  }
+
   if (!propertyId) {
     return (
       <div className="rounded-lg border border-cortai-border bg-cortai-bg2 p-4">
@@ -265,7 +265,7 @@ export function IotSensorsClient({ initialPropertyId }: { initialPropertyId: str
                 <option value="">{t("filters.allTypes")}</option>
                 {["temperature", "motion", "door", "water_leak", "occupancy", "air_quality"].map((tt) => (
                   <option key={tt} value={tt}>
-                    {tt}
+                    {typeLabel(tt)}
                   </option>
                 ))}
               </select>
@@ -294,13 +294,13 @@ export function IotSensorsClient({ initialPropertyId }: { initialPropertyId: str
             >
               <div className="flex items-center gap-2">
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold">{s.device_id}</span>
-                <Badge tone={statusTone(String(s.status))}>{String(s.status)}</Badge>
+                <Badge tone={statusTone(String(s.status))}>{sensorStatusLabel(String(s.status))}</Badge>
               </div>
               <p className="mt-1 text-[11px] text-cortai-text2">
                 {t("card.room")}: {s.room ?? tc("dash")}
               </p>
               <p className="mt-1 text-[11px] text-cortai-text2">
-                {t("card.type")}: {String(s.type)}
+                {t("card.type")}: {typeLabel(String(s.type))}
               </p>
               <p className="mt-2 text-sm">
                 {t("card.last")}:{" "}
@@ -328,9 +328,9 @@ export function IotSensorsClient({ initialPropertyId }: { initialPropertyId: str
           <div className="grid gap-3">
             <div className="flex flex-wrap gap-2">
               <Badge tone={statusTone(String(openSensor.status))} data-testid="iot-sensors-drawer-status">
-                {String(openSensor.status)}
+                {sensorStatusLabel(String(openSensor.status))}
               </Badge>
-              <Badge tone="neutral">{String(openSensor.type)}</Badge>
+              <Badge tone="neutral">{typeLabel(String(openSensor.type))}</Badge>
               <Badge tone="neutral">{openSensor.room ? `${t("card.room")}: ${openSensor.room}` : t("drawer.noRoom")}</Badge>
             </div>
             <p className="text-xs text-cortai-text2">

@@ -9,8 +9,8 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 from app.operations.shift_handover_schemas import (
     ShiftHandoverCurrent,
     ShiftHandoverHistoryList,
@@ -36,7 +36,7 @@ def _current_shift_label(now_utc: datetime) -> ShiftLabel:
 
 @router.get("/current", response_model=ShiftHandoverCurrent)
 async def get_current_shift_handover(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
     shift_date: date | None = Query(default=None),
@@ -88,7 +88,7 @@ async def get_current_shift_handover(
 
 @router.get("/history", response_model=ShiftHandoverHistoryList)
 async def list_shift_handover_history(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID | None = Query(default=None),
     date: date | None = Query(default=None),
@@ -139,7 +139,7 @@ def _next_shift(*, shift_date: date, shift_label: ShiftLabel) -> tuple[date, Shi
 @router.post("", response_model=ShiftHandoverSignoffResponse)
 async def signoff_shift_handover(
     payload: ShiftHandoverSignoffRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> ShiftHandoverSignoffResponse:
     # Validate property belongs to org (RLS-scoped).
@@ -352,7 +352,7 @@ async def signoff_shift_handover(
 async def update_shift_handover(
     handover_id: uuid.UUID,
     payload: ShiftHandoverUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> ShiftHandoverRead:
     data = payload.model_dump(exclude_unset=True)

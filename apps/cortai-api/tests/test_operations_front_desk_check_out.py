@@ -62,11 +62,11 @@ async def seeded_check_out() -> dict[str, uuid.UUID]:
                 )
                 values (
                   :room_id, :org_id, :prop_id, '101', 1, 'king', 'occupied',
-                  :rid, false, :now, :now
+                  null, false, :now, :now
                 )
                 """
             ),
-            {"room_id": room_id, "org_id": org_id, "prop_id": prop_id, "rid": reservation_id, "now": now},
+            {"room_id": room_id, "org_id": org_id, "prop_id": prop_id, "now": now},
         )
         await session.execute(
             text(
@@ -102,6 +102,10 @@ async def seeded_check_out() -> dict[str, uuid.UUID]:
                 "out_at": now + timedelta(hours=1),
                 "now": now,
             },
+        )
+        await session.execute(
+            text("update ops.rooms set current_reservation_id = :rid where id = :room_id"),
+            {"rid": reservation_id, "room_id": room_id},
         )
         await session.commit()
 

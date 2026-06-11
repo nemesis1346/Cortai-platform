@@ -4,7 +4,9 @@ from datetime import UTC, datetime
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+import sqlalchemy as sa
 from sqlalchemy import text
+from sqlalchemy.dialects import postgresql
 
 from app.auth.dependencies import get_principal
 from app.auth.schemas import Principal
@@ -67,7 +69,7 @@ async def seeded_property_room_and_order() -> dict[str, uuid.UUID]:
                 insert into ops.room_service_orders (id, org_id, room_id, guest_id, items_json, status, created_at, updated_at)
                 values (:o, :org, :r, null, :items_json, 'received', :now, :now)
                 """
-            ),
+            ).bindparams(sa.bindparam("items_json", type_=postgresql.JSONB)),
             {"o": order_id, "org": org_id, "r": room_id, "items_json": {"items": [{"sku": "coffee", "qty": 2}]}, "now": now},
         )
         await session.commit()

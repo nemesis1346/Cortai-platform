@@ -6,8 +6,8 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 from app.operations.rooms_schemas import RoomDetail
 
 router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/rooms", tags=["operations-rooms"])
 @router.get("/{room_id}", response_model=RoomDetail)
 async def get_room_detail(
     room_id: uuid.UUID,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> RoomDetail:
     room_row = (

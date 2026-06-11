@@ -10,7 +10,7 @@ from app.auth.dependencies import get_principal
 from app.auth.schemas import Principal
 from app.db import SessionLocal, get_session, set_current_org
 from app.main import create_app
-from app.models import Organization, UserRole
+from app.models import Organization, User, UserRole, UserStatus
 
 
 def _client_for_org(*, org_id: uuid.UUID, user_id: uuid.UUID | None = None) -> AsyncClient:
@@ -32,6 +32,26 @@ def _client_for_org(*, org_id: uuid.UUID, user_id: uuid.UUID | None = None) -> A
     app.dependency_overrides[get_principal] = override_principal
     app.dependency_overrides[get_session] = override_session
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://test")
+
+
+async def _seed_user(*, org_id: uuid.UUID, user_id: uuid.UUID) -> None:
+    now = datetime.now(UTC)
+    async with SessionLocal() as session:
+        await set_current_org(session, str(org_id))
+        session.add(
+            User(
+                id=user_id,
+                org_id=org_id,
+                email=f"shift-user-{user_id}@example.com",
+                full_name="Shift User",
+                role=UserRole.STAFF,
+                status=UserStatus.ACTIVE,
+                password_hash="hash",  # noqa: S106
+                created_at=now,
+                updated_at=now,
+            )
+        )
+        await session.commit()
 
 
 @pytest_asyncio.fixture
@@ -82,6 +102,7 @@ async def seeded_shift_handover() -> dict[str, uuid.UUID]:
     async with SessionLocal() as session:
         await set_current_org(session, str(org_id))
         await session.execute(text("delete from ops.shift_handover where org_id = :org"), {"org": org_id})
+        await session.execute(text("delete from users where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from properties where org_id = :org"), {"org": org_id})
         await session.execute(text("delete from organizations where id = :org"), {"org": org_id})
         await session.commit()
@@ -120,6 +141,7 @@ async def test_post_shift_handover_signoff_creates_signed_and_next(seeded_shift_
     org_id = seeded_shift_handover["org_id"]
     prop_id = seeded_shift_handover["property_id"]
     user_id = uuid.uuid4()
+    await _seed_user(org_id=org_id, user_id=user_id)
 
     async with _client_for_org(org_id=org_id, user_id=user_id) as client:
         resp = await client.post(
@@ -149,6 +171,7 @@ async def test_post_shift_handover_signoff_is_idempotent_for_next_shift(seeded_s
     org_id = seeded_shift_handover["org_id"]
     prop_id = seeded_shift_handover["property_id"]
     user_id = uuid.uuid4()
+    await _seed_user(org_id=org_id, user_id=user_id)
 
     async with _client_for_org(org_id=org_id, user_id=user_id) as client:
         r1 = await client.post(
@@ -173,6 +196,7 @@ async def test_patch_shift_handover_updates_before_signoff(seeded_shift_handover
     org_id = seeded_shift_handover["org_id"]
     prop_id = seeded_shift_handover["property_id"]
     user_id = uuid.uuid4()
+    await _seed_user(org_id=org_id, user_id=user_id)
 
     # Create an unsigned "afternoon" record (as the next shift).
     async with _client_for_org(org_id=org_id, user_id=user_id) as client:
@@ -203,6 +227,7 @@ async def test_patch_shift_handover_rejected_after_signoff(seeded_shift_handover
     org_id = seeded_shift_handover["org_id"]
     prop_id = seeded_shift_handover["property_id"]
     user_id = uuid.uuid4()
+    await _seed_user(org_id=org_id, user_id=user_id)
 
     async with _client_for_org(org_id=org_id, user_id=user_id) as client:
         resp = await client.post(

@@ -7,16 +7,16 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.operations.header_schemas import OperationsHeader
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/header", tags=["operations-header"])
 
 
 @router.get("", response_model=OperationsHeader)
 async def get_operations_header(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID = Query(...),
 ) -> OperationsHeader:

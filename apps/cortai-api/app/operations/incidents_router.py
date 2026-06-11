@@ -12,9 +12,9 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
-from app.auth.dependencies import PrincipalDep
-from app.bridges.ai_client import post_incident_triage
+import app.bridges.ai_client as ai_client
 from app.db import SessionDep
+from app.operations.rbac import OperationsPrincipalDep
 from app.operations.incidents_schemas import (
     IncidentAssignRequest,
     IncidentAttachmentPresignRequest,
@@ -28,8 +28,8 @@ from app.operations.incidents_schemas import (
     IncidentTriageResponse,
     IncidentUpdate,
 )
-from app.notify.email import send_escalation_email
-from app.storage.s3 import incident_attachment_key, presign_put
+import app.notify.email as email
+import app.storage.s3 as s3
 
 
 async def _maybe_send_assignment_email(*, incident: dict, assigned_to: str | None) -> None:
@@ -44,7 +44,7 @@ async def _maybe_send_assignment_email(*, incident: dict, assigned_to: str | Non
         f"Status: {incident.get('status')}",
     ]
     # Reuse escalation email channel for now.
-    await send_escalation_email(subject=subject, body_text="\n".join(body_lines))
+    await email.send_escalation_email(subject=subject, body_text="\n".join(body_lines))
 
 # Mounted under `app.operations.router` which already has `/api/operations` prefix.
 router = APIRouter(prefix="/incidents", tags=["operations-incidents"])
@@ -87,7 +87,7 @@ async def _sla_due_at_for_severity(
 
 @router.get("", response_model=IncidentList)
 async def list_incidents(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -149,7 +149,7 @@ async def list_incidents(
 
 @router.post("", response_model=IncidentRead, status_code=status.HTTP_201_CREATED)
 async def create_incident(
-    payload: IncidentCreate, principal: PrincipalDep, session: SessionDep
+    payload: IncidentCreate, principal: OperationsPrincipalDep, session: SessionDep
 ) -> IncidentRead:
     incident_id = uuid.uuid4()
     now = datetime.now(UTC)
@@ -195,7 +195,7 @@ async def create_incident(
 
 @router.get("/export.csv")
 async def export_incidents_csv(
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
     property_id: uuid.UUID | None = None,
     severity: IncidentSeverity | None = None,
@@ -271,7 +271,7 @@ async def export_incidents_csv(
 
 @router.get("/{incident_id}", response_model=IncidentRead)
 async def get_incident(
-    incident_id: uuid.UUID, principal: PrincipalDep, session: SessionDep
+    incident_id: uuid.UUID, principal: OperationsPrincipalDep, session: SessionDep
 ) -> IncidentRead:
     row = (
         await session.execute(
@@ -294,7 +294,7 @@ async def get_incident(
 async def update_incident(
     incident_id: uuid.UUID,
     payload: IncidentUpdate,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> IncidentRead:
     data = payload.model_dump(exclude_unset=True)
@@ -350,7 +350,7 @@ async def update_incident(
 async def assign_incident(
     incident_id: uuid.UUID,
     payload: IncidentAssignRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> IncidentRead:
     # Validate assignee exists in this org (avoid FK 500s).
@@ -406,7 +406,7 @@ async def assign_incident(
 async def create_incident_attachment_upload(
     incident_id: uuid.UUID,
     payload: IncidentAttachmentPresignRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> IncidentAttachmentPresignResponse:
     inc = (
@@ -425,13 +425,13 @@ async def create_incident_attachment_upload(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
 
     attachment_id = uuid.uuid4()
-    key = incident_attachment_key(
+    key = s3.incident_attachment_key(
         org_id=principal.org_id,
         incident_id=incident_id,
         attachment_id=attachment_id,
         filename=payload.filename,
     )
-    signed = presign_put(key=key, content_type=payload.content_type)
+    signed = s3.presign_put(key=key, content_type=payload.content_type)
     return IncidentAttachmentPresignResponse(
         key=key,
         upload_url=signed.url,
@@ -443,7 +443,7 @@ async def create_incident_attachment_upload(
 async def escalate_incident(
     incident_id: uuid.UUID,
     payload: IncidentEscalateRequest,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> IncidentRead:
     # Escalation updates severity/status and notifies.
@@ -515,7 +515,7 @@ async def escalate_incident(
     if payload.reason:
         body_lines.append("")
         body_lines.append(f"Reason: {payload.reason}")
-    await send_escalation_email(subject=subject, body_text="\n".join(body_lines))
+    await email.send_escalation_email(subject=subject, body_text="\n".join(body_lines))
 
     await session.commit()
     return IncidentRead(**dict(updated))
@@ -525,7 +525,7 @@ async def escalate_incident(
 async def triage_incident(
     incident_id: uuid.UUID,
     request: Request,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> IncidentTriageResponse:
     inc = (
@@ -555,13 +555,13 @@ async def triage_incident(
         "created_at": inc["created_at"].isoformat() if inc["created_at"] else None,
         "resolved_at": inc["resolved_at"].isoformat() if inc["resolved_at"] else None,
     }
-    resp = await post_incident_triage(request=request, incident=payload)
+    resp = await ai_client.post_incident_triage(request=request, incident=payload)
     return IncidentTriageResponse(**resp)
 
 
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_incident(
-    incident_id: uuid.UUID, principal: PrincipalDep, session: SessionDep
+    incident_id: uuid.UUID, principal: OperationsPrincipalDep, session: SessionDep
 ) -> None:
     result = await session.execute(
         text("delete from operations.incidents where id = :id and org_id = :org_id"),

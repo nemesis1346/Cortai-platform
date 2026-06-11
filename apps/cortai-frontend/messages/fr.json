@@ -315,6 +315,17 @@
         "assigned": "Assigné",
         "unassigned": "Non assigné"
       },
+      "channels": {
+        "sms": "SMS",
+        "whatsapp": "WhatsApp",
+        "email": "Courriel",
+        "in_app": "Dans l’app"
+      },
+      "statuses": {
+        "open": "Ouvert",
+        "pending": "En attente",
+        "closed": "Fermé"
+      },
       "actions": {
         "markRead": "Marquer comme lu",
         "markUnread": "Marquer comme non lu",
@@ -364,6 +375,19 @@
         "searchPlaceholder": "device_id ou chambre"
       },
       "empty": "Aucun capteur trouvé.",
+      "types": {
+        "temperature": "Température",
+        "motion": "Mouvement",
+        "door": "Porte",
+        "water_leak": "Fuite d’eau",
+        "occupancy": "Occupation",
+        "air_quality": "Qualité de l’air"
+      },
+      "statuses": {
+        "online": "En ligne",
+        "stale": "Périmé",
+        "offline": "Hors ligne"
+      },
       "card": {
         "room": "Chambre",
         "type": "Type",

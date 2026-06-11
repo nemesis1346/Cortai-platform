@@ -6,9 +6,9 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
 
-from app.auth.dependencies import PrincipalDep
 from app.db import SessionDep
 from app.live.publisher import publish_live_event
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/action-queue", tags=["operations-action-queue"])
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/action-queue", tags=["operations-action-queue"])
 @router.post("/{item_id}/dispatch")
 async def dispatch_action_queue_item(
     item_id: uuid.UUID,
-    principal: PrincipalDep,
+    principal: OperationsPrincipalDep,
     session: SessionDep,
 ) -> dict[str, str | bool]:
     """
