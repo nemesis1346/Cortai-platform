@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { DateTimeInput, toDatetimeLocal } from "@/components/ui/DateTimeInput";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -268,7 +269,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
 
   function openEditAppt(a: SpaAppointment) {
     setApptEditing(a);
-    apptForm.reset({ guest_id: a.guest_id, service: a.service, starts_at: a.starts_at, ends_at: a.ends_at, status: a.status ?? "" });
+    apptForm.reset({ guest_id: a.guest_id, service: a.service, starts_at: toDatetimeLocal(a.starts_at), ends_at: toDatetimeLocal(a.ends_at), status: a.status ?? "" });
     setApptOpen(true);
   }
 
@@ -830,8 +831,8 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
         <form onSubmit={apptForm.handleSubmit((v) => void submitAppt(v))} className="grid gap-3" data-testid="pool-spa-appt-modal">
           <Input label={t("appointments.modal.guestId")}  error={apptForm.formState.errors.guest_id?.message}  {...apptForm.register("guest_id")} />
           <Input label={t("appointments.modal.service")}  error={apptForm.formState.errors.service?.message}   {...apptForm.register("service")} />
-          <Input label={t("appointments.modal.startsAt")} error={apptForm.formState.errors.starts_at?.message} {...apptForm.register("starts_at")} />
-          <Input label={t("appointments.modal.endsAt")}   error={apptForm.formState.errors.ends_at?.message}   {...apptForm.register("ends_at")} />
+          <DateTimeInput label={t("appointments.modal.startsAt")} error={apptForm.formState.errors.starts_at?.message} {...apptForm.register("starts_at")} />
+          <DateTimeInput label={t("appointments.modal.endsAt")}   error={apptForm.formState.errors.ends_at?.message}   {...apptForm.register("ends_at")} />
           <Input label={t("appointments.modal.status")}   error={apptForm.formState.errors.status?.message}    {...apptForm.register("status")} />
           <div className="flex items-center gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setApptOpen(false)}>{t("close")}</Button>

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { DateTimeInput, toDatetimeLocal } from "@/components/ui/DateTimeInput";
 import { Input } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
@@ -233,7 +234,7 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
 
   function openEditClass(c: FitnessClass) {
     setClassEditing(c);
-    classForm.reset({ name: c.name, instructor_name: c.instructor_name ?? "", starts_at: c.starts_at, ends_at: c.ends_at, capacity: c.capacity, booked: c.booked, location: c.location ?? "", description: c.description ?? "", status: c.status });
+    classForm.reset({ name: c.name, instructor_name: c.instructor_name ?? "", starts_at: toDatetimeLocal(c.starts_at), ends_at: toDatetimeLocal(c.ends_at), capacity: c.capacity, booked: c.booked, location: c.location ?? "", description: c.description ?? "", status: c.status });
     setClassOpen(true);
   }
 
@@ -765,8 +766,8 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
         <form onSubmit={classForm.handleSubmit((v) => void submitClass(v))} className="grid gap-3" data-testid="fitness-class-modal">
           <Input label={t("classes.modal.name")}       error={classForm.formState.errors.name?.message}            {...classForm.register("name")} />
           <Input label={t("classes.modal.instructor")} error={classForm.formState.errors.instructor_name?.message} {...classForm.register("instructor_name")} />
-          <Input label={t("classes.modal.startsAt")}   error={classForm.formState.errors.starts_at?.message}       {...classForm.register("starts_at")} />
-          <Input label={t("classes.modal.endsAt")}     error={classForm.formState.errors.ends_at?.message}         {...classForm.register("ends_at")} />
+          <DateTimeInput label={t("classes.modal.startsAt")} error={classForm.formState.errors.starts_at?.message} {...classForm.register("starts_at")} />
+          <DateTimeInput label={t("classes.modal.endsAt")}   error={classForm.formState.errors.ends_at?.message}   {...classForm.register("ends_at")} />
           <div className="grid grid-cols-2 gap-3">
             <Input label={t("classes.modal.capacity")} error={classForm.formState.errors.capacity?.message} type="number" {...classForm.register("capacity")} />
             <Input label={t("classes.modal.booked")}   error={classForm.formState.errors.booked?.message}   type="number" {...classForm.register("booked")} />
