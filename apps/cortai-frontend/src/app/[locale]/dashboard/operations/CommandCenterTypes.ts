@@ -82,6 +82,64 @@ export type ElevatorState = {
   last_seen_at?: string | null;
 };
 
+export type FbStatus = {
+  count: number;
+  capacity: number;
+  status: string;
+  served_today: number;
+  dwell_avg_min: number;
+  cafe_count: number;
+  cafe_capacity: number;
+  cafe_served_today: number;
+  cafe_dwell_avg_min: number;
+  last_updated: string;
+};
+
+export type FitnessCapacity = {
+  count: number;
+  capacity: number;
+  status: string;
+  total_today: number;
+  avg_session_min: number;
+  temp_f: number | null;
+  humidity_pct: number | null;
+  last_updated: string;
+};
+
+export type PoolSpaStatus = {
+  pool_count: number;
+  pool_capacity: number;
+  pool_total_today: number;
+  pool_avg_dwell_min: number;
+  pool_temp_f: number;
+  pool_humidity_pct: number;
+  pool_room_temp_f: number;
+  spa_count: number;
+  spa_capacity: number;
+  spa_total_today: number;
+  spa_avg_session_min: number;
+  hot_tub_temp_f: number;
+  status: string;
+  last_updated: string;
+};
+
+export type MeetingBooking = {
+  id: string;
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  setup_status: string;
+  attendees_count: number;
+  meeting_room_id: string;
+};
+
+export type MeetingBookingList = {
+  items: MeetingBooking[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
 export type LiveMsg = {
   type: string;
   org_id?: string;

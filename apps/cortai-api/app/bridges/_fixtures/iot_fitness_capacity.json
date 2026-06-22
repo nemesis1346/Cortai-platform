@@ -3,6 +3,9 @@
   "count": 12,
   "capacity": 30,
   "status": "moderate",
+  "total_today": 43,
+  "avg_session_min": 38,
+  "temp_f": 68,
+  "humidity_pct": 45,
   "last_updated": "2026-01-01T00:00:00Z"
 }
-

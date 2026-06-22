@@ -4,6 +4,11 @@
   "count": 37,
   "capacity": 90,
   "status": "moderate",
+  "served_today": 156,
+  "dwell_avg_min": 8,
+  "cafe_count": 14,
+  "cafe_capacity": 40,
+  "cafe_served_today": 48,
+  "cafe_dwell_avg_min": 18,
   "last_updated": "2026-01-01T00:00:00Z"
 }
-

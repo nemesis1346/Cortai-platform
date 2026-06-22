@@ -8,22 +8,28 @@ import { useRealtimeSocket } from "@/hooks/use-realtime-socket";
 import { Button } from "@/components/ui/Button";
 import {
   ActionQueueTable,
+  AmenitiesOverviewPanel,
   AiInsightsBanner,
   ElevatorsPanel,
   FrontDeskPanel,
   HousekeepingSummaryPanel,
-  KpiTilesPanel
+  KpiTilesPanel,
+  LobbyWashroomPanel
 } from "./CommandCenterComponents";
 import type {
   ActionQueueItem,
   ActionQueueList,
   AiInsights,
   ElevatorState,
+  FbStatus,
+  FitnessCapacity,
   FrontDeskStats,
   HousekeepingSummary,
   LiveMsg,
+  MeetingBookingList,
   OperationsHeader,
-  OperationsKpis
+  OperationsKpis,
+  PoolSpaStatus
 } from "./CommandCenterTypes";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -89,6 +95,10 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
   const [housekeeping, setHousekeeping] = useState<HousekeepingSummary | null>(null);
   const [elevators, setElevators] = useState<Record<string, ElevatorState>>({});
   const [aiInsights, setAiInsights] = useState<AiInsights | null>(null);
+  const [fbStatus, setFbStatus] = useState<FbStatus | null>(null);
+  const [fitnessCapacity, setFitnessCapacity] = useState<FitnessCapacity | null>(null);
+  const [poolSpaStatus, setPoolSpaStatus] = useState<PoolSpaStatus | null>(null);
+  const [meetingBookings, setMeetingBookings] = useState<MeetingBookingList | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,14 +159,19 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
     setError(null);
     try {
       if (!propertyId) return;
-      const [hdr, k, aq, fd, hk, ai, elv] = await Promise.all([
-        apiFetch<OperationsHeader>(`/api/operations/header?property_id=${encodeURIComponent(propertyId)}`),
-        apiFetch<OperationsKpis>(`/api/operations/kpis?property_id=${encodeURIComponent(propertyId)}`),
-        apiFetch<ActionQueueList>(`/api/operations/action-queue?limit=50&property_id=${encodeURIComponent(propertyId)}`),
-        apiFetch<FrontDeskStats>(`/api/operations/front-desk/stats?property_id=${encodeURIComponent(propertyId)}`),
-        apiFetch<HousekeepingSummary>(`/api/operations/housekeeping/summary?property_id=${encodeURIComponent(propertyId)}`),
+      const pid = encodeURIComponent(propertyId);
+      const [hdr, k, aq, fd, hk, ai, elv, fb, fit, pool, meetings] = await Promise.all([
+        apiFetch<OperationsHeader>(`/api/operations/header?property_id=${pid}`),
+        apiFetch<OperationsKpis>(`/api/operations/kpis?property_id=${pid}`),
+        apiFetch<ActionQueueList>(`/api/operations/action-queue?limit=50&property_id=${pid}`),
+        apiFetch<FrontDeskStats>(`/api/operations/front-desk/stats?property_id=${pid}`),
+        apiFetch<HousekeepingSummary>(`/api/operations/housekeeping/summary?property_id=${pid}`),
         apiFetch<AiInsights>(`/api/ai/v1/operations/insights?locale=${encodeURIComponent(t("common.locale"))}`),
-        apiFetch<ElevatorState[]>(`/api/iot/v1/elevators`)
+        apiFetch<ElevatorState[]>(`/api/iot/v1/elevators`),
+        apiFetch<FbStatus>(`/api/operations/fb/breakfast/status?property_id=${pid}`),
+        apiFetch<FitnessCapacity>(`/api/operations/fitness/capacity?property_id=${pid}`),
+        apiFetch<PoolSpaStatus>(`/api/operations/pool/status?property_id=${pid}`),
+        apiFetch<MeetingBookingList>(`/api/operations/meetings/bookings?property_id=${pid}&page_size=10`)
       ]);
       setHeader(hdr);
       setKpis(k);
@@ -165,6 +180,10 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
       setHousekeeping(hk);
       setAiInsights(ai);
       setElevators(Object.fromEntries(elv.map((e) => [e.id, e])));
+      setFbStatus(fb);
+      setFitnessCapacity(fit);
+      setPoolSpaStatus(pool);
+      setMeetingBookings(meetings);
       lastKpiRef.current = Date.now();
     } catch (e) {
       setError(String(e));
@@ -259,12 +278,22 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
 
   return (
     <div className="grid gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-cortai-border bg-cortai-bg2 px-4 py-3">
         <div>
           <h1 className="text-lg font-semibold">{t("title")}</h1>
           <p className="text-xs text-cortai-text2">{t("subtitle")}</p>
         </div>
         <div className="ml-auto flex items-center gap-2 text-xs text-cortai-text2">
+          <span className="rounded-pill border border-cortai-teal/25 bg-cortai-teal/10 px-3 py-1 text-[10px] font-semibold text-cortai-teal">
+            AI Live / 30s
+          </span>
+          {header ? (
+            <>
+              <span className="rounded-md border border-cortai-border bg-cortai-bg3 px-2 py-1 font-mono">{header.occupancy_pct.toFixed(0)}%</span>
+              <span className="rounded-md border border-cortai-border bg-cortai-bg3 px-2 py-1 font-mono">{header.active_alerts}</span>
+              <span className="rounded-md border border-cortai-border bg-cortai-bg3 px-2 py-1 font-mono">{header.rating.toFixed(1)}</span>
+            </>
+          ) : null}
           <Button type="button" variant="ghost" onClick={() => void refreshAll()} data-testid="command-center-refresh">
             {t("refresh")}
           </Button>
@@ -277,44 +306,20 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
         </div>
       ) : null}
 
-      <KpiTilesPanel
-        dash={dash}
-        header={header}
-        kpis={kpis}
-        labels={{
-          alerts: t("kpis.alerts"),
-          arrived: t("kpis.arrived"),
-          arrivals: t("kpis.arrivals"),
-          cleaning: t("kpis.cleaning"),
-          departed: t("kpis.departed"),
-          departures: t("kpis.departures"),
-          guests: t("kpis.guests"),
-          housekeeping: t("kpis.housekeeping"),
-          occupancy: t("kpis.occupancy"),
-          onSite: t("kpis.onSite"),
-          operations: t("kpis.operations"),
-          progress: t("kpis.progress"),
-          rating: t("kpis.rating"),
-          staff: t("kpis.staff"),
-          today: t("kpis.today")
-        }}
-        loading={loading}
-      />
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-4">
+          <AiInsightsBanner
+            aiInsights={aiInsights}
+            emptyLabel={t("ai.empty")}
+            header={header}
+            labels={{ live: t("ai.live"), stub: t("ai.stub") }}
+            loading={loading}
+            loadingLabel={t("ai.loading")}
+            severityLabel={severityLabel}
+            severityTone={severityTone}
+            title={t("ai.title")}
+          />
 
-      <AiInsightsBanner
-        aiInsights={aiInsights}
-        emptyLabel={t("ai.empty")}
-        header={header}
-        labels={{ live: t("ai.live"), stub: t("ai.stub") }}
-        loading={loading}
-        loadingLabel={t("ai.loading")}
-        severityLabel={severityLabel}
-        severityTone={severityTone}
-        title={t("ai.title")}
-      />
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2">
           <ActionQueueTable
             assignLabel={t("queue.assignToMe")}
             canAssign={Boolean(user)}
@@ -339,9 +344,46 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
             title={t("queue.title")}
             typeLabel={typeLabel}
           />
+
+          <HousekeepingSummaryPanel
+            dash={dash}
+            fmtDuration={fmtDuration}
+            housekeeping={housekeeping}
+            labels={{
+              avgClean: t("housekeeping.avgClean"),
+              donePct: t("housekeeping.donePct"),
+              roomsAssigned: t("housekeeping.roomsAssigned"),
+              staffCount: t("housekeeping.staffCount"),
+              title: t("housekeeping.title")
+            }}
+            loading={loading}
+          />
         </div>
 
         <div className="grid gap-4">
+          <KpiTilesPanel
+            dash={dash}
+            kpis={kpis}
+            labels={{
+              alerts: t("kpis.alerts"),
+              arrived: t("kpis.arrived"),
+              arrivals: t("kpis.arrivals"),
+              cleaning: t("kpis.cleaning"),
+              departed: t("kpis.departed"),
+              departures: t("kpis.departures"),
+              guests: t("kpis.guests"),
+              housekeeping: t("kpis.housekeeping"),
+              occupancy: t("kpis.occupancy"),
+              onSite: t("kpis.onSite"),
+              operations: t("kpis.operations"),
+              progress: t("kpis.progress"),
+              rating: t("kpis.rating"),
+              staff: t("kpis.staff"),
+              today: t("kpis.today")
+            }}
+            loading={loading}
+          />
+
           <FrontDeskPanel
             dash={dash}
             frontDesk={frontDesk}
@@ -369,22 +411,18 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
             }}
             statusLabel={statusLabel}
           />
-
-          <HousekeepingSummaryPanel
-            dash={dash}
-            fmtDuration={fmtDuration}
-            housekeeping={housekeeping}
-            labels={{
-              avgClean: t("housekeeping.avgClean"),
-              donePct: t("housekeeping.donePct"),
-              roomsAssigned: t("housekeeping.roomsAssigned"),
-              staffCount: t("housekeeping.staffCount"),
-              title: t("housekeeping.title")
-            }}
-            loading={loading}
-          />
         </div>
       </div>
+
+      <LobbyWashroomPanel />
+      <AmenitiesOverviewPanel
+        fbStatus={fbStatus}
+        fitnessCapacity={fitnessCapacity}
+        poolSpaStatus={poolSpaStatus}
+        meetingBookings={meetingBookings}
+        loading={loading}
+        dash={dash}
+      />
     </div>
   );
 }

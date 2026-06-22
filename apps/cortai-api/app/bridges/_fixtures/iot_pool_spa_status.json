@@ -1,0 +1,17 @@
+{
+  "property_id": "00000000-0000-0000-0000-000000000000",
+  "pool_count": 10,
+  "pool_capacity": 60,
+  "pool_total_today": 34,
+  "pool_avg_dwell_min": 35,
+  "pool_temp_f": 82,
+  "pool_humidity_pct": 72,
+  "pool_room_temp_f": 78,
+  "spa_count": 2,
+  "spa_capacity": 10,
+  "spa_total_today": 18,
+  "spa_avg_session_min": 22,
+  "hot_tub_temp_f": 102,
+  "status": "moderate",
+  "last_updated": "2026-01-01T00:00:00Z"
+}
