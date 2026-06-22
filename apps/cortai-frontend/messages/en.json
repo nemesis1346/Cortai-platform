@@ -64,6 +64,7 @@
       "selectProperty": "Select a property to view rooms.",
       "refresh": "Refresh",
       "gridTitle": "Rooms",
+      "clickHint": "Click any room to view details",
       "empty": "No rooms found.",
       "filters": {
         "floor": "Floor",

@@ -1,38 +1,38 @@
 from __future__ import annotations
 
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
-
-import uuid
 
 from fastapi import APIRouter, Query
 from sqlalchemy import text
 
 from app.db import SessionDep
-from app.operations.schemas import OperationsKpis
+from app.operations.action_queue_dispatch_router import router as action_queue_dispatch_router
 from app.operations.action_queue_get_router import router as action_queue_get_router
 from app.operations.action_queue_patch_router import router as action_queue_patch_router
 from app.operations.action_queue_post_router import router as action_queue_post_router
-from app.operations.action_queue_dispatch_router import router as action_queue_dispatch_router
-from app.operations.incidents_router import router as incidents_router
-from app.operations.front_desk_router import router as front_desk_router
-from app.operations.housekeeping_router import router as housekeeping_router
-from app.operations.header_router import router as header_router
-from app.operations.rooms_list_router import router as rooms_list_router
-from app.operations.rooms_detail_router import router as rooms_detail_router
-from app.operations.rooms_patch_router import router as rooms_patch_router
-from app.operations.rooms_iot_router import router as rooms_iot_router
-from app.operations.guest_services_router import router as guest_services_router
-from app.operations.shift_handover_router import router as shift_handover_router
-from app.operations.hvac_router import router as hvac_router
 from app.operations.fb_router import router as fb_router
 from app.operations.fitness_router import router as fitness_router
-from app.operations.pool_router import router as pool_router
-from app.operations.spa_router import router as spa_router
+from app.operations.front_desk_router import router as front_desk_router
+from app.operations.guest_services_router import router as guest_services_router
+from app.operations.header_router import router as header_router
+from app.operations.housekeeping_router import router as housekeeping_router
+from app.operations.hvac_router import router as hvac_router
+from app.operations.incidents_router import router as incidents_router
+from app.operations.iot_sensors_router import router as iot_sensors_router
 from app.operations.meetings_router import router as meetings_router
 from app.operations.messaging_router import router as messaging_router
-from app.operations.iot_sensors_router import router as iot_sensors_router
+from app.operations.pool_router import router as pool_router
 from app.operations.rbac import OperationsPrincipalDep
+from app.operations.rooms_detail_router import router as rooms_detail_router
+from app.operations.rooms_iot_router import router as rooms_iot_router
+from app.operations.rooms_list_router import router as rooms_list_router
+from app.operations.rooms_patch_router import router as rooms_patch_router
+from app.operations.rooms_service_router import router as rooms_service_router
+from app.operations.schemas import OperationsKpis
+from app.operations.shift_handover_router import router as shift_handover_router
+from app.operations.spa_router import router as spa_router
 
 router = APIRouter(prefix="/api/operations", tags=["operations"])
 
@@ -225,6 +225,7 @@ router.include_router(rooms_list_router)
 router.include_router(rooms_detail_router)
 router.include_router(rooms_patch_router)
 router.include_router(rooms_iot_router)
+router.include_router(rooms_service_router)
 router.include_router(front_desk_router)
 router.include_router(guest_services_router)
 router.include_router(shift_handover_router)

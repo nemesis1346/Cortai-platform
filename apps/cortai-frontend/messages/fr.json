@@ -64,6 +64,7 @@
       "selectProperty": "Sélectionnez une propriété pour voir les chambres.",
       "refresh": "Actualiser",
       "gridTitle": "Chambres",
+      "clickHint": "Cliquez sur une chambre pour voir les détails",
       "empty": "Aucune chambre trouvée.",
       "filters": {
         "floor": "Étage",

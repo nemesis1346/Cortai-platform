@@ -1,28 +1,43 @@
 {
   "room_id": "00000000-0000-0000-0000-000000000000",
   "hvac": {
-    "current_temp_c": 24.6,
+    "current_temp_c": 20.6,
     "target_temp_c": 21.0,
     "mode": "cooling",
     "fan_speed": "auto",
     "fault_code": null,
+    "model": "Amana PTC093G35",
+    "serial": "ATF2209341A",
+    "noise_db": 39,
+    "filter_life_pct": 72,
+    "install_date": "2022-03-15",
+    "last_service": "2026-01-10",
     "updated_at": "2026-06-08T12:00:00Z"
   },
   "sensors": [
-    {
-      "device_id": "sensor-door-101",
-      "type": "door",
-      "value": 0,
-      "unit": "bool",
-      "ts": "2026-06-08T12:00:00Z"
-    },
-    {
-      "device_id": "sensor-occupancy-101",
-      "type": "occupancy",
-      "value": 1,
-      "unit": "bool",
-      "ts": "2026-06-08T12:00:00Z"
-    }
-  ]
+    { "device_id": "sensor-door-101",      "type": "door",      "value": 0, "unit": "bool", "ts": "2026-06-08T12:00:00Z" },
+    { "device_id": "sensor-occupancy-101", "type": "occupancy", "value": 1, "unit": "bool", "ts": "2026-06-08T12:00:00Z" },
+    { "device_id": "sensor-humidity-101",  "type": "humidity",  "value": 36, "unit": "%",   "ts": "2026-06-08T12:00:00Z" }
+  ],
+  "equipment": {
+    "tv_model": "Samsung 65\" QLED",
+    "tv_status": "online",
+    "safe_status": "ok",
+    "usb_charging": "2× USB-A + 1× USB-C · Desk + Nightstand"
+  },
+  "furniture": {
+    "bed_type": "Queen",
+    "bed_last_rotated": "2026-01-10",
+    "pillows": "4× standard + 2× firm available",
+    "extra_bedding": "In room closet",
+    "sofa_seating": "Desk chair + armchair"
+  },
+  "amenities": {
+    "minibar_status": "stocked",
+    "coffee_maker": "Keurig K-Mini",
+    "coffee_pods_remaining": 4,
+    "bathroom_kit": "Full Marriott kit · Stocked",
+    "towels": "Full set in room",
+    "iron_board": "In closet · Available"
+  }
 }
-

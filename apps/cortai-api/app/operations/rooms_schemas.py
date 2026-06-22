@@ -70,3 +70,36 @@ class RoomUpdate(BaseModel):
     status: RoomStatus | None = None
     attendant_user_id: uuid.UUID | None = None
 
+
+class RoomCleaningLog(BaseModel):
+    id: uuid.UUID
+    room_id: uuid.UUID
+    staff_name: str
+    clean_type: str
+    notes: str | None = None
+    score_pct: int | None = None
+    cleaned_at: datetime
+
+
+class RoomCleaningLogList(BaseModel):
+    items: list[RoomCleaningLog]
+    total: int
+
+
+class StayHistoryItem(BaseModel):
+    reservation_id: uuid.UUID
+    guest_first_name: str
+    guest_last_name: str
+    guest_vip: bool
+    language: str
+    nights: int
+    check_in_at: datetime
+    check_out_at: datetime
+    rate_cents: int | None = None
+    gss: float | None = None
+
+
+class RoomStayHistory(BaseModel):
+    items: list[StayHistoryItem]
+    total: int
+
