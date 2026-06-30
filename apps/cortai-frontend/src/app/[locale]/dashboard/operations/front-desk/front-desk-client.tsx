@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { useRealtimeSocket } from "@/hooks/use-realtime-socket";
 
 type TabKey = "arrivals" | "in_hotel" | "departures" | "queue";
 type ArrivalFilter = "all" | "pending" | "vip";
@@ -37,7 +38,6 @@ type QueueItem = {
 type QueueList = { items: QueueItem[] };
 
 type WalkInResult = { reservation_id: string; guest_id: string; room_id: string; status: string };
-type LiveMsg = { type: string; property_id?: string };
 
 function getCookie(name: string) {
   if (typeof document === "undefined") return null;
@@ -47,19 +47,6 @@ function getCookie(name: string) {
     if (p.startsWith(prefix)) return decodeURIComponent(p.slice(prefix.length));
   }
   return null;
-}
-
-function toWsUrl(apiBaseUrl: string) {
-  const base = apiBaseUrl?.trim();
-  if (!base) {
-    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${proto}//${window.location.host}/ws/live`;
-  }
-  const u = new URL(base);
-  u.protocol = u.protocol === "https:" ? "wss:" : "ws:";
-  u.pathname = "/ws/live";
-  u.search = "";
-  return u.toString();
 }
 
 function fmtShortDate(value: string | null): string {
@@ -110,8 +97,6 @@ const SPECIAL_REQUESTS = [
 export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: string }) {
   const t = useTranslations("operations.frontDesk");
   const { user } = useAuth();
-  const wsRef = useRef<WebSocket | null>(null);
-  const wsUrl = useMemo(() => toWsUrl(process.env.NEXT_PUBLIC_API_BASE_URL ?? ""), []);
 
   const [propertyId, setPropertyId] = useState(initialPropertyId);
   useEffect(() => {
@@ -165,20 +150,14 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
     void loadAll();
   }, [loadAll]);
 
-  useEffect(() => {
-    if (!user || !propertyId) return;
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "subscribe", scope: "property", property_id: propertyId }));
-    };
-    ws.onmessage = (event) => {
-      let msg: LiveMsg | null = null;
-      try { msg = JSON.parse(String(event.data)) as LiveMsg; } catch { return; }
-      if (msg?.type === "front_desk.event") void loadAll();
-    };
-    return () => { ws.close(); wsRef.current = null; };
-  }, [loadAll, propertyId, user, wsUrl]);
+  useRealtimeSocket({
+    enabled: Boolean(user && propertyId),
+    propertyId,
+    onReconnect: useCallback(() => { void loadAll(); }, [loadAll]),
+    onMessage: useCallback((msg: { type?: string }) => {
+      if (msg.type === "front_desk.event") void loadAll();
+    }, [loadAll]),
+  });
 
   // ── Derived stats ────────────────────────────────────────────────────────
   const arrivalsItems   = useMemo(() => arrivals?.items ?? [], [arrivals]);
