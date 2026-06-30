@@ -9,6 +9,7 @@ from sqlalchemy import text
 from app.bridges import iot_client
 from app.db import SessionDep
 from app.i18n import LocaleDep, http_err
+from app.live.publisher import publish_live_event
 from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/hvac", tags=["operations-hvac"])
@@ -41,17 +42,31 @@ async def control_hvac_room(
     locale: LocaleDep,
     payload: dict[str, Any] = Body(default_factory=dict),
 ) -> Any:
-    # Validate room belongs to org (RLS scoped).
-    exists = await session.scalar(
-        text("select 1 from ops.rooms where id = :id and org_id = :org_id"),
+    # Fetch property_id (needed for live event) and validate org membership.
+    property_id = await session.scalar(
+        text("select property_id from ops.rooms where id = :id and org_id = :org_id"),
         {"id": str(room_id), "org_id": str(principal.org_id)},
     )
-    if exists is None:
+    if property_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
 
     allowed = {"target_temp_c", "mode", "fan_speed"}
     filtered = {k: v for k, v in payload.items() if k in allowed and v is not None}
-    return await iot_client.post_hvac_room_control(request=request, room_id=room_id, payload=filtered)
+    resp = await iot_client.post_hvac_room_control(
+        request=request, room_id=room_id, payload=filtered
+    )
+
+    # Publish ACK event so WS subscribers don't need to poll the ACK endpoint.
+    await publish_live_event(session, {
+        "type": "hvac.command.acked",
+        "org_id": str(principal.org_id),
+        "property_id": str(property_id),
+        "command_id": resp.get("command_id", ""),
+        "room_id": str(room_id),
+        "accepted": True,
+    })
+    await session.commit()
+    return resp
 
 
 @router.get("/alerts")

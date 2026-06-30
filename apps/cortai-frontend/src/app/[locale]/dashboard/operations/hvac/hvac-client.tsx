@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
+import { useRealtimeSocket } from "@/hooks/use-realtime-socket";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -27,8 +28,7 @@ type EdgeEvent = {
   ts: string;
 };
 
-type ControlResponse  = { command_id: string; accepted_at: string; expected_ack_within_s: number };
-type AckResponse      = { command_id: string; room_id: string; accepted: boolean; error?: string | null; acked_at?: string | null };
+type ControlResponse = { command_id: string; accepted_at: string; expected_ack_within_s: number };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -48,10 +48,6 @@ function fmtTs(value: string | null) {
 
 function fmtTemp(value: number | null) {
   return value === null || value === undefined ? "—" : `${value.toFixed(1)}°C`;
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 type ZoneCfg = { col: string; bg: string; border: string; label: string };
@@ -111,10 +107,13 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
     setPropertyId(next);
   }, [initialPropertyId]);
 
-  const [items,   setItems]   = useState<HvacRoomState[]>([]);
-  const [alerts,  setAlerts]  = useState<EdgeEvent[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState<string | null>(null);
+  const [items,            setItems]            = useState<HvacRoomState[]>([]);
+  const [alerts,           setAlerts]           = useState<EdgeEvent[]>([]);
+  const [loading,          setLoading]          = useState(false);
+  const [error,            setError]            = useState<string | null>(null);
+  const [pendingCommandId, setPendingCommandId] = useState<string | null>(null);
+  const pendingRef = useRef(pendingCommandId);
+  useEffect(() => { pendingRef.current = pendingCommandId; }, [pendingCommandId]);
 
   const faultItems = useMemo(() => items.filter((i) => Boolean(i.fault_code)), [items]);
   const faultCount = faultItems.length;
@@ -155,6 +154,40 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
 
   useEffect(() => { void load(); }, [load]);
 
+  // ── WebSocket subscription ─────────────────────────────────────────────────
+  useRealtimeSocket({
+    enabled: Boolean(propertyId),
+    propertyId,
+    onReconnect: () => { void load(); },
+    onMessage: useCallback((msg) => {
+      if (msg.type === "hvac.state" && msg.room_id) {
+        setItems((prev) =>
+          prev.map((r) =>
+            r.room_id === msg.room_id
+              ? {
+                  ...r,
+                  current_temp_c: (msg.current_temp_c as number | null) ?? r.current_temp_c,
+                  target_temp_c:  (msg.target_temp_c  as number | null) ?? r.target_temp_c,
+                  mode:           (msg.mode      as string | null) ?? r.mode,
+                  fan_speed:      (msg.fan_speed  as string | null) ?? r.fan_speed,
+                  fault_code:     (msg.fault_code as string | null) ?? r.fault_code,
+                  last_updated:   (msg.ts         as string | null) ?? r.last_updated,
+                }
+              : r
+          )
+        );
+      }
+      if (msg.type === "hvac.command.acked" && msg.command_id === pendingRef.current) {
+        setPendingCommandId(null);
+        if (msg.accepted) {
+          notify({ title: t("toast.acked.title"), description: t("toast.acked.description"), tone: "success" });
+        } else {
+          notify({ title: t("toast.ackFailed.title"), description: String(msg.error ?? ""), tone: "error" });
+        }
+      }
+    }, [notify, t]),
+  });
+
   // ── Control modal ─────────────────────────────────────────────────────────
   const [modalOpen, setModalOpen] = useState(false);
   const [selected,  setSelected]  = useState<HvacRoomState | null>(null);
@@ -190,22 +223,8 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
         { method: "POST", body: JSON.stringify(payload) },
       );
       notify({ title: t("toast.sent.title"), description: t("toast.sent.description", { seconds: resp.expected_ack_within_s }), tone: "success" });
-
-      let ack: AckResponse | null = null;
-      for (let i = 0; i < 4; i++) {
-        await sleep(500);
-        ack = await apiFetch<AckResponse>(
-          `/api/operations/hvac/rooms/${encodeURIComponent(selected.room_id)}/commands/${encodeURIComponent(resp.command_id)}`,
-        );
-        if (ack.accepted || ack.error) break;
-      }
-      if (ack?.accepted) {
-        notify({ title: t("toast.acked.title"), description: t("toast.acked.description"), tone: "success" });
-      } else if (ack?.error) {
-        notify({ title: t("toast.ackFailed.title"), description: ack.error, tone: "error" });
-      }
+      setPendingCommandId(resp.command_id);
       setModalOpen(false);
-      await load();
     } catch (e) {
       setError(String(e));
       notify({ title: t("toast.failed.title"), description: t("toast.failed.description"), tone: "error" });
