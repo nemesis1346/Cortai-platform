@@ -91,6 +91,20 @@
         "iot": "IoT",
         "recentIncidents": "Incidents récents",
         "noIncidents": "Aucun incident."
+      },
+      "status": {
+        "vacant_clean": "Propre / Prête",
+        "vacant_dirty": "À nettoyer",
+        "occupied": "Occupée",
+        "inspected": "Inspectée",
+        "out_of_order": "Hors service"
+      },
+      "statusCode": {
+        "vacant_clean": "PRÊ",
+        "vacant_dirty": "SAL",
+        "occupied": "OCC",
+        "inspected": "INS",
+        "out_of_order": "HRS"
       }
     },
     "commandCenter": {
@@ -194,8 +208,7 @@
         "donePct": "Terminé",
         "avgClean": "Moy. nettoyage"
       }
-    }
-    ,
+    },
     "frontDesk": {
       "title": "Réception",
       "subtitle": "Arrivées, départs, clients à l’hôtel et file en direct.",
@@ -249,8 +262,7 @@
         "roomId": "ID chambre",
         "submit": "Enregistrer"
       }
-    }
-    ,
+    },
     "guestServices": {
       "title": "Services aux clients",
       "subtitle": "Créer et suivre les demandes clients (serviettes, oreillers, départ tardif, etc.).",
@@ -287,11 +299,16 @@
         "submit": "Créer la demande"
       },
       "toast": {
-        "created": { "title": "Demande créée", "description": "Demande créée avec succès." },
-        "failed": { "title": "Échec", "description": "Impossible de créer la demande." }
+        "created": {
+          "title": "Demande créée",
+          "description": "Demande créée avec succès."
+        },
+        "failed": {
+          "title": "Échec",
+          "description": "Impossible de créer la demande."
+        }
       }
-    }
-    ,
+    },
     "guestMessaging": {
       "title": "Messagerie client",
       "subtitle": "Conversations client en direct avec modèles et réponses WebSocket.",
@@ -351,12 +368,20 @@
         "send": "Envoyer"
       },
       "toast": {
-        "sent": { "title": "Message envoyé", "description": "Le message sortant a été envoyé." },
-        "assigned": { "title": "Assigné", "description": "Fil assigné avec succès." },
-        "unassigned": { "title": "Désassigné", "description": "Fil désassigné avec succès." }
+        "sent": {
+          "title": "Message envoyé",
+          "description": "Le message sortant a été envoyé."
+        },
+        "assigned": {
+          "title": "Assigné",
+          "description": "Fil assigné avec succès."
+        },
+        "unassigned": {
+          "title": "Désassigné",
+          "description": "Fil désassigné avec succès."
+        }
       }
-    }
-    ,
+    },
     "iotSensors": {
       "title": "Capteurs IoT",
       "subtitle": "Inventaire des capteurs en direct avec historique.",
@@ -404,8 +429,7 @@
         "loading": "Chargement…",
         "noData": "Aucune donnée."
       }
-    }
-    ,
+    },
     "shiftHandover": {
       "title": "Passation de quart",
       "subtitle": "Clôturez le quart avec les KPI, le travail ouvert et les éléments à reporter.",
@@ -441,11 +465,24 @@
         "noRequests": "Aucune demande en attente."
       },
       "toast": {
-        "saved": { "title": "Brouillon enregistré", "description": "Les notes de passation ont été mises à jour." },
-        "signed": { "title": "Quart clôturé", "description": "Le prochain quart a été démarré avec les éléments reportés." },
-        "failed": { "title": "Échec de la passation", "description": "Veuillez réessayer." }
+        "saved": {
+          "title": "Brouillon enregistré",
+          "description": "Les notes de passation ont été mises à jour."
+        },
+        "signed": {
+          "title": "Quart clôturé",
+          "description": "Le prochain quart a été démarré avec les éléments reportés."
+        },
+        "failed": {
+          "title": "Échec de la passation",
+          "description": "Veuillez réessayer."
+        }
       },
-      "status": { "notStarted": "Non démarré", "open": "Ouvert", "signed": "Signé" },
+      "status": {
+        "notStarted": "Non démarré",
+        "open": "Ouvert",
+        "signed": "Signé"
+      },
       "auto": {
         "heading": {
           "shiftSummary": "Résumé du quart",
@@ -465,8 +502,7 @@
         "openIncidents": "Incidents ouverts",
         "pendingGuestRequests": "Demandes clients en attente"
       }
-    }
-    ,
+    },
     "hvac": {
       "title": "CVC",
       "subtitle": "État CVC par chambre depuis le pont IoT.",
@@ -501,14 +537,36 @@
         "targetTempPlaceholder": "ex. 22.0",
         "mode": "Mode",
         "fanSpeed": "Vitesse ventil.",
-        "modes": { "auto": "Auto", "cooling": "Refroidir", "heating": "Chauffer", "off": "Arrêt" },
-        "fans": { "auto": "Auto", "low": "Faible", "medium": "Moyenne", "high": "Élevée" }
+        "modes": {
+          "auto": "Auto",
+          "cooling": "Refroidir",
+          "heating": "Chauffer",
+          "off": "Arrêt"
+        },
+        "fans": {
+          "auto": "Auto",
+          "low": "Faible",
+          "medium": "Moyenne",
+          "high": "Élevée"
+        }
       },
       "toast": {
-        "sent": { "title": "Commande envoyée", "description": "Attente d’ack (≤ {seconds}s)." },
-        "acked": { "title": "Ack reçu", "description": "Le contrôleur CVC a accepté la commande." },
-        "ackFailed": { "title": "Échec ack", "description": "Le contrôleur CVC a rejeté la commande." },
-        "failed": { "title": "Échec commande CVC", "description": "Veuillez réessayer." }
+        "sent": {
+          "title": "Commande envoyée",
+          "description": "Attente d’ack (≤ {seconds}s)."
+        },
+        "acked": {
+          "title": "Ack reçu",
+          "description": "Le contrôleur CVC a accepté la commande."
+        },
+        "ackFailed": {
+          "title": "Échec ack",
+          "description": "Le contrôleur CVC a rejeté la commande."
+        },
+        "failed": {
+          "title": "Échec commande CVC",
+          "description": "Veuillez réessayer."
+        }
       },
       "cols": {
         "roomId": "Chambre",
@@ -519,8 +577,7 @@
         "fault": "Défaut",
         "updated": "Maj"
       }
-    }
-    ,
+    },
     "foodBreakfast": {
       "title": "Restauration & Petit-déjeuner",
       "subtitle": "Statut du petit-déjeuner, tables du restaurant, menu et service de chambre.",
@@ -534,7 +591,11 @@
         "title": "Statut du petit-déjeuner",
         "count": "{count} clients",
         "capacity": "Capacité {capacity}",
-        "level": { "quiet": "Calme", "moderate": "Modéré", "busy": "Achalandé" }
+        "level": {
+          "quiet": "Calme",
+          "moderate": "Modéré",
+          "busy": "Achalandé"
+        }
       },
       "tables": {
         "title": "Tables du restaurant",
@@ -551,7 +612,12 @@
         "yes": "Oui",
         "no": "Non",
         "empty": "Aucun article de menu.",
-        "service": { "breakfast": "Petit-déjeuner", "restaurant": "Restaurant", "room_service": "Service de chambre", "roomService": "Service de chambre" },
+        "service": {
+          "breakfast": "Petit-déjeuner",
+          "restaurant": "Restaurant",
+          "room_service": "Service de chambre",
+          "roomService": "Service de chambre"
+        },
         "filters": {
           "allServices": "Tous les services",
           "allAvailability": "Toutes disponibilités",
@@ -587,7 +653,10 @@
         "detailTitle": "Commande {id}",
         "detailRoom": "Chambre {room}",
         "detailStatus": "Statut : {status}",
-        "filters": { "allStatuses": "Tous les statuts", "apply": "Appliquer" },
+        "filters": {
+          "allStatuses": "Tous les statuts",
+          "apply": "Appliquer"
+        },
         "status": {
           "received": "Reçue",
           "preparing": "Préparation",
@@ -595,7 +664,13 @@
           "delivered": "Livrée",
           "cancelled": "Annulée"
         },
-        "cols": { "room": "Chambre", "status": "Statut", "items": "Articles", "updated": "Maj", "actions": "Actions" },
+        "cols": {
+          "room": "Chambre",
+          "status": "Statut",
+          "items": "Articles",
+          "updated": "Maj",
+          "actions": "Actions"
+        },
         "actions": {
           "received": "Reçue",
           "preparing": "Préparation",
@@ -611,14 +686,28 @@
         }
       },
       "toast": {
-        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
-        "menuCreated": { "title": "Article créé", "description": "Article de menu créé avec succès." },
-        "menuUpdated": { "title": "Article mis à jour", "description": "Article de menu mis à jour avec succès." },
-        "orderCreated": { "title": "Commande créée", "description": "Commande créée avec succès." },
-        "invalidJson": { "title": "JSON invalide", "description": "Le JSON des articles doit être valide." }
+        "failed": {
+          "title": "Échec",
+          "description": "Veuillez réessayer."
+        },
+        "menuCreated": {
+          "title": "Article créé",
+          "description": "Article de menu créé avec succès."
+        },
+        "menuUpdated": {
+          "title": "Article mis à jour",
+          "description": "Article de menu mis à jour avec succès."
+        },
+        "orderCreated": {
+          "title": "Commande créée",
+          "description": "Commande créée avec succès."
+        },
+        "invalidJson": {
+          "title": "JSON invalide",
+          "description": "Le JSON des articles doit être valide."
+        }
       }
-    }
-    ,
+    },
     "poolSpa": {
       "title": "Piscine & Spa",
       "subtitle": "Capacité piscine et services & rendez-vous spa.",
@@ -633,14 +722,24 @@
         "title": "Capacité piscine",
         "count": "{count} clients",
         "capacity": "Capacité {capacity}",
-        "level": { "quiet": "Calme", "moderate": "Modéré", "busy": "Achalandé" }
+        "level": {
+          "quiet": "Calme",
+          "moderate": "Modéré",
+          "busy": "Achalandé"
+        }
       },
       "services": {
         "title": "Services spa",
         "new": "Nouveau service",
         "empty": "Aucun service.",
         "minutes": "{minutes} min",
-        "cols": { "name": "Nom", "duration": "Durée", "price": "Prix", "available": "Disponible", "updated": "Maj" },
+        "cols": {
+          "name": "Nom",
+          "duration": "Durée",
+          "price": "Prix",
+          "available": "Disponible",
+          "updated": "Maj"
+        },
         "modal": {
           "title": "Nouveau service spa",
           "name": "Nom",
@@ -657,9 +756,21 @@
         "empty": "Aucun rendez-vous.",
         "detail": "Détail",
         "edit": "Modifier",
-        "view": { "list": "Liste", "calendar": "Calendrier" },
-        "status": { "unknown": "Inconnu" },
-        "cols": { "service": "Service", "guest": "Client", "starts": "Début", "ends": "Fin", "status": "Statut", "actions": "Actions" },
+        "view": {
+          "list": "Liste",
+          "calendar": "Calendrier"
+        },
+        "status": {
+          "unknown": "Inconnu"
+        },
+        "cols": {
+          "service": "Service",
+          "guest": "Client",
+          "starts": "Début",
+          "ends": "Fin",
+          "status": "Statut",
+          "actions": "Actions"
+        },
         "modal": {
           "newTitle": "Nouveau rendez-vous",
           "editTitle": "Modifier le rendez-vous",
@@ -675,16 +786,29 @@
         "detailStarts": "Début : {value}",
         "detailEnds": "Fin : {value}",
         "detailStatus": "Statut : {status}",
-        "actions": { "markCompleted": "Marquer terminé" }
+        "actions": {
+          "markCompleted": "Marquer terminé"
+        }
       },
       "toast": {
-        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
-        "serviceCreated": { "title": "Service créé", "description": "Service spa créé avec succès." },
-        "apptCreated": { "title": "Rendez-vous créé", "description": "Rendez-vous spa créé avec succès." },
-        "apptUpdated": { "title": "Rendez-vous mis à jour", "description": "Rendez-vous spa mis à jour avec succès." }
+        "failed": {
+          "title": "Échec",
+          "description": "Veuillez réessayer."
+        },
+        "serviceCreated": {
+          "title": "Service créé",
+          "description": "Service spa créé avec succès."
+        },
+        "apptCreated": {
+          "title": "Rendez-vous créé",
+          "description": "Rendez-vous spa créé avec succès."
+        },
+        "apptUpdated": {
+          "title": "Rendez-vous mis à jour",
+          "description": "Rendez-vous spa mis à jour avec succès."
+        }
       }
-    }
-    ,
+    },
     "fitness": {
       "title": "Fitness",
       "subtitle": "Capacité, équipement, cours et entrées.",
@@ -697,12 +821,21 @@
         "title": "Capacité fitness",
         "count": "{count} clients",
         "capacity": "Capacité {capacity}",
-        "level": { "quiet": "Calme", "moderate": "Modéré", "busy": "Achalandé" }
+        "level": {
+          "quiet": "Calme",
+          "moderate": "Modéré",
+          "busy": "Achalandé"
+        }
       },
       "equipment": {
         "title": "Équipement",
         "empty": "Aucun équipement.",
-        "cols": { "equipment": "Équipement", "type": "Type", "status": "Statut", "updated": "Maj" }
+        "cols": {
+          "equipment": "Équipement",
+          "type": "Type",
+          "status": "Statut",
+          "updated": "Maj"
+        }
       },
       "classes": {
         "title": "Cours",
@@ -711,14 +844,23 @@
         "edit": "Modifier",
         "detail": "Détail",
         "instructor": "Instructeur : {name}",
-        "view": { "list": "Liste", "calendar": "Calendrier" },
+        "view": {
+          "list": "Liste",
+          "calendar": "Calendrier"
+        },
         "detailTitle": "Cours {id}",
         "detailInstructor": "Instructeur : {value}",
         "detailTime": "Heure : {start} → {end}",
         "detailCapacity": "Réservés : {booked}/{capacity}",
         "detailLocation": "Lieu : {value}",
         "detailStatus": "Statut : {status}",
-        "cols": { "name": "Nom", "time": "Heure", "capacity": "Réservés", "status": "Statut", "actions": "Actions" },
+        "cols": {
+          "name": "Nom",
+          "time": "Heure",
+          "capacity": "Réservés",
+          "status": "Statut",
+          "actions": "Actions"
+        },
         "modal": {
           "newTitle": "Nouveau cours",
           "editTitle": "Modifier le cours",
@@ -744,7 +886,12 @@
         "detailTime": "Heure : {value}",
         "detailSource": "Source : {source}",
         "detailNotes": "Notes : {value}",
-        "cols": { "guest": "Client", "class": "Cours", "time": "Heure", "source": "Source" },
+        "cols": {
+          "guest": "Client",
+          "class": "Cours",
+          "time": "Heure",
+          "source": "Source"
+        },
         "modal": {
           "title": "Nouvelle entrée",
           "guestId": "ID client (UUID)",
@@ -755,13 +902,24 @@
         }
       },
       "toast": {
-        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
-        "classCreated": { "title": "Cours créé", "description": "Cours fitness créé avec succès." },
-        "classUpdated": { "title": "Cours mis à jour", "description": "Cours fitness mis à jour avec succès." },
-        "checkinCreated": { "title": "Entrée créée", "description": "Entrée fitness créée avec succès." }
+        "failed": {
+          "title": "Échec",
+          "description": "Veuillez réessayer."
+        },
+        "classCreated": {
+          "title": "Cours créé",
+          "description": "Cours fitness créé avec succès."
+        },
+        "classUpdated": {
+          "title": "Cours mis à jour",
+          "description": "Cours fitness mis à jour avec succès."
+        },
+        "checkinCreated": {
+          "title": "Entrée créée",
+          "description": "Entrée fitness créée avec succès."
+        }
       }
-    }
-    ,
+    },
     "meetingsEvents": {
       "title": "Réunions & Événements",
       "subtitle": "Salles de réunion et inventaire.",
@@ -776,7 +934,12 @@
         "noEquipment": "—",
         "edit": "Modifier",
         "delete": "Supprimer",
-        "cols": { "name": "Nom", "capacity": "Capacité", "equipment": "Équipement", "actions": "Actions" },
+        "cols": {
+          "name": "Nom",
+          "capacity": "Capacité",
+          "equipment": "Équipement",
+          "actions": "Actions"
+        },
         "modal": {
           "newTitle": "Nouvelle salle",
           "editTitle": "Modifier la salle",
@@ -794,7 +957,10 @@
         "markReady": "Prêt",
         "markDone": "Terminé",
         "detail": "Détail",
-        "view": { "list": "Liste", "calendar": "Calendrier" },
+        "view": {
+          "list": "Liste",
+          "calendar": "Calendrier"
+        },
         "detailTitle": "Réservation {id}",
         "detailRoom": "Salle : {room}",
         "detailTime": "Heure : {start} → {end}",
@@ -824,13 +990,34 @@
         }
       },
       "toast": {
-        "failed": { "title": "Échec", "description": "Veuillez réessayer." },
-        "roomCreated": { "title": "Salle créée", "description": "Salle créée avec succès." },
-        "roomUpdated": { "title": "Salle mise à jour", "description": "Salle mise à jour avec succès." },
-        "roomDeleted": { "title": "Salle supprimée", "description": "Salle supprimée avec succès." },
-        "bookingCreated": { "title": "Réservation créée", "description": "Réservation créée avec succès." },
-        "bookingUpdated": { "title": "Réservation mise à jour", "description": "Réservation mise à jour avec succès." },
-        "setupUpdated": { "title": "Statut mis à jour", "description": "Statut d’installation mis à jour avec succès." }
+        "failed": {
+          "title": "Échec",
+          "description": "Veuillez réessayer."
+        },
+        "roomCreated": {
+          "title": "Salle créée",
+          "description": "Salle créée avec succès."
+        },
+        "roomUpdated": {
+          "title": "Salle mise à jour",
+          "description": "Salle mise à jour avec succès."
+        },
+        "roomDeleted": {
+          "title": "Salle supprimée",
+          "description": "Salle supprimée avec succès."
+        },
+        "bookingCreated": {
+          "title": "Réservation créée",
+          "description": "Réservation créée avec succès."
+        },
+        "bookingUpdated": {
+          "title": "Réservation mise à jour",
+          "description": "Réservation mise à jour avec succès."
+        },
+        "setupUpdated": {
+          "title": "Statut mis à jour",
+          "description": "Statut d’installation mis à jour avec succès."
+        }
       }
     }
   },
@@ -920,8 +1107,7 @@
     "previous": "Précédent",
     "next": "Suivant",
     "rowsPerPage": "Lignes par page"
-  }
-  ,
+  },
   "incidents": {
     "title": "Journal d'incidents",
     "subtitle": "Incidents opérationnels signalés par le personnel et les systèmes.",
@@ -995,8 +1181,7 @@
         "description": "Impossible d’assigner l’incident."
       }
     }
-  }
-  ,
+  },
   "properties": {
     "title": "Admin / Propriétés",
     "subtitle": "Gérez les propriétés de votre organisation.",

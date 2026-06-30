@@ -149,28 +149,20 @@ function toWsUrl(apiBaseUrl: string) {
   return u.toString();
 }
 
-const ROOM_STATUS_PILLS: Array<{ label: string; status: RoomStatus; color: string }> = [
-  { label: "Occupied",     status: "occupied",     color: "#3b82f6" },
-  { label: "Clean / Ready", status: "vacant_clean", color: "#10b981" },
-  { label: "Dirty",        status: "vacant_dirty",  color: "#ef4444" },
-  { label: "Inspected",    status: "inspected",     color: "#00c4a3" },
-  { label: "Out of Order", status: "out_of_order",  color: "#8b5cf6" },
+const ROOM_STATUS_PILLS: Array<{ status: RoomStatus; color: string }> = [
+  { status: "occupied",     color: "#3b82f6" },
+  { status: "vacant_clean", color: "#10b981" },
+  { status: "vacant_dirty", color: "#ef4444" },
+  { status: "inspected",    color: "#00c4a3" },
+  { status: "out_of_order", color: "#8b5cf6" },
 ];
 
-const ROOM_STATUS_CFG: Record<RoomStatus, { bg: string; border: string; color: string; label: string }> = {
-  vacant_clean: { bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.2)",  color: "#10b981", label: "RDY" },
-  vacant_dirty: { bg: "rgba(239,68,68,0.1)",   border: "rgba(239,68,68,0.2)",   color: "#ef4444", label: "DRT" },
-  occupied:     { bg: "rgba(59,130,246,0.1)",  border: "rgba(59,130,246,0.2)",  color: "#3b82f6", label: "OCC" },
-  inspected:    { bg: "rgba(0,196,163,0.1)",   border: "rgba(0,196,163,0.2)",   color: "#00c4a3", label: "INS" },
-  out_of_order: { bg: "rgba(139,92,246,0.1)",  border: "rgba(139,92,246,0.2)", color: "#8b5cf6", label: "OOO" },
-};
-
-const STATUS_LABELS: Record<RoomStatus, string> = {
-  vacant_clean: "Clean / Ready",
-  vacant_dirty: "Dirty",
-  occupied: "Occupied",
-  inspected: "Inspected",
-  out_of_order: "Out of Order",
+const ROOM_STATUS_CFG: Record<RoomStatus, { bg: string; border: string; color: string }> = {
+  vacant_clean: { bg: "rgba(16,185,129,0.1)", border: "rgba(16,185,129,0.2)", color: "#10b981" },
+  vacant_dirty: { bg: "rgba(239,68,68,0.1)",  border: "rgba(239,68,68,0.2)",  color: "#ef4444" },
+  occupied:     { bg: "rgba(59,130,246,0.1)", border: "rgba(59,130,246,0.2)", color: "#3b82f6" },
+  inspected:    { bg: "rgba(0,196,163,0.1)",  border: "rgba(0,196,163,0.2)",  color: "#00c4a3" },
+  out_of_order: { bg: "rgba(139,92,246,0.1)", border: "rgba(139,92,246,0.2)", color: "#8b5cf6" },
 };
 
 
@@ -418,7 +410,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
 
       {/* Status summary pills */}
       <div className="flex flex-wrap gap-2">
-        {ROOM_STATUS_PILLS.map(({ label, status, color }) => (
+        {ROOM_STATUS_PILLS.map(({ status, color }) => (
           <button
             key={status}
             type="button"
@@ -430,7 +422,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
             }}
           >
             <div className="size-2 rounded-full" style={{ background: color }} />
-            <span className="text-xs text-cortai-text2">{label}</span>
+            <span className="text-xs text-cortai-text2">{t(`status.${status}`)}</span>
             <span className="text-[13px] font-bold" style={{ color }}>
               {statusCounts[status] ?? 0}
             </span>
@@ -523,7 +515,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
                           {r.room_number}{r.vip ? " ★" : ""}
                         </div>
                         <div className="text-[9px]" style={{ color: `${cfg.color}99` }}>
-                          {cfg.label}
+                          {t(`statusCode.${r.status}`)}
                         </div>
                       </button>
                     );
@@ -558,7 +550,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
                     border: `1px solid ${ROOM_STATUS_CFG[detail.room.status].color}40`,
                   }}
                 >
-                  {STATUS_LABELS[detail.room.status]}
+                  {t(`status.${detail.room.status}`)}
                 </span>
                 <button
                   type="button"
@@ -945,7 +937,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
                   <div className="absolute bottom-full left-0 right-0 rounded-t-[10px] border border-b-0 border-cortai-border p-3" style={{ background: "#1a2540" }}>
                     <div className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-cortai-text3">Change Status</div>
                     <div className="grid grid-cols-1 gap-1.5">
-                      {ROOM_STATUS_PILLS.map(({ label, status, color }) => (
+                      {ROOM_STATUS_PILLS.map(({ status, color }) => (
                         <button
                           key={status}
                           type="button"
@@ -957,7 +949,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
                           }}
                         >
                           <div className="size-2 rounded-full" style={{ background: color }} />
-                          {label}
+                          {t(`status.${status}`)}
                           {detail.room.status === status ? (
                             <svg className="ml-auto" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                               <polyline points="20,6 9,17 4,12" />

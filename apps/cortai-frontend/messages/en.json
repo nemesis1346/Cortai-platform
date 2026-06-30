@@ -91,6 +91,20 @@
         "iot": "IoT",
         "recentIncidents": "Recent incidents",
         "noIncidents": "No incidents."
+      },
+      "status": {
+        "vacant_clean": "Clean / Ready",
+        "vacant_dirty": "Dirty",
+        "occupied": "Occupied",
+        "inspected": "Inspected",
+        "out_of_order": "Out of Order"
+      },
+      "statusCode": {
+        "vacant_clean": "RDY",
+        "vacant_dirty": "DRT",
+        "occupied": "OCC",
+        "inspected": "INS",
+        "out_of_order": "OOO"
       }
     },
     "commandCenter": {
@@ -194,8 +208,7 @@
         "donePct": "Done",
         "avgClean": "Avg clean time"
       }
-    }
-    ,
+    },
     "frontDesk": {
       "title": "Front Desk",
       "subtitle": "Arrivals, departures, in-hotel guests, and live queue.",
@@ -249,8 +262,7 @@
         "roomId": "Room ID",
         "submit": "Check in"
       }
-    }
-    ,
+    },
     "guestServices": {
       "title": "Guest Services",
       "subtitle": "Create and track guest requests (towels, pillows, late checkout, etc.).",
@@ -287,11 +299,16 @@
         "submit": "Create request"
       },
       "toast": {
-        "created": { "title": "Request created", "description": "Guest service request created successfully." },
-        "failed": { "title": "Request failed", "description": "Unable to create guest service request." }
+        "created": {
+          "title": "Request created",
+          "description": "Guest service request created successfully."
+        },
+        "failed": {
+          "title": "Request failed",
+          "description": "Unable to create guest service request."
+        }
       }
-    }
-    ,
+    },
     "guestMessaging": {
       "title": "Guest Messaging",
       "subtitle": "Live guest conversations with templates and WebSocket replies.",
@@ -351,12 +368,20 @@
         "send": "Send"
       },
       "toast": {
-        "sent": { "title": "Message sent", "description": "The outbound message was dispatched." },
-        "assigned": { "title": "Assigned", "description": "Thread assigned successfully." },
-        "unassigned": { "title": "Unassigned", "description": "Thread unassigned successfully." }
+        "sent": {
+          "title": "Message sent",
+          "description": "The outbound message was dispatched."
+        },
+        "assigned": {
+          "title": "Assigned",
+          "description": "Thread assigned successfully."
+        },
+        "unassigned": {
+          "title": "Unassigned",
+          "description": "Thread unassigned successfully."
+        }
       }
-    }
-    ,
+    },
     "iotSensors": {
       "title": "IoT Sensors",
       "subtitle": "Live sensor inventory with history.",
@@ -404,8 +429,7 @@
         "loading": "Loading…",
         "noData": "No data."
       }
-    }
-    ,
+    },
     "shiftHandover": {
       "title": "Shift Handover",
       "subtitle": "Sign off the current shift with KPI context, open work, and carry-forward checklist items.",
@@ -441,11 +465,24 @@
         "noRequests": "No pending guest requests."
       },
       "toast": {
-        "saved": { "title": "Draft saved", "description": "Shift handover notes were updated." },
-        "signed": { "title": "Shift signed off", "description": "Next shift was started with carry-forward items." },
-        "failed": { "title": "Shift handover failed", "description": "Please try again." }
+        "saved": {
+          "title": "Draft saved",
+          "description": "Shift handover notes were updated."
+        },
+        "signed": {
+          "title": "Shift signed off",
+          "description": "Next shift was started with carry-forward items."
+        },
+        "failed": {
+          "title": "Shift handover failed",
+          "description": "Please try again."
+        }
       },
-      "status": { "notStarted": "Not started", "open": "Open", "signed": "Signed" },
+      "status": {
+        "notStarted": "Not started",
+        "open": "Open",
+        "signed": "Signed"
+      },
       "auto": {
         "heading": {
           "shiftSummary": "Shift summary",
@@ -465,8 +502,7 @@
         "openIncidents": "Open incidents",
         "pendingGuestRequests": "Pending guest requests"
       }
-    }
-    ,
+    },
     "hvac": {
       "title": "HVAC",
       "subtitle": "Per-room HVAC state from the IoT bridge.",
@@ -501,14 +537,36 @@
         "targetTempPlaceholder": "e.g. 22.0",
         "mode": "Mode",
         "fanSpeed": "Fan speed",
-        "modes": { "auto": "Auto", "cooling": "Cooling", "heating": "Heating", "off": "Off" },
-        "fans": { "auto": "Auto", "low": "Low", "medium": "Medium", "high": "High" }
+        "modes": {
+          "auto": "Auto",
+          "cooling": "Cooling",
+          "heating": "Heating",
+          "off": "Off"
+        },
+        "fans": {
+          "auto": "Auto",
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
       },
       "toast": {
-        "sent": { "title": "Command sent", "description": "Awaiting ack (≤ {seconds}s)." },
-        "acked": { "title": "Ack received", "description": "HVAC controller accepted the command." },
-        "ackFailed": { "title": "Ack failed", "description": "HVAC controller rejected the command." },
-        "failed": { "title": "HVAC command failed", "description": "Please try again." }
+        "sent": {
+          "title": "Command sent",
+          "description": "Awaiting ack (≤ {seconds}s)."
+        },
+        "acked": {
+          "title": "Ack received",
+          "description": "HVAC controller accepted the command."
+        },
+        "ackFailed": {
+          "title": "Ack failed",
+          "description": "HVAC controller rejected the command."
+        },
+        "failed": {
+          "title": "HVAC command failed",
+          "description": "Please try again."
+        }
       },
       "cols": {
         "roomId": "Room",
@@ -519,8 +577,7 @@
         "fault": "Fault",
         "updated": "Updated"
       }
-    }
-    ,
+    },
     "foodBreakfast": {
       "title": "Food & Breakfast",
       "subtitle": "Breakfast status, restaurant tables, menu items, and room service orders.",
@@ -534,7 +591,11 @@
         "title": "Breakfast status",
         "count": "{count} guests",
         "capacity": "Capacity {capacity}",
-        "level": { "quiet": "Quiet", "moderate": "Moderate", "busy": "Busy" }
+        "level": {
+          "quiet": "Quiet",
+          "moderate": "Moderate",
+          "busy": "Busy"
+        }
       },
       "tables": {
         "title": "Restaurant tables",
@@ -551,7 +612,12 @@
         "yes": "Yes",
         "no": "No",
         "empty": "No menu items.",
-        "service": { "breakfast": "Breakfast", "restaurant": "Restaurant", "room_service": "Room service", "roomService": "Room service" },
+        "service": {
+          "breakfast": "Breakfast",
+          "restaurant": "Restaurant",
+          "room_service": "Room service",
+          "roomService": "Room service"
+        },
         "filters": {
           "allServices": "All services",
           "allAvailability": "All availability",
@@ -587,7 +653,10 @@
         "detailTitle": "Order {id}",
         "detailRoom": "Room {room}",
         "detailStatus": "Status: {status}",
-        "filters": { "allStatuses": "All statuses", "apply": "Apply" },
+        "filters": {
+          "allStatuses": "All statuses",
+          "apply": "Apply"
+        },
         "status": {
           "received": "Received",
           "preparing": "Preparing",
@@ -595,7 +664,13 @@
           "delivered": "Delivered",
           "cancelled": "Cancelled"
         },
-        "cols": { "room": "Room", "status": "Status", "items": "Items", "updated": "Updated", "actions": "Actions" },
+        "cols": {
+          "room": "Room",
+          "status": "Status",
+          "items": "Items",
+          "updated": "Updated",
+          "actions": "Actions"
+        },
         "actions": {
           "received": "Received",
           "preparing": "Preparing",
@@ -611,14 +686,28 @@
         }
       },
       "toast": {
-        "failed": { "title": "Request failed", "description": "Please try again." },
-        "menuCreated": { "title": "Menu item created", "description": "Menu item created successfully." },
-        "menuUpdated": { "title": "Menu item updated", "description": "Menu item updated successfully." },
-        "orderCreated": { "title": "Order created", "description": "Room service order created successfully." },
-        "invalidJson": { "title": "Invalid JSON", "description": "Items JSON must be valid JSON." }
+        "failed": {
+          "title": "Request failed",
+          "description": "Please try again."
+        },
+        "menuCreated": {
+          "title": "Menu item created",
+          "description": "Menu item created successfully."
+        },
+        "menuUpdated": {
+          "title": "Menu item updated",
+          "description": "Menu item updated successfully."
+        },
+        "orderCreated": {
+          "title": "Order created",
+          "description": "Room service order created successfully."
+        },
+        "invalidJson": {
+          "title": "Invalid JSON",
+          "description": "Items JSON must be valid JSON."
+        }
       }
-    }
-    ,
+    },
     "poolSpa": {
       "title": "Pool & Spa",
       "subtitle": "Pool capacity and spa services & appointments.",
@@ -633,14 +722,24 @@
         "title": "Pool capacity",
         "count": "{count} guests",
         "capacity": "Capacity {capacity}",
-        "level": { "quiet": "Quiet", "moderate": "Moderate", "busy": "Busy" }
+        "level": {
+          "quiet": "Quiet",
+          "moderate": "Moderate",
+          "busy": "Busy"
+        }
       },
       "services": {
         "title": "Spa services",
         "new": "New service",
         "empty": "No services.",
         "minutes": "{minutes} min",
-        "cols": { "name": "Name", "duration": "Duration", "price": "Price", "available": "Available", "updated": "Updated" },
+        "cols": {
+          "name": "Name",
+          "duration": "Duration",
+          "price": "Price",
+          "available": "Available",
+          "updated": "Updated"
+        },
         "modal": {
           "title": "New spa service",
           "name": "Name",
@@ -657,9 +756,21 @@
         "empty": "No appointments.",
         "detail": "Detail",
         "edit": "Edit",
-        "view": { "list": "List", "calendar": "Calendar" },
-        "status": { "unknown": "Unknown" },
-        "cols": { "service": "Service", "guest": "Guest", "starts": "Starts", "ends": "Ends", "status": "Status", "actions": "Actions" },
+        "view": {
+          "list": "List",
+          "calendar": "Calendar"
+        },
+        "status": {
+          "unknown": "Unknown"
+        },
+        "cols": {
+          "service": "Service",
+          "guest": "Guest",
+          "starts": "Starts",
+          "ends": "Ends",
+          "status": "Status",
+          "actions": "Actions"
+        },
         "modal": {
           "newTitle": "New appointment",
           "editTitle": "Edit appointment",
@@ -675,16 +786,29 @@
         "detailStarts": "Starts: {value}",
         "detailEnds": "Ends: {value}",
         "detailStatus": "Status: {status}",
-        "actions": { "markCompleted": "Mark completed" }
+        "actions": {
+          "markCompleted": "Mark completed"
+        }
       },
       "toast": {
-        "failed": { "title": "Request failed", "description": "Please try again." },
-        "serviceCreated": { "title": "Service created", "description": "Spa service created successfully." },
-        "apptCreated": { "title": "Appointment created", "description": "Spa appointment created successfully." },
-        "apptUpdated": { "title": "Appointment updated", "description": "Spa appointment updated successfully." }
+        "failed": {
+          "title": "Request failed",
+          "description": "Please try again."
+        },
+        "serviceCreated": {
+          "title": "Service created",
+          "description": "Spa service created successfully."
+        },
+        "apptCreated": {
+          "title": "Appointment created",
+          "description": "Spa appointment created successfully."
+        },
+        "apptUpdated": {
+          "title": "Appointment updated",
+          "description": "Spa appointment updated successfully."
+        }
       }
-    }
-    ,
+    },
     "fitness": {
       "title": "Fitness",
       "subtitle": "Capacity, equipment status, classes, and check-ins.",
@@ -697,12 +821,21 @@
         "title": "Fitness capacity",
         "count": "{count} guests",
         "capacity": "Capacity {capacity}",
-        "level": { "quiet": "Quiet", "moderate": "Moderate", "busy": "Busy" }
+        "level": {
+          "quiet": "Quiet",
+          "moderate": "Moderate",
+          "busy": "Busy"
+        }
       },
       "equipment": {
         "title": "Equipment",
         "empty": "No equipment.",
-        "cols": { "equipment": "Equipment", "type": "Type", "status": "Status", "updated": "Updated" }
+        "cols": {
+          "equipment": "Equipment",
+          "type": "Type",
+          "status": "Status",
+          "updated": "Updated"
+        }
       },
       "classes": {
         "title": "Classes",
@@ -711,14 +844,23 @@
         "edit": "Edit",
         "detail": "Detail",
         "instructor": "Instructor: {name}",
-        "view": { "list": "List", "calendar": "Calendar" },
+        "view": {
+          "list": "List",
+          "calendar": "Calendar"
+        },
         "detailTitle": "Class {id}",
         "detailInstructor": "Instructor: {value}",
         "detailTime": "Time: {start} → {end}",
         "detailCapacity": "Booked: {booked}/{capacity}",
         "detailLocation": "Location: {value}",
         "detailStatus": "Status: {status}",
-        "cols": { "name": "Name", "time": "Time", "capacity": "Booked", "status": "Status", "actions": "Actions" },
+        "cols": {
+          "name": "Name",
+          "time": "Time",
+          "capacity": "Booked",
+          "status": "Status",
+          "actions": "Actions"
+        },
         "modal": {
           "newTitle": "New class",
           "editTitle": "Edit class",
@@ -744,7 +886,12 @@
         "detailTime": "Time: {value}",
         "detailSource": "Source: {source}",
         "detailNotes": "Notes: {value}",
-        "cols": { "guest": "Guest", "class": "Class", "time": "Time", "source": "Source" },
+        "cols": {
+          "guest": "Guest",
+          "class": "Class",
+          "time": "Time",
+          "source": "Source"
+        },
         "modal": {
           "title": "New check-in",
           "guestId": "Guest ID (UUID)",
@@ -755,13 +902,24 @@
         }
       },
       "toast": {
-        "failed": { "title": "Request failed", "description": "Please try again." },
-        "classCreated": { "title": "Class created", "description": "Fitness class created successfully." },
-        "classUpdated": { "title": "Class updated", "description": "Fitness class updated successfully." },
-        "checkinCreated": { "title": "Check-in created", "description": "Fitness check-in created successfully." }
+        "failed": {
+          "title": "Request failed",
+          "description": "Please try again."
+        },
+        "classCreated": {
+          "title": "Class created",
+          "description": "Fitness class created successfully."
+        },
+        "classUpdated": {
+          "title": "Class updated",
+          "description": "Fitness class updated successfully."
+        },
+        "checkinCreated": {
+          "title": "Check-in created",
+          "description": "Fitness check-in created successfully."
+        }
       }
-    }
-    ,
+    },
     "meetingsEvents": {
       "title": "Meetings & Events",
       "subtitle": "Meeting rooms setup and inventory.",
@@ -776,7 +934,12 @@
         "noEquipment": "—",
         "edit": "Edit",
         "delete": "Delete",
-        "cols": { "name": "Name", "capacity": "Capacity", "equipment": "Equipment", "actions": "Actions" },
+        "cols": {
+          "name": "Name",
+          "capacity": "Capacity",
+          "equipment": "Equipment",
+          "actions": "Actions"
+        },
         "modal": {
           "newTitle": "New meeting room",
           "editTitle": "Edit meeting room",
@@ -794,7 +957,10 @@
         "markReady": "Ready",
         "markDone": "Done",
         "detail": "Detail",
-        "view": { "list": "List", "calendar": "Calendar" },
+        "view": {
+          "list": "List",
+          "calendar": "Calendar"
+        },
         "detailTitle": "Booking {id}",
         "detailRoom": "Room: {room}",
         "detailTime": "Time: {start} → {end}",
@@ -824,13 +990,34 @@
         }
       },
       "toast": {
-        "failed": { "title": "Request failed", "description": "Please try again." },
-        "roomCreated": { "title": "Room created", "description": "Meeting room created successfully." },
-        "roomUpdated": { "title": "Room updated", "description": "Meeting room updated successfully." },
-        "roomDeleted": { "title": "Room deleted", "description": "Meeting room deleted successfully." },
-        "bookingCreated": { "title": "Booking created", "description": "Meeting booking created successfully." },
-        "bookingUpdated": { "title": "Booking updated", "description": "Meeting booking updated successfully." },
-        "setupUpdated": { "title": "Setup status updated", "description": "Meeting setup status updated successfully." }
+        "failed": {
+          "title": "Request failed",
+          "description": "Please try again."
+        },
+        "roomCreated": {
+          "title": "Room created",
+          "description": "Meeting room created successfully."
+        },
+        "roomUpdated": {
+          "title": "Room updated",
+          "description": "Meeting room updated successfully."
+        },
+        "roomDeleted": {
+          "title": "Room deleted",
+          "description": "Meeting room deleted successfully."
+        },
+        "bookingCreated": {
+          "title": "Booking created",
+          "description": "Meeting booking created successfully."
+        },
+        "bookingUpdated": {
+          "title": "Booking updated",
+          "description": "Meeting booking updated successfully."
+        },
+        "setupUpdated": {
+          "title": "Setup status updated",
+          "description": "Meeting setup status updated successfully."
+        }
       }
     }
   },
@@ -920,8 +1107,7 @@
     "previous": "Previous",
     "next": "Next",
     "rowsPerPage": "Rows per page"
-  }
-  ,
+  },
   "incidents": {
     "title": "Incident Log",
     "subtitle": "Operational incidents reported by staff and systems.",
@@ -995,8 +1181,7 @@
         "description": "Unable to assign the incident."
       }
     }
-  }
-  ,
+  },
   "properties": {
     "title": "Admin / Properties",
     "subtitle": "Manage properties for your organization.",
