@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from datetime import UTC
 from typing import Any
 
+import httpx
 from fastapi import APIRouter
 from sqlalchemy import text
 
 from app.config import get_settings
 from app.db import SessionDep
-
 
 router = APIRouter(tags=["health"])
 
@@ -54,10 +55,9 @@ async def _check_redis(*, redis_url: str | None, timeout_s: float) -> dict[str, 
             pass
 
 
-async def _check_mqtt(
-    *, host: str, port: int, timeout_s: float
-) -> dict[str, Any]:
+async def _check_mqtt(*, host: str, port: int, timeout_s: float) -> dict[str, Any]:
     try:
+
         async def _run() -> dict[str, Any]:
             # Intentionally a simple TCP connect only.
             # Our Mosquitto broker uses mTLS (8883); a full MQTT/TLS handshake from the API
@@ -75,6 +75,86 @@ async def _check_mqtt(
         return await asyncio.wait_for(_run(), timeout=timeout_s)
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
+
+
+async def _check_bridge(*, mode: str, base_url: str | None, timeout_s: float) -> dict[str, Any]:
+    """Check reachability of an IoT or AI bridge.
+
+    Mock mode: exercised in-process via the mock FastAPI app (no network).
+    Real mode: GET {base_url}/healthz — the documented health probe on each bridge.
+    """
+    t0 = time.monotonic()
+
+    async def _run() -> None:
+        if mode == "mock":
+            from app.bridges._mock_server import (
+                mock_app,  # local import avoids circular dep at module load
+            )
+
+            transport = httpx.ASGITransport(app=mock_app)  # type: ignore[arg-type]
+            async with httpx.AsyncClient(transport=transport, base_url="http://mock") as client:
+                resp = await client.get("/healthz")
+                resp.raise_for_status()
+        else:
+            if not base_url:
+                raise ValueError("bridge base URL not configured")
+            async with httpx.AsyncClient(
+                base_url=base_url, timeout=httpx.Timeout(timeout_s, connect=timeout_s)
+            ) as client:
+                resp = await client.get("/healthz")
+                resp.raise_for_status()
+
+    try:
+        await asyncio.wait_for(_run(), timeout=timeout_s)
+        return {"ok": True, "mode": mode, "latency_ms": round((time.monotonic() - t0) * 1000, 1)}
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "ok": False,
+            "mode": mode,
+            "latency_ms": round((time.monotonic() - t0) * 1000, 1),
+            "error": str(exc),
+        }
+
+
+async def _check_s3(
+    *,
+    mode: str,
+    bucket: str | None,
+    region: str | None,
+    endpoint_url: str | None,
+    access_key: str | None,
+    secret_key: str | None,
+    timeout_s: float,
+) -> dict[str, Any]:
+    """Verify S3 is reachable and the configured bucket exists.
+
+    Mock mode: returns immediately — no network call needed.
+    Real mode: head_bucket call via boto3 (run in a thread to stay async-safe).
+    """
+    display_bucket = bucket or "mock-bucket"
+
+    if mode == "mock":
+        return {"ok": True, "bucket": display_bucket}
+
+    if not bucket:
+        return {"ok": False, "bucket": None, "error": "S3_BUCKET not set"}
+
+    def _head_bucket() -> None:
+        import boto3  # type: ignore[import-not-found]
+
+        session = boto3.session.Session(
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+            region_name=region,
+        )
+        client = session.client("s3", endpoint_url=endpoint_url)
+        client.head_bucket(Bucket=bucket)
+
+    try:
+        await asyncio.wait_for(asyncio.to_thread(_head_bucket), timeout=timeout_s)
+        return {"ok": True, "bucket": bucket}
+    except Exception as exc:  # noqa: BLE001
+        return {"ok": False, "bucket": bucket, "error": str(exc)}
 
 
 async def _mqtt_last_seen(*, session: SessionDep, timeout_s: float) -> str | None:
@@ -100,23 +180,45 @@ async def health(session: SessionDep) -> dict[str, Any]:
     settings = get_settings()
     timeout_s = settings.health_timeout_s
 
-    db_task = _check_db(session=session, timeout_s=timeout_s)
-    redis_task = _check_redis(redis_url=settings.redis_url, timeout_s=timeout_s)
-    mqtt_task = _check_mqtt(host=settings.mqtt_host, port=settings.mqtt_port, timeout_s=timeout_s)
-    mqtt_last_seen_task = _mqtt_last_seen(session=session, timeout_s=timeout_s)
-
-    db, redis, mqtt, mqtt_last_seen = await asyncio.gather(
-        db_task, redis_task, mqtt_task, mqtt_last_seen_task
+    db, redis, mqtt, mqtt_last_seen, iot_bridge, ai_bridge, s3 = await asyncio.gather(
+        _check_db(session=session, timeout_s=timeout_s),
+        _check_redis(redis_url=settings.redis_url, timeout_s=timeout_s),
+        _check_mqtt(host=settings.mqtt_host, port=settings.mqtt_port, timeout_s=timeout_s),
+        _mqtt_last_seen(session=session, timeout_s=timeout_s),
+        _check_bridge(
+            mode=settings.bridges_mode, base_url=settings.iot_bridge_base_url, timeout_s=timeout_s
+        ),
+        _check_bridge(
+            mode=settings.bridges_mode, base_url=settings.ai_bridge_base_url, timeout_s=timeout_s
+        ),
+        _check_s3(
+            mode=settings.s3_mode,
+            bucket=settings.s3_bucket,
+            region=settings.s3_region,
+            endpoint_url=settings.s3_endpoint_url,
+            access_key=settings.aws_access_key_id,
+            secret_key=settings.aws_secret_access_key,
+            timeout_s=timeout_s,
+        ),
     )
 
-    ok = bool(db.get("ok")) and bool(redis.get("ok")) and bool(mqtt.get("ok"))
-    status = "ok" if ok else "degraded"
+    ok = (
+        bool(db.get("ok"))
+        and bool(redis.get("ok"))
+        and bool(mqtt.get("ok"))
+        and bool(iot_bridge.get("ok"))
+        and bool(ai_bridge.get("ok"))
+        and bool(s3.get("ok"))
+    )
 
     return {
-        "status": status,
+        "status": "ok" if ok else "degraded",
         "db": {"ok": bool(db.get("ok")), "version": db.get("version")},
         "redis": {"ok": bool(redis.get("ok"))},
         "mqtt": {"ok": bool(mqtt.get("ok")), "last_seen": mqtt_last_seen},
+        "iot_bridge": iot_bridge,
+        "ai_bridge": ai_bridge,
+        "s3": s3,
         "build": {
             "sha": settings.build_sha or "unknown",
             "version": settings.build_version or "unknown",

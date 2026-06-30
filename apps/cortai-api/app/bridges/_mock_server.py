@@ -74,3 +74,8 @@ async def mock_ai_incident_triage(incident_id: str, locale: str = Query(default=
     fixture_locale = "fr" if locale.lower().startswith("fr") else "en"
     return load_fixture(f"ai_incident_triage.{fixture_locale}.json")
 
+
+@mock_app.get("/healthz")
+async def mock_healthz() -> dict[str, bool]:
+    return {"ok": True}
+
