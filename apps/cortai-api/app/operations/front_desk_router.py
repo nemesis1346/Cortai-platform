@@ -4,12 +4,12 @@ import json
 import uuid
 from datetime import UTC, date, datetime, timedelta
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 
 from app.db import SessionDep
-from app.operations.rbac import OperationsPrincipalDep
+from app.i18n import LocaleDep, http_err
 from app.operations.front_desk_schemas import (
     FrontDeskArrivals,
     FrontDeskCheckInRequest,
@@ -18,14 +18,15 @@ from app.operations.front_desk_schemas import (
     FrontDeskDepartures,
     FrontDeskInHotel,
     FrontDeskQueue,
-    FrontDeskStats,
     FrontDeskQueueJoinRequest,
     FrontDeskQueueJoinResult,
     FrontDeskQueueServeRequest,
     FrontDeskQueueServeResult,
+    FrontDeskStats,
     FrontDeskWalkInRequest,
     FrontDeskWalkInResult,
 )
+from app.operations.rbac import OperationsPrincipalDep
 
 router = APIRouter(prefix="/front-desk", tags=["operations-front-desk"])
 
@@ -392,6 +393,7 @@ async def check_in_reservation(
     payload: FrontDeskCheckInRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> FrontDeskCheckInResult:
     """
     Check-in: assign room, set reservation checked_in, update room occupancy, create key request, emit WS event.
@@ -412,14 +414,10 @@ async def check_in_reservation(
         )
     ).mappings().first()
     if res is None:
-        from fastapi import HTTPException, status  # local import to keep router import light
-
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.front_desk.reservation_not_found", locale))
 
     if str(res["status"]) in {"checked_in", "checked_out", "cancelled", "no_show"}:
-        from fastapi import HTTPException, status  # noqa: PLC0415
-
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reservation is not eligible for check-in")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.front_desk.not_eligible_check_in", locale))
 
     # Validate room belongs to org/property.
     room = (
@@ -439,9 +437,7 @@ async def check_in_reservation(
         )
     ).mappings().first()
     if room is None:
-        from fastapi import HTTPException, status  # noqa: PLC0415
-
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
 
     # Update reservation.
     await session.execute(
@@ -547,6 +543,7 @@ async def check_out_reservation(
     reservation_id: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> FrontDeskCheckOutResult:
     """
     Check-out: mark reservation checked_out, clear room occupancy, emit WS event.
@@ -569,19 +566,13 @@ async def check_out_reservation(
         )
     ).mappings().first()
     if res is None:
-        from fastapi import HTTPException, status  # local import to keep router import light
-
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.front_desk.reservation_not_found", locale))
 
     if str(res["status"]) != "checked_in":
-        from fastapi import HTTPException, status  # noqa: PLC0415
-
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reservation is not eligible for check-out")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.front_desk.not_eligible_check_out", locale))
 
     if res["room_id"] is None:
-        from fastapi import HTTPException, status  # noqa: PLC0415
-
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reservation has no assigned room")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.front_desk.no_assigned_room", locale))
 
     room_id = uuid.UUID(str(res["room_id"]))
 
@@ -662,14 +653,13 @@ async def walk_in(
     payload: FrontDeskWalkInRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> FrontDeskWalkInResult:
     """
     Walk-in: create guest + reservation + check-in in one shot.
 
     V1: minimal guest profile + immediate room assignment.
     """
-    from fastapi import HTTPException, status  # local import to keep router import light
-
     now = datetime.now(UTC)
 
     # Validate room belongs to org/property and is usable.
@@ -690,9 +680,9 @@ async def walk_in(
         )
     ).mappings().first()
     if room is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
     if str(room["status"]) in {"occupied", "out_of_order"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Room is not eligible for walk-in")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.rooms.not_eligible_walk_in", locale))
 
     guest_id = uuid.uuid4()
     reservation_id = uuid.uuid4()
@@ -869,6 +859,7 @@ async def queue_join(
     payload: FrontDeskQueueJoinRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> FrontDeskQueueJoinResult:
     """
     Queue join: guest physically arrives.
@@ -876,8 +867,6 @@ async def queue_join(
     Creates an open-ended front desk event with kind=queue_joined and ended_at NULL.
     Emits a live event so UIs can refresh.
     """
-    from fastapi import HTTPException, status  # local import to keep router import light
-
     now = datetime.now(UTC)
 
     # Reservation must exist in this org/property.
@@ -898,10 +887,10 @@ async def queue_join(
         )
     ).mappings().first()
     if res is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reservation not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.front_desk.reservation_not_found", locale))
 
     if str(res["status"]) in {"checked_in", "checked_out", "cancelled", "no_show"}:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reservation is not eligible to join the queue")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.front_desk.not_eligible_queue", locale))
 
     # Idempotent: if already in queue (today) return existing position.
     existing = (
@@ -1008,6 +997,7 @@ async def queue_serve(
     payload: FrontDeskQueueServeRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> FrontDeskQueueServeResult:
     """
     Queue serve: clerk picks up next open queue item (FIFO by queue_position then started_at).
@@ -1015,8 +1005,6 @@ async def queue_serve(
     Closes the queue_joined event and records a served event for metrics.
     Emits a live event so UIs can refresh.
     """
-    from fastapi import HTTPException, status  # local import to keep router import light
-
     now = datetime.now(UTC)
 
     # Find the next open queue_joined event for this property.
@@ -1038,7 +1026,7 @@ async def queue_serve(
         )
     ).mappings().first()
     if next_row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Queue is empty")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.front_desk.queue_empty", locale))
 
     queue_join_event_id = uuid.UUID(str(next_row["id"]))
     reservation_id = uuid.UUID(str(next_row["reservation_id"]))

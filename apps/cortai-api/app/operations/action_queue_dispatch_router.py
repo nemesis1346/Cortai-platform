@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.live.publisher import publish_live_event
 from app.operations.rbac import OperationsPrincipalDep
 
@@ -18,6 +19,7 @@ async def dispatch_action_queue_item(
     item_id: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> dict[str, str | bool]:
     """
     Urgent-only dispatch: emits a NOTIFY event for live subscribers.
@@ -37,13 +39,13 @@ async def dispatch_action_queue_item(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Action queue item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.action_queue.not_found", locale))
 
     is_urgent = str(row["status"]) == "urgent" or str(row["severity"]) == "urgent"
     if not is_urgent:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only urgent action queue items can be dispatched",
+            detail=http_err("operations.action_queue.only_urgent", locale),
         )
 
     now = datetime.now(UTC)

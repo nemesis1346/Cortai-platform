@@ -13,8 +13,10 @@ from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
 import app.bridges.ai_client as ai_client
+import app.notify.email as email
+import app.storage.s3 as s3
 from app.db import SessionDep
-from app.operations.rbac import OperationsPrincipalDep
+from app.i18n import LocaleDep, http_err
 from app.operations.incidents_schemas import (
     IncidentAssignRequest,
     IncidentAttachmentPresignRequest,
@@ -28,8 +30,7 @@ from app.operations.incidents_schemas import (
     IncidentTriageResponse,
     IncidentUpdate,
 )
-import app.notify.email as email
-import app.storage.s3 as s3
+from app.operations.rbac import OperationsPrincipalDep
 
 
 async def _maybe_send_assignment_email(*, incident: dict, assigned_to: str | None) -> None:
@@ -271,7 +272,7 @@ async def export_incidents_csv(
 
 @router.get("/{incident_id}", response_model=IncidentRead)
 async def get_incident(
-    incident_id: uuid.UUID, principal: OperationsPrincipalDep, session: SessionDep
+    incident_id: uuid.UUID, principal: OperationsPrincipalDep, session: SessionDep, locale: LocaleDep
 ) -> IncidentRead:
     row = (
         await session.execute(
@@ -286,7 +287,7 @@ async def get_incident(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.not_found", locale))
     return IncidentRead(**dict(row))
 
 
@@ -296,10 +297,11 @@ async def update_incident(
     payload: IncidentUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> IncidentRead:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(incident_id), "org_id": str(principal.org_id)}
@@ -341,7 +343,7 @@ async def update_incident(
     )
     row = (await session.execute(stmt, params)).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.not_found", locale))
     await session.commit()
     return IncidentRead(**dict(row))
 
@@ -352,6 +354,7 @@ async def assign_incident(
     payload: IncidentAssignRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> IncidentRead:
     # Validate assignee exists in this org (avoid FK 500s).
     if payload.assigned_to is not None:
@@ -360,7 +363,7 @@ async def assign_incident(
             {"id": str(payload.assigned_to), "org_id": str(principal.org_id)},
         )
         if exists is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignee user not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.assignee_not_found", locale))
 
     row = (
         await session.execute(
@@ -380,7 +383,7 @@ async def assign_incident(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.not_found", locale))
 
     now = datetime.now(UTC)
     event = {
@@ -408,6 +411,7 @@ async def create_incident_attachment_upload(
     payload: IncidentAttachmentPresignRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> IncidentAttachmentPresignResponse:
     inc = (
         await session.execute(
@@ -422,7 +426,7 @@ async def create_incident_attachment_upload(
         )
     ).mappings().first()
     if inc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.not_found", locale))
 
     attachment_id = uuid.uuid4()
     key = s3.incident_attachment_key(
@@ -445,6 +449,7 @@ async def escalate_incident(
     payload: IncidentEscalateRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> IncidentRead:
     # Escalation updates severity/status and notifies.
     inc = (
@@ -460,7 +465,7 @@ async def escalate_incident(
         )
     ).mappings().first()
     if inc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.not_found", locale))
 
     next_severity = payload.severity or IncidentSeverity.CRITICAL
 
@@ -527,6 +532,7 @@ async def triage_incident(
     request: Request,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> IncidentTriageResponse:
     inc = (
         await session.execute(
@@ -541,7 +547,7 @@ async def triage_incident(
         )
     ).mappings().first()
     if inc is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.not_found", locale))
 
     payload = {
         "id": str(inc["id"]),
@@ -561,13 +567,13 @@ async def triage_incident(
 
 @router.delete("/{incident_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_incident(
-    incident_id: uuid.UUID, principal: OperationsPrincipalDep, session: SessionDep
+    incident_id: uuid.UUID, principal: OperationsPrincipalDep, session: SessionDep, locale: LocaleDep
 ) -> None:
     result = await session.execute(
         text("delete from operations.incidents where id = :id and org_id = :org_id"),
         {"id": str(incident_id), "org_id": str(principal.org_id)},
     )
     if result.rowcount == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Incident not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.not_found", locale))
     await session.commit()
 

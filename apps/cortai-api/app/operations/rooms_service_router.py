@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.operations.rbac import OperationsPrincipalDep
 from app.operations.rooms_schemas import RoomCleaningLogList, RoomStayHistory
 
@@ -18,6 +19,7 @@ async def get_room_cleaning_log(
     room_id: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> Any:
@@ -26,7 +28,7 @@ async def get_room_cleaning_log(
         {"id": str(room_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
 
     total = await session.scalar(
         text(
@@ -64,6 +66,7 @@ async def get_room_stay_history(
     room_id: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> Any:
@@ -72,7 +75,7 @@ async def get_room_stay_history(
         {"id": str(room_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
 
     total = await session.scalar(
         text(

@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.live.publisher import publish_live_event
 from app.operations.rbac import OperationsPrincipalDep
 from app.operations.rooms_schemas import RoomListItem, RoomStatus, RoomUpdate
@@ -20,10 +21,11 @@ async def patch_room(
     payload: RoomUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> RoomListItem:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(room_id), "org_id": str(principal.org_id)}
@@ -31,11 +33,11 @@ async def patch_room(
     if "status" in data:
         st: RoomStatus | None = data.get("status")
         if st is None:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="status cannot be null")
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.rooms.status_cannot_be_null", locale))
         if st not in {RoomStatus.OUT_OF_ORDER, RoomStatus.INSPECTED}:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="status can only be set to out_of_order or inspected",
+                detail=http_err("operations.rooms.status_invalid", locale),
             )
         sets.append("status = :status")
         params["status"] = st.value
@@ -61,14 +63,14 @@ async def patch_room(
     ).mappings().first()
 
     if room_row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
 
     # Optional attendant reassignment (today). If no assignment exists today, create one.
     if "attendant_user_id" in data:
         attendant_user_id = data.get("attendant_user_id")
         if attendant_user_id is None:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="attendant_user_id cannot be null"
+                status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.rooms.attendant_cannot_be_null", locale)
             )
 
         now = datetime.now(UTC)

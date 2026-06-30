@@ -1,20 +1,20 @@
 from __future__ import annotations
 
+import json
 import uuid
 
-from fastapi import APIRouter, Query
-import json
-
+from fastapi import APIRouter, HTTPException, Query, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.operations.guest_services_schemas import (
     GuestServiceRequestCreate,
     GuestServiceRequestList,
+    GuestServiceRequestUpdate,
     GuestServiceStatus,
     GuestServiceType,
-    GuestServiceRequestUpdate,
 )
 from app.operations.rbac import OperationsPrincipalDep
 
@@ -188,6 +188,7 @@ async def update_guest_service_request(
     payload: GuestServiceRequestUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> dict:
     """
     Assign / complete guest service request and sync the linked action_queue item.
@@ -196,20 +197,16 @@ async def update_guest_service_request(
 
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        from fastapi import HTTPException, status
-
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     # Validate assignee exists in this org (avoid FK 500s).
     if "assigned_to_user_id" in data and payload.assigned_to_user_id is not None:
-        from fastapi import HTTPException, status
-
         exists = await session.scalar(
             text("select 1 from users where id = :id and org_id = :org_id"),
             {"id": str(payload.assigned_to_user_id), "org_id": str(principal.org_id)},
         )
         if exists is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignee user not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.assignee_not_found", locale))
 
     # Load request and linked AQ item id.
     req = (
@@ -225,9 +222,7 @@ async def update_guest_service_request(
         )
     ).mappings().first()
     if req is None:
-        from fastapi import HTTPException, status
-
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Guest service request not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.guest_services.not_found", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(request_id), "org_id": str(principal.org_id)}

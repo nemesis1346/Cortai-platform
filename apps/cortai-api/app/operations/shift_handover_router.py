@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.dialects import postgresql
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.operations.rbac import OperationsPrincipalDep
 from app.operations.shift_handover_schemas import (
     ShiftHandoverCurrent,
@@ -38,6 +39,7 @@ def _current_shift_label(now_utc: datetime) -> ShiftLabel:
 async def get_current_shift_handover(
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     property_id: uuid.UUID = Query(...),
     shift_date: date | None = Query(default=None),
     shift_label: ShiftLabel | None = Query(default=None),
@@ -45,7 +47,7 @@ async def get_current_shift_handover(
     # Validate property belongs to org (RLS-scoped).
     exists = await session.scalar(text("select 1 from properties where id = :pid"), {"pid": property_id})
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     now = datetime.now(UTC)
     sd = shift_date or now.date()
@@ -141,11 +143,12 @@ async def signoff_shift_handover(
     payload: ShiftHandoverSignoffRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> ShiftHandoverSignoffResponse:
     # Validate property belongs to org (RLS-scoped).
     exists = await session.scalar(text("select 1 from properties where id = :pid"), {"pid": payload.property_id})
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     now = datetime.now(UTC)
     sd = payload.shift_date or now.date()
@@ -354,10 +357,11 @@ async def update_shift_handover(
     payload: ShiftHandoverUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> ShiftHandoverRead:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     current = (
         await session.execute(
@@ -372,11 +376,11 @@ async def update_shift_handover(
         )
     ).mappings().first()
     if current is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shift handover not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.shift_handover.not_found", locale))
     if current.get("signed_at") is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Shift handover is already signed and cannot be edited",
+            detail=http_err("operations.shift_handover.already_signed", locale),
         )
 
     sets: list[str] = []
@@ -406,7 +410,7 @@ async def update_shift_handover(
         stmt = stmt.bindparams(sa.bindparam("checklist_json", type_=postgresql.JSONB))
     row = (await session.execute(stmt, params)).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shift handover not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.shift_handover.not_found", locale))
 
     await session.commit()
     return ShiftHandoverRead(**dict(row))

@@ -11,11 +11,12 @@ from sqlalchemy.dialects import postgresql
 
 from app.bridges import iot_client
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.operations.fb_schemas import (
     FbMenuItemCreate,
+    FbMenuItemRead,
     FbMenuItemUpdate,
     FbMenuList,
-    FbMenuItemRead,
     FbMenuService,
     RoomServiceOrderCreate,
     RoomServiceOrderList,
@@ -33,6 +34,7 @@ async def get_breakfast_status(
     request: Request,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:
     exists = await session.scalar(
@@ -40,7 +42,7 @@ async def get_breakfast_status(
         {"id": str(property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     return await iot_client.get_fb_breakfast_status(request)
 
@@ -50,6 +52,7 @@ async def list_restaurant_tables(
     request: Request,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     property_id: uuid.UUID = Query(...),
 ) -> Any:
     exists = await session.scalar(
@@ -57,7 +60,7 @@ async def list_restaurant_tables(
         {"id": str(property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     return await iot_client.get_fb_restaurant_tables(request)
 
@@ -156,10 +159,11 @@ async def update_menu_item(
     payload: FbMenuItemUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> FbMenuItemRead:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(item_id), "org_id": str(principal.org_id)}
@@ -200,7 +204,7 @@ async def update_menu_item(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Menu item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.fb.menu_item_not_found", locale))
 
     await session.commit()
     return FbMenuItemRead(**dict(row))
@@ -210,6 +214,7 @@ async def update_menu_item(
 async def list_room_service_orders(
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     property_id: uuid.UUID = Query(...),
     status: RoomServiceOrderStatus | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
@@ -220,7 +225,7 @@ async def list_room_service_orders(
         {"id": str(property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     filters = ["o.org_id = :org_id", "r.property_id = :property_id"]
     params: dict[str, object] = {
@@ -258,6 +263,7 @@ async def create_room_service_order(
     payload: RoomServiceOrderCreate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> RoomServiceOrderRead:
     # Validate property belongs to org.
     exists = await session.scalar(
@@ -265,7 +271,7 @@ async def create_room_service_order(
         {"id": str(payload.property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     # Validate room belongs to that property (and org via RLS).
     room_ok = await session.scalar(
@@ -279,7 +285,7 @@ async def create_room_service_order(
         {"room_id": str(payload.room_id), "org_id": str(principal.org_id), "property_id": str(payload.property_id)},
     )
     if room_ok is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
 
     st = (payload.status or RoomServiceOrderStatus.RECEIVED).value
     stmt = (
@@ -320,10 +326,11 @@ async def update_room_service_order(
     payload: RoomServiceOrderUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> RoomServiceOrderRead:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     # Load current order (and room/property linkage).
     current = (
@@ -340,7 +347,7 @@ async def update_room_service_order(
         )
     ).mappings().first()
     if current is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room service order not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.fb.order_not_found", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(order_id), "org_id": str(principal.org_id)}
@@ -362,7 +369,7 @@ async def update_room_service_order(
             },
         )
         if room_ok is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
         sets.append("room_id = :room_id")
         params["room_id"] = str(payload.room_id)
 
@@ -393,7 +400,7 @@ async def update_room_service_order(
 
     row = (await session.execute(stmt, params)).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room service order not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.fb.order_not_found", locale))
 
     await session.commit()
     return RoomServiceOrderRead(**dict(row))

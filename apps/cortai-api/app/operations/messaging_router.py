@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import uuid
-
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -9,6 +8,7 @@ from sqlalchemy import text
 
 from app.config import get_settings
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.internal_messaging_router import fake_dispatch_reply
 from app.live.publisher import publish_live_event
 from app.operations.messaging_dispatch import dispatch_outbound_message
@@ -83,6 +83,7 @@ async def list_thread_messages(
     thread_pk: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     limit: int = Query(default=200, ge=1, le=500),
 ) -> GuestMessageList:
     # Ensure the thread exists in this org (RLS-scoped) and fetch its thread_id.
@@ -97,7 +98,7 @@ async def list_thread_messages(
         {"id": str(thread_pk), "org_id": str(principal.org_id)},
     )
     if thread_id is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.messaging.thread_not_found", locale))
 
     rows = (
         await session.execute(
@@ -139,6 +140,7 @@ async def send_thread_message(
     request: Request,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     dispatch=DispatchDep,  # type: ignore[assignment]
 ) -> GuestMessageSendResponse:
     # Ensure the thread exists and fetch stable identifiers.
@@ -155,7 +157,7 @@ async def send_thread_message(
         )
     ).mappings().first()
     if thread_row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.messaging.thread_not_found", locale))
 
     thread_id = str(thread_row["thread_id"])
     guest_id = str(thread_row["guest_id"])
@@ -313,10 +315,11 @@ async def update_message_template(
     payload: GuestMessageTemplateUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> GuestMessageTemplateRead:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(template_id), "org_id": str(principal.org_id)}
@@ -349,7 +352,7 @@ async def update_message_template(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Template not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.messaging.template_not_found", locale))
     await session.commit()
     return GuestMessageTemplateRead(**dict(row))
 
@@ -360,6 +363,7 @@ async def assign_message_thread(
     payload: GuestMessageThreadAssignRequest,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> GuestMessageThreadRead:
     # Validate assignee exists in this org (avoid FK 500s).
     if payload.assigned_to_user_id is not None:
@@ -368,7 +372,7 @@ async def assign_message_thread(
             {"id": str(payload.assigned_to_user_id), "org_id": str(principal.org_id)},
         )
         if exists is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Assignee user not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.incidents.assignee_not_found", locale))
 
     row = (
         await session.execute(
@@ -393,7 +397,7 @@ async def assign_message_thread(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.messaging.thread_not_found", locale))
 
     # Emit replayable event.
     await publish_live_event(
@@ -417,6 +421,7 @@ async def mark_thread_read(
     thread_pk: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> GuestMessageThreadRead:
     row = (
         await session.execute(
@@ -437,7 +442,7 @@ async def mark_thread_read(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.messaging.thread_not_found", locale))
 
     await publish_live_event(
         session,
@@ -459,6 +464,7 @@ async def mark_thread_unread(
     thread_pk: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> GuestMessageThreadRead:
     row = (
         await session.execute(
@@ -479,7 +485,7 @@ async def mark_thread_unread(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Thread not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.messaging.thread_not_found", locale))
 
     await publish_live_event(
         session,

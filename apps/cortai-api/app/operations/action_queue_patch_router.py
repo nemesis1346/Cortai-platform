@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.live.publisher import publish_live_event
 from app.operations.action_queue_schemas import ActionQueueItem
 from app.operations.action_queue_update_schemas import ActionQueueUpdate
@@ -21,10 +22,11 @@ async def update_action_queue_item(
     payload: ActionQueueUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> ActionQueueItem:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(item_id), "org_id": str(principal.org_id)}
@@ -69,7 +71,7 @@ async def update_action_queue_item(
     ).mappings().first()
 
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Action queue item not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.action_queue.not_found", locale))
 
     event_type = "action_queue.updated"
     try:

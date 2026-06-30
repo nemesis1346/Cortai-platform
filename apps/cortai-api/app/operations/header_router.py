@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.operations.header_schemas import OperationsHeader
 from app.operations.rbac import OperationsPrincipalDep
 
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/header", tags=["operations-header"])
 async def get_operations_header(
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     property_id: uuid.UUID = Query(...),
 ) -> OperationsHeader:
     # Validate property belongs to org (RLS-scoped).
@@ -26,7 +28,7 @@ async def get_operations_header(
         {"pid": property_id},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     now = datetime.now(UTC)
 

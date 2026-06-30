@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import text
 
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.operations.rbac import OperationsPrincipalDep
 from app.operations.rooms_schemas import RoomDetail
 
@@ -18,6 +19,7 @@ async def get_room_detail(
     room_id: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> RoomDetail:
     room_row = (
         await session.execute(
@@ -36,7 +38,7 @@ async def get_room_detail(
         )
     ).mappings().first()
     if room_row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.room_not_found", locale))
 
     reservation_row = None
     if room_row.get("current_reservation_id"):

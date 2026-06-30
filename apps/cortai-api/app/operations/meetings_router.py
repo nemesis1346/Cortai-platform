@@ -7,6 +7,7 @@ from sqlalchemy import text
 
 from app.bridges import iot_client
 from app.db import SessionDep
+from app.i18n import LocaleDep, http_err
 from app.operations.meetings_schemas import (
     MeetingBookingCreate,
     MeetingBookingList,
@@ -27,6 +28,7 @@ router = APIRouter(prefix="/meetings", tags=["operations-meetings"])
 async def list_meeting_rooms(
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     property_id: uuid.UUID = Query(...),
 ) -> MeetingRoomList:
     exists = await session.scalar(
@@ -34,7 +36,7 @@ async def list_meeting_rooms(
         {"id": str(property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     rows = (
         await session.execute(
@@ -60,13 +62,14 @@ async def create_meeting_room(
     payload: MeetingRoomCreate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> MeetingRoomRead:
     exists = await session.scalar(
         text("select 1 from properties where id = :id and org_id = :org_id"),
         {"id": str(payload.property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     row = (
         await session.execute(
@@ -107,10 +110,11 @@ async def update_meeting_room(
     payload: MeetingRoomUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> MeetingRoomRead:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     current = (
         await session.execute(
@@ -125,7 +129,7 @@ async def update_meeting_room(
         )
     ).mappings().first()
     if current is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.room_not_found", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(room_id), "org_id": str(principal.org_id)}
@@ -151,7 +155,7 @@ async def update_meeting_room(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.room_not_found", locale))
 
     await session.commit()
     return MeetingRoomRead(**dict(row))
@@ -162,13 +166,14 @@ async def delete_meeting_room(
     room_id: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> None:
     deleted = await session.execute(
         text("delete from ops.meeting_rooms where id = :id and org_id = :org_id"),
         {"id": str(room_id), "org_id": str(principal.org_id)},
     )
     if (deleted.rowcount or 0) == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.room_not_found", locale))
     await session.commit()
     return None
 
@@ -177,6 +182,7 @@ async def delete_meeting_room(
 async def list_meeting_bookings(
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
     property_id: uuid.UUID = Query(...),
     meeting_room_id: uuid.UUID | None = Query(default=None),
     page: int = Query(default=1, ge=1),
@@ -187,7 +193,7 @@ async def list_meeting_bookings(
         {"id": str(property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
 
     where = ["org_id = :org_id", "property_id = :property_id"]
     params: dict[str, object] = {"org_id": str(principal.org_id), "property_id": str(property_id)}
@@ -237,15 +243,16 @@ async def create_meeting_booking(
     payload: MeetingBookingCreate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> MeetingBookingRead:
     exists = await session.scalar(
         text("select 1 from properties where id = :id and org_id = :org_id"),
         {"id": str(payload.property_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.common.property_not_found", locale))
     if payload.ends_at <= payload.starts_at:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ends_at must be after starts_at")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.meetings.ends_before_starts", locale))
 
     room_ok = await session.scalar(
         text(
@@ -258,7 +265,7 @@ async def create_meeting_booking(
         {"id": str(payload.meeting_room_id), "org_id": str(principal.org_id), "property_id": str(payload.property_id)},
     )
     if room_ok is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting room not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.room_not_found", locale))
 
     row = (
         await session.execute(
@@ -303,10 +310,11 @@ async def update_meeting_booking(
     payload: MeetingBookingUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> MeetingBookingRead:
     data = payload.model_dump(exclude_unset=True)
     if not data:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.common.no_fields_to_update", locale))
 
     current = (
         await session.execute(
@@ -321,12 +329,12 @@ async def update_meeting_booking(
         )
     ).mappings().first()
     if current is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.booking_not_found", locale))
 
     starts_at = data.get("starts_at", current["starts_at"])
     ends_at = data.get("ends_at", current["ends_at"])
     if ends_at <= starts_at:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="ends_at must be after starts_at")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=http_err("operations.meetings.ends_before_starts", locale))
 
     if payload.meeting_room_id is not None:
         room_ok = await session.scalar(
@@ -344,7 +352,7 @@ async def update_meeting_booking(
             },
         )
         if room_ok is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting room not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.room_not_found", locale))
 
     sets: list[str] = []
     params: dict[str, object] = {"id": str(booking_id), "org_id": str(principal.org_id)}
@@ -370,7 +378,7 @@ async def update_meeting_booking(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.booking_not_found", locale))
 
     await session.commit()
     return MeetingBookingRead(**dict(row))
@@ -382,6 +390,7 @@ async def set_meeting_booking_setup_status(
     payload: MeetingBookingSetupStatusUpdate,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> MeetingBookingRead:
     row = (
         await session.execute(
@@ -400,7 +409,7 @@ async def set_meeting_booking_setup_status(
         )
     ).mappings().first()
     if row is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.booking_not_found", locale))
 
     await session.commit()
     return MeetingBookingRead(**dict(row))
@@ -412,6 +421,7 @@ async def get_meeting_booking_attendance(
     booking_id: uuid.UUID,
     principal: OperationsPrincipalDep,
     session: SessionDep,
+    locale: LocaleDep,
 ) -> object:
     """
     Proxy attendance count from IoT bridge (door counter).
@@ -422,7 +432,7 @@ async def get_meeting_booking_attendance(
         {"id": str(booking_id), "org_id": str(principal.org_id)},
     )
     if exists is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=http_err("operations.meetings.booking_not_found", locale))
 
     return await iot_client.get_meeting_booking_attendance(request=request, booking_id=booking_id)
 
