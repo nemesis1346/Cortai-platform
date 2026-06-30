@@ -6,16 +6,16 @@ from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Any
 
+import sqlalchemy as sa
 from fastapi import Request, Response
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import text
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.auth.schemas import Principal
 from app.db import SessionLocal, set_current_org
-from sqlalchemy.dialects import postgresql
-import sqlalchemy as sa
 
 
 def _client_ip(request: Request) -> str | None:
@@ -35,92 +35,164 @@ def _should_audit(request: Request) -> bool:
     return path.startswith("/api/admin/") or path.startswith("/api/operations/")
 
 
+# ---------------------------------------------------------------------------
+# Snapshot registry
+#
+# Maps entity_type → SELECT SQL with :id and :org_id bind params.
+# Adding a new auditable entity is one line here.
+# ---------------------------------------------------------------------------
+
+_SNAPSHOT_QUERIES: dict[str, str] = {
+    # ── admin entities ──────────────────────────────────────────────────────
+    "admin_user": (
+        "select id, org_id, email, full_name, role, status, created_at, updated_at"
+        " from users where id = :id and org_id = :org_id"
+    ),
+    "admin_device": (
+        "select id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,"
+        " logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at"
+        " from platform.devices where id = :id and org_id = :org_id"
+    ),
+    "admin_property": (
+        "select id, org_id, name, slug, marsha_property_id, address, room_count, status,"
+        " created_at, updated_at"
+        " from properties where id = :id and org_id = :org_id"
+    ),
+    # ── ops entities ────────────────────────────────────────────────────────
+    "operations_incident": (
+        "select id, org_id, property_id, severity, status, title, description,"
+        " assigned_to, created_at, resolved_at"
+        " from ops.incidents where id = :id and org_id = :org_id"
+    ),
+    "operations_action_queue": (
+        "select id, org_id, type, source, room_id, guest_id, title,"
+        " assigned_to_user_id, sla_due_at, completed_at, parent_incident_id, created_at, updated_at"
+        " from ops.action_queue where id = :id and org_id = :org_id"
+    ),
+    "operations_menu_item": (
+        "select id, org_id, service, name_en, name_fr, price_cents, available,"
+        " created_at, updated_at"
+        " from ops.menu_items where id = :id and org_id = :org_id"
+    ),
+    "operations_fitness_class": (
+        "select id, org_id, property_id, name, instructor_name, starts_at, ends_at,"
+        " capacity, booked, location, description, status, created_at, updated_at"
+        " from ops.fitness_classes where id = :id and org_id = :org_id"
+    ),
+    "operations_fitness_checkin": (
+        "select id, org_id, property_id, guest_id, class_id, checked_in_at,"
+        " source, notes, created_at, updated_at"
+        " from ops.fitness_checkins where id = :id and org_id = :org_id"
+    ),
+    "operations_guest_service_request": (
+        "select id, org_id, property_id, room_id, guest_id, type, note,"
+        " assigned_to_user_id, completed_at, created_at, updated_at"
+        " from ops.guest_service_requests where id = :id and org_id = :org_id"
+    ),
+    "operations_meeting_room": (
+        "select id, org_id, property_id, name, capacity, created_at, updated_at"
+        " from ops.meeting_rooms where id = :id and org_id = :org_id"
+    ),
+    "operations_meeting_booking": (
+        "select id, org_id, property_id, meeting_room_id, organizer_guest_id_or_user_id,"
+        " title, attendees_count, starts_at, ends_at, setup_status, created_at, updated_at"
+        " from ops.meeting_bookings where id = :id and org_id = :org_id"
+    ),
+    "operations_guest_message_template": (
+        "select id, org_id, name, language, body_template, created_at, updated_at"
+        " from ops.guest_message_templates where id = :id and org_id = :org_id"
+    ),
+    "operations_guest_message_thread": (
+        "select id, org_id, property_id, thread_id, guest_id, status,"
+        " assigned_to_user_id, unread_count, last_message_at, created_at, updated_at"
+        " from ops.guest_message_threads where id = :id and org_id = :org_id"
+    ),
+    "operations_room": (
+        "select id, org_id, property_id, room_number, floor, type, status,"
+        " current_reservation_id, last_service_at, vip, created_at, updated_at"
+        " from ops.rooms where id = :id and org_id = :org_id"
+    ),
+    "operations_shift_handover": (
+        "select id, org_id, property_id, shift_date, shift_label, summary_md,"
+        " checklist_json, signed_by_user_id, signed_at, carry_forward_from_id,"
+        " created_at, updated_at"
+        " from ops.shift_handover where id = :id and org_id = :org_id"
+    ),
+    "operations_spa_service": (
+        "select id, org_id, property_id, name, description, duration_minutes,"
+        " price_cents, available, created_at, updated_at"
+        " from ops.spa_services where id = :id and org_id = :org_id"
+    ),
+    "operations_spa_appointment": (
+        "select id, org_id, property_id, guest_id, service, therapist_user_id,"
+        " starts_at, ends_at, status, created_at, updated_at"
+        " from ops.spa_appointments where id = :id and org_id = :org_id"
+    ),
+}
+
+# ---------------------------------------------------------------------------
+# Path → entity_type mapping
+#
+# Ordered most-specific first so longer prefixes win.
+# Adding a new route is one tuple here.
+# ---------------------------------------------------------------------------
+
+_PATH_TO_ENTITY: list[tuple[str, str]] = [
+    ("/api/admin/users",                          "admin_user"),
+    ("/api/admin/devices",                        "admin_device"),
+    ("/api/admin/properties",                     "admin_property"),
+    ("/api/operations/incidents",                 "operations_incident"),
+    ("/api/operations/action-queue",              "operations_action_queue"),
+    ("/api/operations/fb/menu",                   "operations_menu_item"),
+    ("/api/operations/fitness/classes",           "operations_fitness_class"),
+    ("/api/operations/fitness/checkins",          "operations_fitness_checkin"),
+    ("/api/operations/guest-services",            "operations_guest_service_request"),
+    ("/api/operations/meetings/rooms",            "operations_meeting_room"),
+    ("/api/operations/meetings/bookings",         "operations_meeting_booking"),
+    ("/api/operations/messaging/templates",       "operations_guest_message_template"),
+    ("/api/operations/messaging/threads",         "operations_guest_message_thread"),
+    ("/api/operations/rooms",                     "operations_room"),
+    ("/api/operations/shift-handover",            "operations_shift_handover"),
+    ("/api/operations/spa/services",              "operations_spa_service"),
+    ("/api/operations/spa/appointments",          "operations_spa_appointment"),
+]
+
+
 async def _best_effort_before_snapshot(
     *, session: AsyncSession, principal: Principal, entity_type: str, entity_id: str | None
 ) -> dict[str, Any] | None:
-    # Keep this intentionally narrow to avoid unexpected load.
     if entity_id is None:
         return None
-    if entity_type == "admin_user":
-        row = await session.execute(
-            text(
-                """
-                select id, org_id, email, full_name, role, status, created_at, updated_at
-                from users
-                where id = :id and org_id = :org_id
-                """
-            ),
-            {"id": entity_id, "org_id": str(principal.org_id)},
-        )
-        m = row.mappings().first()
-        return dict(m) if m is not None else None
-    if entity_type == "admin_device":
-        row = await session.execute(
-            text(
-                """
-                select id, org_id, property_id, device_id, type, capabilities, cert_fingerprint,
-                       logical_bindings, last_seen_at, is_offline, offline_since, created_at, updated_at
-                from platform.devices
-                where id = :id and org_id = :org_id
-                """
-            ),
-            {"id": entity_id, "org_id": str(principal.org_id)},
-        )
-        m = row.mappings().first()
-        return dict(m) if m is not None else None
-    if entity_type == "admin_property":
-        row = await session.execute(
-            text(
-                """
-                select id, org_id, name, slug, marsha_property_id, address, room_count, status, created_at, updated_at
-                from properties
-                where id = :id and org_id = :org_id
-                """
-            ),
-            {"id": entity_id, "org_id": str(principal.org_id)},
-        )
-        m = row.mappings().first()
-        return dict(m) if m is not None else None
-    if entity_type == "operations_incident":
-        row = await session.execute(
-            text(
-                """
-                select id, org_id, property_id, severity, status, title, description, assigned_to, created_at, resolved_at
-                from operations.incidents
-                where id = :id and org_id = :org_id
-                """
-            ),
-            {"id": entity_id, "org_id": str(principal.org_id)},
-        )
-        m = row.mappings().first()
-        return dict(m) if m is not None else None
-    return None
+    query = _SNAPSHOT_QUERIES.get(entity_type)
+    if query is None:
+        return None
+    row = await session.execute(
+        text(query),
+        {"id": entity_id, "org_id": str(principal.org_id)},
+    )
+    m = row.mappings().first()
+    return dict(m) if m is not None else None
 
 
 def _entity_type_for_path(path: str) -> str:
-    # Keep stable identifiers for reporting.
-    if path.startswith("/api/admin/users"):
-        return "admin_user"
-    if path.startswith("/api/admin/devices"):
-        return "admin_device"
-    if path.startswith("/api/admin/properties"):
-        return "admin_property"
-    if path.startswith("/api/operations/incidents"):
-        return "operations_incident"
-    if path.startswith("/api/operations/"):
-        return "operations"
+    for prefix, entity_type in _PATH_TO_ENTITY:
+        if path.startswith(prefix):
+            return entity_type
     return "unknown"
 
 
 def _entity_id_from_path(path: str) -> str | None:
     parts = [p for p in path.split("/") if p]
-    if len(parts) >= 4 and parts[0] == "api" and parts[1] in {"admin", "operations"}:
-        candidate = parts[3]
-        # Best effort: only log IDs that look like UUIDs.
+    if len(parts) < 4 or parts[0] != "api" or parts[1] not in {"admin", "operations"}:
+        return None
+    # Try position 3 (flat: /api/operations/rooms/{uuid})
+    # then position 4 (nested: /api/operations/meetings/rooms/{uuid}).
+    candidates = [parts[3]] + ([parts[4]] if len(parts) > 4 else [])
+    for candidate in candidates:
         try:
             return str(uuid.UUID(candidate))
-        except Exception:  # noqa: BLE001
-            return None
+        except Exception:  # noqa: BLE001,S112
+            continue
     return None
 
 
@@ -228,4 +300,3 @@ class AuditLogMiddleware(BaseHTTPMiddleware):
             await session.commit()
 
         return response
-
