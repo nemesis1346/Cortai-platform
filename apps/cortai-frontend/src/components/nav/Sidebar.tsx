@@ -170,7 +170,6 @@ export function Sidebar({ locale }: { locale: string }) {
           { id: "shiftHandover", label: t("shiftHandover"), href: (l) => `/${l}/dashboard/operations/shift-handover` },
           { id: "hvac", label: t("hvac"), href: (l) => `/${l}/dashboard/operations/hvac` },
           { id: "iotSensors", label: t("iotSensors"), href: (l) => `/${l}/dashboard/operations/iot-sensors` },
-          { id: "live", label: t("live"), href: (l) => `/${l}/dashboard/live` },
           { id: "edgeLive", label: t("edgeLive"), href: (l) => `/${l}/dashboard/edge/live` },
           { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` }
         ]
