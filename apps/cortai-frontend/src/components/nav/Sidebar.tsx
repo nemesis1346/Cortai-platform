@@ -81,14 +81,6 @@ function IconBroom() {
   );
 }
 
-function IconMessage() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-    </svg>
-  );
-}
-
 function IconBriefcase() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
@@ -162,14 +154,15 @@ export function Sidebar({ locale }: { locale: string }) {
           { id: "commandCenter", label: t("commandCenter"), href: (l) => `/${l}/dashboard/operations` },
           { id: "roomMonitor", label: t("roomMonitor"), href: (l) => `/${l}/dashboard/operations/room-monitor` },
           { id: "frontDesk", label: t("frontDesk"), href: (l) => `/${l}/dashboard/operations/front-desk` },
+          { id: "guestMessaging", label: t("guestMessaging"), href: (l) => `/${l}/dashboard/operations/guest-messaging` },
           { id: "guestServices", label: t("guestServices"), href: (l) => `/${l}/dashboard/operations/guest-services` },
           { id: "foodBreakfast", label: t("foodBreakfast"), href: (l) => `/${l}/dashboard/operations/food-breakfast` },
           { id: "poolSpa", label: t("poolSpa"), href: (l) => `/${l}/dashboard/operations/pool-spa` },
           { id: "fitness", label: t("fitness"), href: (l) => `/${l}/dashboard/operations/fitness` },
           { id: "meetingsEvents", label: t("meetingsEvents"), href: (l) => `/${l}/dashboard/operations/meetings-events` },
           { id: "shiftHandover", label: t("shiftHandover"), href: (l) => `/${l}/dashboard/operations/shift-handover` },
-          { id: "hvac", label: t("hvac"), href: (l) => `/${l}/dashboard/operations/hvac` },
-          { id: "iotSensors", label: t("iotSensors"), href: (l) => `/${l}/dashboard/operations/iot-sensors` },
+          { id: "hvac", label: t("hvac"), href: (l) => `/${l}/dashboard/operations/hvac`, roles: managerRoles },
+          { id: "iotSensors", label: t("iotSensors"), href: (l) => `/${l}/dashboard/operations/iot-sensors`, roles: managerRoles },
           { id: "edgeLive", label: t("edgeLive"), href: (l) => `/${l}/dashboard/edge/live` },
           { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` }
         ]
@@ -188,13 +181,6 @@ export function Sidebar({ locale }: { locale: string }) {
         icon: <IconBroom />,
         href: (l) => `/${l}/dashboard/housekeeping`,
         items: [{ id: "overview", label: t("overview"), href: (l) => `/${l}/dashboard/housekeeping` }]
-      },
-      {
-        id: "guestMessaging",
-        label: t("guestMessaging"),
-        icon: <IconMessage />,
-        href: (l) => `/${l}/dashboard/operations/guest-messaging`,
-        items: [{ id: "overview", label: t("overview"), href: (l) => `/${l}/dashboard/operations/guest-messaging` }]
       },
       {
         id: "sales",
