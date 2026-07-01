@@ -415,6 +415,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
           <button
             key={status}
             type="button"
+            data-testid={`status-filter-${status}`}
             onClick={() => pushQuery({ status: effective.status === status ? "" : status })}
             className="flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 transition"
             style={{
@@ -574,6 +575,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
                   <button
                     key={tab}
                     type="button"
+                    data-testid={`detail-tab-${tab}`}
                     onClick={() => setDetailTab(tab)}
                     className="px-4 py-2.5 text-[12px] transition"
                     style={{

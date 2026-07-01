@@ -261,6 +261,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
         ].map(({ label, v, sub, c }) => (
           <div
             key={label}
+            data-testid={`kpi-tile-${label.toLowerCase().replace(/ /g, "-")}`}
             className="rounded-xl border border-cortai-border px-4 py-3"
             style={{ background: "rgba(255,255,255,.02)" }}
           >
@@ -296,6 +297,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
                 <button
                   key={val}
                   type="button"
+                  data-testid={`status-filter-${val || "all"}`}
                   onClick={() => setStatusFilter(val as GuestServiceStatus | "")}
                   className="rounded-md px-2.5 py-1 text-[10px] font-semibold transition"
                   style={{
@@ -311,6 +313,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
               <select
                 value={typeFilter}
                 onChange={(e) => setTypeFilter(e.target.value as GuestServiceType | "")}
+                data-testid="type-filter-select"
                 className="rounded-md border border-cortai-border px-2 py-1 text-[10px] outline-none"
                 style={{ background: "#0d1929", color: "#4d7088" }}
               >
@@ -345,6 +348,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
             return (
               <div
                 key={item.id}
+                data-testid={`request-row-${item.id}`}
                 className="grid items-center border-b border-cortai-border/30 px-4 py-2.5 text-[11px] last:border-0"
                 style={{
                   gridTemplateColumns: "1.4fr 90px 56px 70px 70px 1fr",
@@ -399,6 +403,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
                     <button
                       type="button"
                       disabled={!user}
+                      data-testid={`request-assign-${item.id}`}
                       onClick={() => void patch(item.id, { status: "assigned", assigned_to_user_id: user?.id })}
                       className="rounded px-2 py-0.5 text-[9px] font-semibold transition hover:opacity-80 disabled:opacity-40"
                       style={{ background: "rgba(59,130,246,.12)", color: "#3b82f6", border: "1px solid rgba(59,130,246,.2)" }}
@@ -409,6 +414,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
                   {item.status !== "completed" ? (
                     <button
                       type="button"
+                      data-testid={`request-complete-${item.id}`}
                       onClick={() => void patch(item.id, { status: "completed" })}
                       className="rounded px-2 py-0.5 text-[9px] font-semibold transition hover:opacity-80"
                       style={{ background: "rgba(16,185,129,.12)", color: "#10b981", border: "1px solid rgba(16,185,129,.2)" }}
@@ -501,6 +507,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
           <label className="grid gap-1.5 text-xs text-cortai-text2">
             <span className="font-medium">{t("modal.type")}</span>
             <select
+              data-testid="modal-type-select"
               className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-2 text-sm text-cortai-text outline-none transition focus:border-cortai-teal"
               {...form.register("type")}
             >
@@ -515,7 +522,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
               {t("close")}
             </Button>
-            <Button type="submit" className="ml-auto" disabled={loading}>
+            <Button type="submit" className="ml-auto" data-testid="modal-submit" disabled={loading}>
               {t("modal.submit")}
             </Button>
           </div>

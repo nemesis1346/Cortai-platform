@@ -128,15 +128,17 @@ export function KpiTile({
   label,
   value,
   sub,
-  percent
+  percent,
+  testId
 }: {
   label: string;
   value: string;
   sub?: string;
   percent?: number;
+  testId?: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-[10px] border border-cortai-border bg-cortai-bg3 p-3">
+    <div className="flex items-center gap-2 rounded-[10px] border border-cortai-border bg-cortai-bg3 p-3" {...(testId ? { "data-testid": testId } : {})}>
       <div className="min-w-0 flex-1">
         <div className="text-[10px] text-cortai-text2">{label}</div>
         <div className="mt-0.5 font-mono text-xl font-bold leading-none text-cortai-text">{value}</div>
@@ -182,24 +184,28 @@ export function KpiTilesPanel({
         value={kpis ? `${kpis.occupancy_pct.toFixed(0)}%` : fallback}
         sub={kpis ? `${kpis.occupancy_rooms.used}/${kpis.occupancy_rooms.total}` : labels.today}
         percent={kpis?.occupancy_pct}
+        testId="kpi-tile-occupancy"
       />
       <KpiTile
         label={labels.guests}
         value={kpis ? String(kpis.guests_in_hotel) : fallback}
         sub={kpis ? `${kpis.guests_in_hotel}/${kpis.guests_total_capacity}` : labels.operations}
         percent={kpis ? (kpis.guests_in_hotel / Math.max(kpis.guests_total_capacity, 1)) * 100 : undefined}
+        testId="kpi-tile-guests"
       />
       <KpiTile
         label={labels.arrivals}
         value={kpis ? String(kpis.arrivals_today.count) : fallback}
         sub={kpis ? `${labels.arrived}: ${kpis.arrivals_today.arrived}` : labels.today}
         percent={kpis ? (kpis.arrivals_today.arrived / Math.max(kpis.arrivals_today.count, 1)) * 100 : undefined}
+        testId="kpi-tile-arrivals"
       />
       <KpiTile
         label={labels.departures}
         value={kpis ? String(kpis.departures_today.count) : fallback}
         sub={kpis ? `${labels.departed}: ${kpis.departures_today.departed}` : labels.today}
         percent={kpis ? (kpis.departures_today.departed / Math.max(kpis.departures_today.count, 1)) * 100 : undefined}
+        testId="kpi-tile-departures"
       />
     </div>
   );

@@ -277,7 +277,7 @@ export function CommandCenterClient({ initialPropertyId }: { initialPropertyId: 
     direction ? t(`elevators.directions.${direction}`) : dash;
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-4" data-testid="command-center-page">
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-cortai-border bg-cortai-bg2 px-4 py-3">
         <div>
           <h1 className="text-lg font-semibold">{t("title")}</h1>

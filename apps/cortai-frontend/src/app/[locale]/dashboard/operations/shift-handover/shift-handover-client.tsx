@@ -397,31 +397,35 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
       <div className="grid grid-cols-4 gap-3">
         {[
           {
+            tid:   "occupancy",
             label: t("summary.occupancy"),
             v:     kpis ? `${Math.round(kpis.occupancy_pct)}%` : "—",
             sub:   kpis ? `${kpis.occupancy_rooms.used} / ${kpis.occupancy_rooms.total} rooms` : "",
             c:     kpis && kpis.occupancy_pct >= 85 ? "#10b981" : kpis && kpis.occupancy_pct >= 70 ? "#f59e0b" : "#ef4444",
           },
           {
+            tid:   "arrivals-pending",
             label: "Arrivals Pending",
             v:     kpis ? Math.max(0, kpis.arrivals_today.count - kpis.arrivals_today.arrived) : "—",
             sub:   kpis ? `${kpis.arrivals_today.arrived} of ${kpis.arrivals_today.count} arrived` : "",
             c:     kpis && (kpis.arrivals_today.count - kpis.arrivals_today.arrived) > 0 ? "#f59e0b" : "#10b981",
           },
           {
+            tid:   "incidents",
             label: t("summary.incidents"),
             v:     incidents.length,
             sub:   `${critIncidents.length} critical / high`,
             c:     critIncidents.length > 0 ? "#ef4444" : incidents.length > 0 ? "#f59e0b" : "#10b981",
           },
           {
+            tid:   "requests",
             label: t("summary.requests"),
             v:     requests.length,
             sub:   `${checklist.filter((c) => !c.done).length} checklist items open`,
             c:     requests.length > 0 ? "#f59e0b" : "#10b981",
           },
-        ].map(({ label, v, sub, c }) => (
-          <div key={label} className="rounded-xl border border-cortai-border px-4 py-3" style={{ background: "rgba(255,255,255,.02)" }}>
+        ].map(({ tid, label, v, sub, c }) => (
+          <div key={label} data-testid={`kpi-tile-${tid}`} className="rounded-xl border border-cortai-border px-4 py-3" style={{ background: "rgba(255,255,255,.02)" }}>
             <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-cortai-text3">{label}</div>
             <div className="mt-1 font-mono text-[26px] font-bold leading-none" style={{ color: c }}>{v}</div>
             <div className="mt-1 text-[9px] text-cortai-text3">{sub}</div>
@@ -527,11 +531,13 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
                 <EmptyState message={t("checklist.empty")} className="px-4 py-6" testId="checklist-empty" />
               ) : checklist.map((item) => (
                 <div key={item.id}
+                  data-testid={`checklist-item-${item.id}`}
                   className="flex items-start gap-2 border-b border-cortai-border/30 px-4 py-2.5 last:border-0">
                   <input
                     type="checkbox"
                     checked={item.done}
                     disabled={signed}
+                    data-testid={`checklist-check-${item.id}`}
                     onChange={() => toggleItem(item.id)}
                     className="mt-0.5 shrink-0 accent-cortai-teal"
                   />
@@ -539,6 +545,7 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
                     {item.text}
                   </span>
                   <button type="button" disabled={signed} onClick={() => removeItem(item.id)}
+                    data-testid={`checklist-remove-${item.id}`}
                     className="shrink-0 text-[9px] transition hover:text-cortai-red disabled:opacity-40"
                     style={{ color: "#4d7088" }}>
                     ✕
@@ -553,10 +560,12 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
                   value={newItem}
                   onChange={(e) => setNewItem(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") addItem(); }}
+                  data-testid="checklist-add-input"
                   placeholder={t("checklist.placeholder")}
                   className="min-w-0 flex-1 rounded-md border border-cortai-border bg-cortai-bg2 px-2.5 py-1.5 text-[11px] text-cortai-text outline-none focus:border-cortai-teal"
                 />
                 <button type="button" onClick={addItem}
+                  data-testid="checklist-add-button"
                   className="rounded-md px-2.5 py-1.5 text-[10px] font-semibold transition hover:opacity-80"
                   style={{ background: "rgba(0,196,163,.12)", color: "#00c4a3", border: "1px solid rgba(0,196,163,.2)" }}>
                   {t("checklist.add")}
@@ -583,10 +592,12 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
                 onChange={(e) => { setNotes(e.target.value); setDirty(true); }}
                 rows={10}
                 disabled={signed}
+                data-testid="notes-textarea"
                 className="w-full rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-2 font-mono text-[11px] text-cortai-text outline-none transition placeholder:text-cortai-text3 focus:border-cortai-teal disabled:opacity-60"
               />
               {!signed && current?.handover ? (
                 <button type="button" onClick={() => void saveDraft()} disabled={loading || !dirty}
+                  data-testid="notes-save-draft"
                   className="mt-2 rounded-md px-3 py-1.5 text-[10px] font-semibold transition hover:opacity-80 disabled:opacity-40"
                   style={{ background: "rgba(0,196,163,.10)", color: "#00c4a3", border: "1px solid rgba(0,196,163,.2)" }}>
                   {t("saveDraft")}
@@ -596,7 +607,7 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
           </div>
 
           {/* Sign-off panel */}
-          <div className="overflow-hidden rounded-xl border border-cortai-border" style={{ background: "#080f1d" }}>
+          <div className="overflow-hidden rounded-xl border border-cortai-border" data-testid="signoff-panel" style={{ background: "#080f1d" }}>
             <div className="border-b border-cortai-border px-4 py-3">
               <div className="text-[12px] font-semibold text-cortai-text">Handoff Sign-Off</div>
               <div className="text-[9px] text-cortai-text3">Electronic · audit-logged · cannot be deleted</div>

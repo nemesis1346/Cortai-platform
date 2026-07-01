@@ -317,7 +317,7 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
             c:     alerts.length > 0 ? "#ef4444" : "#10b981",
           },
         ].map(({ label, v, sub, c }) => (
-          <div key={label} className="rounded-xl border border-cortai-border px-4 py-3" style={{ background: "rgba(255,255,255,.02)" }}>
+          <div key={label} data-testid={`kpi-tile-${label.toLowerCase().replace(/ /g, "-")}`} className="rounded-xl border border-cortai-border px-4 py-3" style={{ background: "rgba(255,255,255,.02)" }}>
             <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-cortai-text3">{label}</div>
             <div className="mt-1 font-mono text-[24px] font-bold leading-none" style={{ color: c }}>{v}</div>
             <div className="mt-1 text-[9px] text-cortai-text3">{sub}</div>
@@ -471,6 +471,7 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
                     </div>
                     <div className="flex gap-1.5">
                       <button type="button" onClick={() => openControl(room)}
+                        data-testid={`hvac-control-${room.room_id.slice(0, 8)}`}
                         className="rounded px-2 py-0.5 text-[9px] font-semibold transition hover:opacity-80"
                         style={{ background: "rgba(239,68,68,.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,.2)" }}>
                         Control
@@ -615,6 +616,7 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
                 step="0.5"
                 value={targetTemp}
                 onChange={(e) => setTargetTemp(e.target.value)}
+                data-testid="hvac-target-temp"
                 className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-2 text-sm text-cortai-text outline-none focus:border-cortai-teal"
                 placeholder={t("control.targetTempPlaceholder")}
               />
@@ -626,6 +628,7 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
+                data-testid="hvac-mode-select"
                 className="rounded-md border border-cortai-border bg-cortai-bg2 px-3 py-2 text-sm text-cortai-text outline-none focus:border-cortai-teal"
                 style={{ colorScheme: "dark" }}
               >
@@ -646,6 +649,7 @@ export function HvacClient({ initialPropertyId }: { initialPropertyId: string })
                 <input
                   type="range" min={0} max={3} step={1} value={fanIndex}
                   onChange={(e) => setFanIndex(Number.parseInt(e.target.value, 10))}
+                  data-testid="hvac-fan-speed"
                   className="flex-1 accent-cortai-teal"
                 />
                 <span className="text-[9px] text-cortai-text3">High</span>

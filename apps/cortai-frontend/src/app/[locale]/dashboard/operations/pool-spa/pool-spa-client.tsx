@@ -353,6 +353,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
           <button
             key={key}
             type="button"
+            data-testid={`tab-${key}`}
             onClick={() => setActiveTab(key)}
             className="flex items-center gap-2 rounded-lg px-3 py-2 text-[12px] font-semibold transition"
             style={{
@@ -387,7 +388,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
               { label: "Room Temp / RH",v: poolStatus ? `${poolStatus.pool_room_temp_f}°F / ${poolStatus.pool_humidity_pct}%` : "—", c: "#3b82f6" },
               { label: "Status",        v: poolStatus?.status ?? pool?.status ?? "—",                                     c: sc },
             ].map(({ label, v, c }) => (
-              <div key={label} className="rounded-xl border border-cortai-border px-3 py-3" style={{ background: "rgba(255,255,255,.02)" }}>
+              <div key={label} data-testid={`kpi-tile-${label.toLowerCase().replace(/ /g, "-")}`} className="rounded-xl border border-cortai-border px-3 py-3" style={{ background: "rgba(255,255,255,.02)" }}>
                 <div className="text-[9px] font-bold uppercase tracking-[0.08em] text-cortai-text3">{label}</div>
                 <div className="mt-1 font-mono text-[18px] font-bold leading-none" style={{ color: c }}>{v}</div>
               </div>
@@ -680,6 +681,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
                 <button
                   key={v}
                   type="button"
+                  data-testid={`view-toggle-${v}`}
                   onClick={() => setAppointmentsView(v)}
                   className="rounded-md px-2.5 py-1 text-[10px] font-semibold transition"
                   style={{
@@ -724,6 +726,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
                 return (
                   <div
                     key={a.id}
+                    data-testid={`appt-row-${a.id}`}
                     className="grid items-center border-b border-cortai-border/30 px-4 py-2.5 text-[11px] last:border-0 hover:bg-white/[.01]"
                     style={{ gridTemplateColumns: "1.2fr 90px 1fr 1fr 80px 1fr" }}
                   >
@@ -748,6 +751,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
                         {t("appointments.detail")}
                       </button>
                       <button type="button" onClick={() => openEditAppt(a)}
+                        data-testid={`appt-edit-${a.id}`}
                         className="rounded px-2 py-0.5 text-[9px] font-semibold transition hover:opacity-80"
                         style={{ background: "rgba(139,92,246,.12)", color: "#8b5cf6", border: "1px solid rgba(139,92,246,.2)" }}>
                         {t("appointments.edit")}
@@ -817,7 +821,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
           </label>
           <div className="flex items-center gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setSvcOpen(false)}>{t("close")}</Button>
-            <Button type="submit" className="ml-auto" disabled={loading}>{t("services.modal.submit")}</Button>
+            <Button type="submit" className="ml-auto" data-testid="service-modal-submit" disabled={loading}>{t("services.modal.submit")}</Button>
           </div>
         </form>
       </Modal>
@@ -837,7 +841,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
           <Input label={t("appointments.modal.status")}   error={apptForm.formState.errors.status?.message}    {...apptForm.register("status")} />
           <div className="flex items-center gap-2 pt-2">
             <Button type="button" variant="ghost" onClick={() => setApptOpen(false)}>{t("close")}</Button>
-            <Button type="submit" className="ml-auto" disabled={loading}>{t("appointments.modal.submit")}</Button>
+            <Button type="submit" className="ml-auto" data-testid="appt-modal-submit" disabled={loading}>{t("appointments.modal.submit")}</Button>
           </div>
         </form>
       </Modal>
