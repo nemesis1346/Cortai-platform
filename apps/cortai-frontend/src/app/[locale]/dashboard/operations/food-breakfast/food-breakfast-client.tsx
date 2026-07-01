@@ -8,6 +8,7 @@ import { z } from "zod";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -466,7 +467,7 @@ export function FoodBreakfastClient({ initialPropertyId }: { initialPropertyId: 
                     <div className="mt-1 text-[9px] text-cortai-text3">{breakfastPct}% capacity utilisation</div>
                   </div>
                 ) : (
-                  <div className="p-4 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("empty")}</div>
+                  <EmptyState message={loading ? t("loading") : t("empty")} className="p-4" testId="breakfast-occupancy-empty" />
                 )}
               </div>
 
@@ -482,7 +483,7 @@ export function FoodBreakfastClient({ initialPropertyId }: { initialPropertyId: 
                   </span>
                 </div>
                 {tables.length === 0 ? (
-                  <div className="p-4 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("tables.empty")}</div>
+                  <EmptyState message={loading ? t("loading") : t("tables.empty")} className="p-4" testId="tables-empty" />
                 ) : (
                   <div className="grid p-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 8 }}>
                     {tables.map((tb) => (
@@ -585,7 +586,7 @@ export function FoodBreakfastClient({ initialPropertyId }: { initialPropertyId: 
                   ) : null}
                 </div>
                 {activeOrders.length === 0 ? (
-                  <div className="p-4 text-center text-[11px] text-cortai-text3">No active orders</div>
+                  <EmptyState message="No active orders" className="p-4" testId="active-orders-empty" />
                 ) : (
                   <div>
                     {activeOrders.slice(0, 5).map((o) => {
@@ -690,7 +691,7 @@ export function FoodBreakfastClient({ initialPropertyId }: { initialPropertyId: 
 
           {/* Rows */}
           {(menu?.items ?? []).length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("menu.empty")}</div>
+            <EmptyState message={loading ? t("loading") : t("menu.empty")} testId="menu-empty" />
           ) : (menu?.items ?? []).map((it) => {
             const sc = MENU_SERVICE_CFG[it.service];
             return (
@@ -783,7 +784,7 @@ export function FoodBreakfastClient({ initialPropertyId }: { initialPropertyId: 
 
           {/* Rows */}
           {orders.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("roomService.empty")}</div>
+            <EmptyState message={loading ? t("loading") : t("roomService.empty")} testId="room-service-empty" />
           ) : orders.map((o) => {
             const sc = RS_STATUS_CFG[o.status];
             return (

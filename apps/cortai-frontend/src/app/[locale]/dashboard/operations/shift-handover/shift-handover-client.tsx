@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -523,7 +524,7 @@ export function ShiftHandoverClient({ initialPropertyId }: { initialPropertyId: 
 
             <div className="max-h-64 overflow-y-auto">
               {checklist.length === 0 ? (
-                <div className="px-4 py-6 text-center text-[11px] text-cortai-text3">{t("checklist.empty")}</div>
+                <EmptyState message={t("checklist.empty")} className="px-4 py-6" testId="checklist-empty" />
               ) : checklist.map((item) => (
                 <div key={item.id}
                   className="flex items-start gap-2 border-b border-cortai-border/30 px-4 py-2.5 last:border-0">
@@ -682,7 +683,7 @@ function SHSection({
         ) : null}
       </div>
       {count === 0 ? (
-        <div className="px-4 py-6 text-center text-[11px] text-cortai-text3">{empty}</div>
+        <EmptyState message={empty} className="px-4 py-6" />
       ) : (
         <div>{children}</div>
       )}

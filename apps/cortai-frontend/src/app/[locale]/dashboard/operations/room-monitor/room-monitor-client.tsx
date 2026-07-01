@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type RoomStatus = "vacant_clean" | "vacant_dirty" | "occupied" | "inspected" | "out_of_order";
 type DetailTab = "overview" | "equipment" | "history";
@@ -824,7 +825,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
                         </button>
                       </div>
                       {clItems.length === 0 ? (
-                        <div className="py-4 text-center text-[11px] text-cortai-text3">No cleaning logs yet</div>
+                        <EmptyState message="No cleaning logs yet" className="py-4" testId="cleaning-logs-empty" />
                       ) : (
                         <>
                           <div
@@ -880,7 +881,7 @@ export function RoomMonitorClient({ initialPropertyId }: { initialPropertyId: st
                         ) : null}
                       </div>
                       {shItems.length === 0 ? (
-                        <div className="py-4 text-center text-[11px] text-cortai-text3">No stay history yet</div>
+                        <EmptyState message="No stay history yet" className="py-4" testId="stay-history-empty" />
                       ) : (
                         <>
                           <div

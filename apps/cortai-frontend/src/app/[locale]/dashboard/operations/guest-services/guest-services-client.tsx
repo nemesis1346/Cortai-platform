@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -335,10 +336,8 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
           </div>
 
           {/* Rows */}
-          {loading && items.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{t("loading")}</div>
-          ) : items.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{t("empty")}</div>
+          {items.length === 0 ? (
+            <EmptyState message={loading ? t("loading") : t("empty")} testId="requests-empty" />
           ) : items.map((item) => {
             const pri = derivePriority(item);
             const sc  = STATUS_CFG[item.status];
@@ -437,7 +436,7 @@ export function GuestServicesClient({ initialPropertyId }: { initialPropertyId: 
             </div>
             <div className="p-4">
               {responseByType.length === 0 ? (
-                <div className="py-4 text-center text-[11px] text-cortai-text3">No completed requests yet</div>
+                <EmptyState message="No completed requests yet" className="py-4" testId="completed-requests-empty" />
               ) : responseByType.map(({ label, avgMin, pct }) => (
                 <div key={label} className="mb-3 last:mb-0">
                   <div className="mb-1.5 flex items-center justify-between">

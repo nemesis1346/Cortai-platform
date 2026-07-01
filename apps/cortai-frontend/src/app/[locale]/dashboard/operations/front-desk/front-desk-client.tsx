@@ -5,7 +5,9 @@ import { useTranslations } from "next-intl";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { Tabs } from "@/components/ui/Tabs";
 import { useRealtimeSocket } from "@/hooks/use-realtime-socket";
 
 type TabKey = "arrivals" | "in_hotel" | "departures" | "queue";
@@ -275,75 +277,49 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
       ) : null}
 
       {/* ── Tab Bar ────────────────────────────────────────────────────── */}
-      <div
-        className="flex items-center overflow-x-auto rounded-xl border border-cortai-border"
-        style={{ background: "#080f1d" }}
-        data-testid="front-desk-tabs"
-      >
-        {(
-          [
-            {
-              key: "arrivals" as TabKey,
-              label: "Arrivals",
-              sub: `${arrivalsItems.length} today · ${checkedInCount} in`,
-              icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M5 12h14M12 5l7 7-7 7"/></svg>,
-            },
-            {
-              key: "in_hotel" as TabKey,
-              label: "In-House",
-              sub: `${inHouseItems.length} rooms · ${inHouseVipCount} VIPs`,
-              icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-            },
-            {
-              key: "departures" as TabKey,
-              label: "Departures",
-              sub: `${departuresItems.length} today · ${stillInCount} to go`,
-              icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>,
-            },
-            {
-              key: "queue" as TabKey,
-              label: "Queue",
-              sub: `${queueCount} waiting`,
-              icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
-            },
-          ] as const
-        ).map(({ key, label, sub, icon }) => {
-          const active = tab === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setTab(key)}
-              className="flex shrink-0 items-center gap-2 whitespace-nowrap px-5 py-3.5 text-[11px] font-semibold transition"
-              style={{
-                color: active ? "#00c4a3" : "#4d7088",
-                borderBottom: active ? "2px solid #00c4a3" : "2px solid transparent",
-                background: active ? "rgba(0,196,163,.05)" : "transparent",
-              }}
-            >
-              {icon}
-              {label}
-              <span
-                className="rounded-full px-2 py-0.5 text-[9px]"
-                style={{
-                  background: active ? "rgba(0,196,163,.18)" : "rgba(255,255,255,.05)",
-                  color: active ? "#00c4a3" : "#4d7088",
-                }}
-              >
-                {sub}
-              </span>
-            </button>
-          );
-        })}
-        <div className="ml-auto flex items-center px-4">
+      <Tabs
+        value={tab}
+        onChange={(v) => setTab(v as TabKey)}
+        testId="front-desk-tabs"
+        rightSlot={
           <input
             type="text"
             placeholder="Search guest, confirm #, room…"
             className="rounded-lg border border-cortai-border bg-cortai-bg3 px-3 py-1.5 text-[11px] text-cortai-text outline-none focus:border-cortai-teal/50"
             style={{ width: 220 }}
           />
-        </div>
-      </div>
+        }
+        tabs={[
+          {
+            value: "arrivals",
+            label: "Arrivals",
+            sub: `${arrivalsItems.length} today · ${checkedInCount} in`,
+            icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M5 12h14M12 5l7 7-7 7"/></svg>,
+            testId: "tab-arrivals",
+          },
+          {
+            value: "in_hotel",
+            label: "In-House",
+            sub: `${inHouseItems.length} rooms · ${inHouseVipCount} VIPs`,
+            icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+            testId: "tab-in-hotel",
+          },
+          {
+            value: "departures",
+            label: "Departures",
+            sub: `${departuresItems.length} today · ${stillInCount} to go`,
+            icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>,
+            testId: "tab-departures",
+          },
+          {
+            value: "queue",
+            label: "Queue",
+            sub: `${queueCount} waiting`,
+            icon: <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" fill="none" strokeWidth="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>,
+            testId: "tab-queue",
+          },
+        ]}
+      />
 
       {/* ═══════════════════════════════════════════════════════════════════
           ARRIVALS TAB
@@ -417,10 +393,11 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
               </div>
 
               {/* Rows */}
-              {loading && filteredArrivals.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">Loading arrivals…</div>
-              ) : filteredArrivals.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">No arrivals for this filter</div>
+              {filteredArrivals.length === 0 ? (
+                <EmptyState
+                  message={loading ? "Loading arrivals…" : "No arrivals for this filter"}
+                  testId="arrivals-empty"
+                />
               ) : filteredArrivals.map((a) => {
                 const sc = getStatusCfg(a.status);
                 const isVip = a.guest.vip;
@@ -632,9 +609,10 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
               <div>Tier</div>
             </div>
             {inHouseItems.length === 0 ? (
-              <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">
-                {loading ? "Loading…" : "No guests currently in-house"}
-              </div>
+              <EmptyState
+                message={loading ? "Loading…" : "No guests currently in-house"}
+                testId="in-hotel-empty"
+              />
             ) : inHouseItems.map((r) => {
               const isVip = r.guest.vip;
               const nights = calcNights(r.check_in_at, r.check_out_at);
@@ -719,9 +697,10 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
               <div>Status</div>
             </div>
             {departuresItems.length === 0 ? (
-              <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">
-                {loading ? "Loading…" : "No departures today"}
-              </div>
+              <EmptyState
+                message={loading ? "Loading…" : "No departures today"}
+                testId="departures-empty"
+              />
             ) : departuresItems.map((r) => {
               const sc = getStatusCfg(r.status);
               const isVip = r.guest.vip;
@@ -788,9 +767,10 @@ export function FrontDeskClient({ initialPropertyId }: { initialPropertyId: stri
             <div>Action</div>
           </div>
           {(queue?.items ?? []).length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">
-              {loading ? t("loading") : t("queue.empty")}
-            </div>
+            <EmptyState
+              message={loading ? t("loading") : t("queue.empty")}
+              testId="queue-empty"
+            />
           ) : (queue?.items ?? []).map((item) => (
             <div
               key={item.event_id}

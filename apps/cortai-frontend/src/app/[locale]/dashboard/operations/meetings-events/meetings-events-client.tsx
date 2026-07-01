@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { DateTimeInput, toDatetimeLocal } from "@/components/ui/DateTimeInput";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -709,7 +710,7 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
                 <div>{t("bookings.cols.actions")}</div>
               </div>
               {bookings.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("bookings.empty")}</div>
+                <EmptyState message={loading ? t("loading") : t("bookings.empty")} testId="bookings-list-empty" />
               ) : bookings.map((booking) => {
                 const sc  = bookingStatusCfg(booking.setup_status);
                 const att = attendance[booking.id];
@@ -778,7 +779,7 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
           {bookingsView === "calendar" && (
             <div className="p-4" data-testid="meeting-bookings-calendar">
               {bookingCalendarGroups.length === 0 ? (
-                <div className="py-6 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("bookings.empty")}</div>
+                <EmptyState message={loading ? t("loading") : t("bookings.empty")} className="py-6" testId="bookings-calendar-empty" />
               ) : (
                 <div className="grid gap-3">
                   {bookingCalendarGroups.map(([day, items]) => (
@@ -853,7 +854,7 @@ export function MeetingsEventsClient({ initialPropertyId }: { initialPropertyId:
           </div>
 
           {rooms.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("rooms.empty")}</div>
+            <EmptyState message={loading ? t("loading") : t("rooms.empty")} testId="rooms-empty" />
           ) : rooms.map((room) => {
             const status = deriveRoomStatus(room.id, bookings);
             const sc     = roomStatusCfg(status);

@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { DateTimeInput, toDatetimeLocal } from "@/components/ui/DateTimeInput";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -449,7 +450,7 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
               </div>
 
               {equipment.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("equipment.empty")}</div>
+                <EmptyState message={loading ? t("loading") : t("equipment.empty")} testId="equipment-empty" />
               ) : equipment.map((e) => {
                 const sc = equipStatusCfg(e);
                 return (
@@ -609,7 +610,7 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
                 <div>{t("classes.cols.actions")}</div>
               </div>
               {classes.length === 0 ? (
-                <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("classes.empty")}</div>
+                <EmptyState message={loading ? t("loading") : t("classes.empty")} testId="classes-list-empty" />
               ) : classes.map((c) => {
                 const fill = classFillCfg(c.booked, c.capacity);
                 const sc   = classStatusCfg(c.status);
@@ -665,7 +666,7 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
           {classesView === "calendar" && (
             <div className="p-4" data-testid="fitness-classes-calendar">
               {classCalendarGroups.length === 0 ? (
-                <div className="py-6 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("classes.empty")}</div>
+                <EmptyState message={loading ? t("loading") : t("classes.empty")} className="py-6" testId="classes-calendar-empty" />
               ) : (
                 <div className="grid gap-3">
                   {classCalendarGroups.map(([day, items]) => (
@@ -736,7 +737,7 @@ export function FitnessClient({ initialPropertyId }: { initialPropertyId: string
           </div>
 
           {checkins.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("checkins.empty")}</div>
+            <EmptyState message={loading ? t("loading") : t("checkins.empty")} testId="checkins-empty" />
           ) : checkins.map((c) => (
             <button
               key={c.id}

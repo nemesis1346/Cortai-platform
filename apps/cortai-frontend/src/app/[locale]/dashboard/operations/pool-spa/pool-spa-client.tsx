@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/Button";
 import { DateTimeInput, toDatetimeLocal } from "@/components/ui/DateTimeInput";
 import { Input } from "@/components/ui/Input";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/Toast";
 
@@ -456,7 +457,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
                 </div>
                 <div className="p-4">
                   {!poolStatus ? (
-                    <div className="text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("empty")}</div>
+                    <EmptyState message={loading ? t("loading") : t("empty")} className="py-4" testId="pool-status-empty" />
                   ) : (
                     <>
                       <div className="mb-3 flex items-center gap-4">
@@ -504,7 +505,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
                 </div>
                 <div className="p-4">
                   {!poolStatus ? (
-                    <div className="text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("empty")}</div>
+                    <EmptyState message={loading ? t("loading") : t("empty")} className="py-4" testId="spa-status-empty" />
                   ) : (
                     <>
                       <div className="mb-3 flex items-center gap-4">
@@ -566,7 +567,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
               </button>
             </div>
             {upcomingAppts.length === 0 ? (
-              <div className="px-4 py-6 text-center text-[11px] text-cortai-text3">No upcoming appointments</div>
+              <EmptyState message="No upcoming appointments" className="px-4 py-6" testId="upcoming-appts-empty" />
             ) : (
               <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
                 {upcomingAppts.map((a) => {
@@ -634,7 +635,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
           </div>
 
           {services.length === 0 ? (
-            <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("services.empty")}</div>
+            <EmptyState message={loading ? t("loading") : t("services.empty")} testId="services-empty" />
           ) : services.map((s) => (
             <div
               key={s.id}
@@ -717,7 +718,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
                 <div>{t("appointments.cols.actions")}</div>
               </div>
               {(appointments?.items ?? []).length === 0 ? (
-                <div className="px-4 py-8 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("appointments.empty")}</div>
+                <EmptyState message={loading ? t("loading") : t("appointments.empty")} testId="appointments-list-empty" />
               ) : (appointments?.items ?? []).map((a) => {
                 const cfg = apptStatusCfg(a.status);
                 return (
@@ -762,7 +763,7 @@ export function PoolSpaClient({ initialPropertyId }: { initialPropertyId: string
           {appointmentsView === "calendar" && (
             <div className="p-4">
               {calendarGroups.length === 0 ? (
-                <div className="py-6 text-center text-[11px] text-cortai-text3">{loading ? t("loading") : t("appointments.empty")}</div>
+                <EmptyState message={loading ? t("loading") : t("appointments.empty")} className="py-6" testId="appointments-calendar-empty" />
               ) : (
                 <div className="grid gap-3">
                   {calendarGroups.map(([day, items]) => (
