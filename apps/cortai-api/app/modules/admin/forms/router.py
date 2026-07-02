@@ -89,6 +89,28 @@ async def list_forms(
     )
 
 
+@router.get("/by-slug/{slug}", response_model=FormDefinitionRead)
+async def get_form_by_slug(
+    slug: str, principal: PrincipalDep, session: SessionDep
+) -> FormDefinitionRead:
+    """Fetch the latest published version of a form by slug. All authenticated roles."""
+    row = await session.execute(
+        text(
+            f"{_SELECT}"
+            " where org_id = :org_id and slug = :slug and status = 'published'"
+            " order by version desc limit 1"
+        ),
+        {"org_id": str(principal.org_id), "slug": slug},
+    )
+    m = row.mappings().first()
+    if m is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Form not found or not published",
+        )
+    return FormDefinitionRead.model_validate(dict(m))
+
+
 @router.get("/{form_id}", response_model=FormDefinitionRead)
 async def get_form(
     form_id: uuid.UUID, principal: AdminPrincipalDep, session: SessionDep

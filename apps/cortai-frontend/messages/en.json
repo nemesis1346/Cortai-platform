@@ -1268,5 +1268,15 @@
     "loading": "Loading…",
     "empty": "No forms yet. Create one to get started.",
     "adminRestricted": "This section is restricted to administrators."
+  },
+  "formRunner": {
+    "loading": "Loading form…",
+    "notFound": "Form not found",
+    "notFoundDetail": "This form may have been archived or the link is incorrect.",
+    "backToForms": "Back to forms",
+    "submit": "Submit",
+    "successTitle": "Submitted successfully",
+    "successDetail": "Your response has been recorded.",
+    "submitAnother": "Submit another response"
   }
 }

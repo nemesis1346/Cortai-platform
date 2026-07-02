@@ -1268,5 +1268,15 @@
     "loading": "Chargement…",
     "empty": "Aucun formulaire. Créez-en un pour commencer.",
     "adminRestricted": "Cette section est réservée aux administrateurs."
+  },
+  "formRunner": {
+    "loading": "Chargement du formulaire…",
+    "notFound": "Formulaire introuvable",
+    "notFoundDetail": "Ce formulaire a peut-être été archivé ou le lien est incorrect.",
+    "backToForms": "Retour aux formulaires",
+    "submit": "Soumettre",
+    "successTitle": "Soumis avec succès",
+    "successDetail": "Votre réponse a été enregistrée.",
+    "submitAnother": "Soumettre une autre réponse"
   }
 }
