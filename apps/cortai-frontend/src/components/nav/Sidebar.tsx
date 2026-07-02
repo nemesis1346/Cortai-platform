@@ -164,7 +164,8 @@ export function Sidebar({ locale }: { locale: string }) {
           { id: "hvac", label: t("hvac"), href: (l) => `/${l}/dashboard/operations/hvac`, roles: managerRoles },
           { id: "iotSensors", label: t("iotSensors"), href: (l) => `/${l}/dashboard/operations/iot-sensors`, roles: managerRoles },
           { id: "edgeLive", label: t("edgeLive"), href: (l) => `/${l}/dashboard/edge/live` },
-          { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` }
+          { id: "incidentLog", label: t("incidentLog"), href: (l) => `/${l}/dashboard/security/incidents` },
+          { id: "operationsForms", label: t("operationsForms"), href: (l) => `/${l}/dashboard/operations/forms` }
         ]
       },
       {

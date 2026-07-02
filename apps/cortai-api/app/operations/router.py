@@ -14,6 +14,7 @@ from app.operations.action_queue_patch_router import router as action_queue_patc
 from app.operations.action_queue_post_router import router as action_queue_post_router
 from app.operations.fb_router import router as fb_router
 from app.operations.fitness_router import router as fitness_router
+from app.operations.form_submissions_router import router as form_submissions_router
 from app.operations.front_desk_router import router as front_desk_router
 from app.operations.guest_services_router import router as guest_services_router
 from app.operations.header_router import router as header_router
@@ -239,4 +240,5 @@ router.include_router(messaging_router)
 router.include_router(iot_sensors_router)
 router.include_router(housekeeping_router)
 router.include_router(header_router)
+router.include_router(form_submissions_router)
 

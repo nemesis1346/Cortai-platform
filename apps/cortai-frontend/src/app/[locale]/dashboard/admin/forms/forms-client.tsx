@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -100,6 +101,9 @@ type FormFields = z.infer<typeof formSchema>;
 
 export function FormsClient() {
   const t = useTranslations("forms");
+  const params = useParams();
+  const locale = (params.locale as string) ?? "en";
+  const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === "IT_ADMIN" || user?.role === "SERVICE_PROVIDER_ADMIN";
 
@@ -288,6 +292,13 @@ export function FormsClient() {
                   </Td>
                   <Td>
                     <div className="flex flex-wrap gap-1">
+                      <Button
+                        variant="ghost"
+                        onClick={() => router.push(`/${locale}/dashboard/admin/forms/${f.id}/submissions` as unknown as Parameters<typeof router.push>[0])}
+                        data-testid={`form-submissions-${f.id}`}
+                      >
+                        {t("submissions")}
+                      </Button>
                       <Button
                         variant="ghost"
                         onClick={() => setPreview(f)}

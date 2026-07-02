@@ -63,6 +63,11 @@ _SNAPSHOT_QUERIES: dict[str, str] = {
         " version, status, created_at, updated_at, published_at"
         " from platform.form_definitions where id = :id and org_id = :org_id"
     ),
+    "operations_form_submission": (
+        "select id, org_id, form_definition_id, form_version, submitted_by_user_id,"
+        " submitted_by_guest_id, source_property_id, status, created_at, updated_at, submitted_at"
+        " from platform.form_submissions where id = :id and org_id = :org_id"
+    ),
     # ── ops entities ────────────────────────────────────────────────────────
     "operations_incident": (
         "select id, org_id, property_id, severity, status, title, description,"
@@ -147,6 +152,7 @@ _PATH_TO_ENTITY: list[tuple[str, str]] = [
     ("/api/admin/devices",                        "admin_device"),
     ("/api/admin/properties",                     "admin_property"),
     ("/api/admin/form-definitions",               "admin_form_definition"),
+    ("/api/operations/form-submissions",          "operations_form_submission"),
     ("/api/operations/incidents",                 "operations_incident"),
     ("/api/operations/action-queue",              "operations_action_queue"),
     ("/api/operations/fb/menu",                   "operations_menu_item"),
