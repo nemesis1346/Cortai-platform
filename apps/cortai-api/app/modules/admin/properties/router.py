@@ -179,15 +179,17 @@ async def update_property(
     return PropertyRead.model_validate(prop)
 
 
-@router.delete("/{property_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{property_id}", response_model=PropertyRead)
 async def delete_property(
     property_id: uuid.UUID, principal: AdminPrincipalDep, session: SessionDep
-) -> None:
+) -> PropertyRead:
     prop = await session.scalar(
         select(Property).where(Property.id == property_id, Property.org_id == principal.org_id)
     )
     if prop is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Property not found")
+    snapshot = PropertyRead.model_validate(prop)
     await session.delete(prop)
     await session.commit()
+    return snapshot
 
