@@ -436,6 +436,7 @@ export function FormsClient() {
               <FormRenderer
                 schema={liveSchema}
                 uiHints={liveHints}
+                locale={locale}
                 onSubmit={async () => {}}
                 submitLabel={t("previewSubmit")}
               />
@@ -465,6 +466,7 @@ export function FormsClient() {
             <FormRenderer
               schema={preview.schema_json}
               uiHints={preview.ui_hints_json}
+              locale={locale}
               onSubmit={async (data) => {
                 console.info("Preview submit (no-op):", data);
                 setPreview(null);

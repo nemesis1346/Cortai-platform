@@ -42,6 +42,7 @@ class FormSubmissionRead(BaseModel):
     form_title_en: str | None = None
     form_title_fr: str | None = None
     form_schema_json: dict[str, Any] | None = None
+    ui_hints_json: dict[str, Any] | None = None
 
 
 class FormSubmissionList(BaseModel):

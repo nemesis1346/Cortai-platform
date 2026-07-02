@@ -17,6 +17,7 @@ import { type JSONSchema, jsonSchemaToZod } from "@/lib/json-schema-to-zod";
 export type UIHints = {
   order?: string[];
   labels?: Record<string, string>;
+  labels_fr?: Record<string, string>;
   placeholders?: Record<string, string>;
   hidden?: string[];
   readOnly?: string[];
@@ -26,6 +27,7 @@ type FieldProps = {
   name: string;
   schema: JSONSchema;
   hints: UIHints;
+  locale?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<any>;
   required: boolean;
@@ -33,12 +35,16 @@ type FieldProps = {
 
 // ── Field-level renderer ───────────────────────────────────────────────────────
 
-function Field({ name, schema, hints, form, required }: FieldProps) {
+function Field({ name, schema, hints, locale, form, required }: FieldProps) {
   const hidden = hints.hidden?.includes(name);
   if (hidden) return null;
 
   const readOnly = hints.readOnly?.includes(name) || schema.readOnly;
-  const label = hints.labels?.[name] ?? schema.title ?? name;
+  const label =
+    (locale === "fr" ? hints.labels_fr?.[name] : undefined) ??
+    hints.labels?.[name] ??
+    schema.title ??
+    name;
   const placeholder = hints.placeholders?.[name] ?? schema.description ?? "";
   const error = form.formState.errors[name]?.message as string | undefined;
   const t = primaryType(schema);
@@ -85,6 +91,7 @@ function Field({ name, schema, hints, form, required }: FieldProps) {
               name={`${name}.${k}`}
               schema={schema.properties![k]}
               hints={hints}
+              locale={locale}
               form={form}
               required={childReq.has(k)}
             />
@@ -101,6 +108,7 @@ function Field({ name, schema, hints, form, required }: FieldProps) {
         name={name}
         schema={schema}
         hints={hints}
+        locale={locale}
         form={form}
         label={label}
         required={required}
@@ -240,6 +248,7 @@ function ArrayField({
   name,
   schema,
   hints,
+  locale,
   form,
   label,
   required,
@@ -248,6 +257,7 @@ function ArrayField({
   name: string;
   schema: JSONSchema;
   hints: UIHints;
+  locale?: string;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: UseFormReturn<any>;
   label: string;
@@ -275,6 +285,7 @@ function ArrayField({
                   name={`${name}.${idx}`}
                   schema={itemSchema}
                   hints={hints}
+                  locale={locale}
                   form={form}
                   required={false}
                 />
@@ -283,6 +294,7 @@ function ArrayField({
                   name={`${name}.${idx}`}
                   schema={itemSchema}
                   hints={hints}
+                  locale={locale}
                   form={form}
                   required={false}
                 />
@@ -336,6 +348,7 @@ function orderedKeys(schema: JSONSchema, hints: UIHints): string[] {
 type FormRendererProps = {
   schema: JSONSchema;
   uiHints?: UIHints;
+  locale?: string;
   defaultValues?: Record<string, unknown>;
   onSubmit: (data: Record<string, unknown>) => Promise<void>;
   submitLabel?: string;
@@ -345,6 +358,7 @@ type FormRendererProps = {
 export function FormRenderer({
   schema,
   uiHints = {},
+  locale,
   defaultValues,
   onSubmit,
   submitLabel = "Submit",
@@ -379,6 +393,7 @@ export function FormRenderer({
           name={key}
           schema={props[key]}
           hints={uiHints}
+          locale={locale}
           form={form}
           required={reqSet.has(key)}
         />

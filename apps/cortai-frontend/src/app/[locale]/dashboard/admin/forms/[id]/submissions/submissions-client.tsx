@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { Table, Td } from "@/components/ui/Table";
 import { FormRenderer } from "@/components/forms/FormRenderer";
+import type { UIHints } from "@/components/forms/FormRenderer";
 import type { JSONSchema } from "@/lib/json-schema-to-zod";
 import { apiFetch } from "@/lib/api";
 
@@ -29,6 +30,7 @@ type Submission = {
   form_slug: string | null;
   form_title_en: string | null;
   form_schema_json: JSONSchema | null;
+  ui_hints_json: UIHints | null;
 };
 
 type SubmissionList = {
@@ -191,6 +193,8 @@ export function AdminSubmissionsClient({ formId }: { formId: string }) {
             </div>
             <FormRenderer
               schema={detail.form_schema_json}
+              uiHints={detail.ui_hints_json ?? undefined}
+              locale={locale}
               defaultValues={detail.payload_json}
               onSubmit={async () => {}}
               submitLabel={t("close")}

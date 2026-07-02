@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
+import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import type { BadgeTone } from "@/components/ui/Badge";
@@ -59,6 +60,8 @@ const SUB_STATUS_TONE: Record<SubmissionStatus, BadgeTone> = {
 
 export function FormsSubmitClient() {
   const t = useTranslations("formSubmissions");
+  const params = useParams();
+  const locale = (params.locale as string) ?? "en";
 
   const [publishedForms, setPublishedForms] = useState<FormDefinition[]>([]);
   const [mySubmissions, setMySubmissions] = useState<Submission[]>([]);
@@ -204,6 +207,7 @@ export function FormsSubmitClient() {
             <FormRenderer
               schema={activeForm.schema_json}
               uiHints={activeForm.ui_hints_json}
+              locale={locale}
               onSubmit={handleSubmit}
               submitLabel={t("submit")}
             />

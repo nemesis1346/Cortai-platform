@@ -31,7 +31,8 @@ _SELECT = """
       fd.slug  as form_slug,
       fd.title_en as form_title_en,
       fd.title_fr as form_title_fr,
-      fd.schema_json as form_schema_json
+      fd.schema_json as form_schema_json,
+      fd.ui_hints_json as ui_hints_json
     from platform.form_submissions fs
     join platform.form_definitions fd on fd.id = fs.form_definition_id
 """
