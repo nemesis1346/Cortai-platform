@@ -49,6 +49,7 @@
     "users": "Users",
     "devices": "Devices",
     "properties": "Properties",
+    "forms": "Forms",
     "adminRestricted": "Admin menu",
     "logout": "Log out",
     "loggingOut": "Logging out..."
@@ -1210,5 +1211,35 @@
     "previous": "Previous",
     "next": "Next",
     "rowsPerPage": "Rows per page"
+  },
+  "forms": {
+    "title": "Admin / Forms",
+    "subtitle": "Define JSON Schema forms rendered dynamically in the UI.",
+    "create": "New form",
+    "createForm": "Create form",
+    "editForm": "Edit form",
+    "slug": "Slug",
+    "titleEn": "Title (EN)",
+    "titleFr": "Title (FR)",
+    "version": "Version",
+    "status": "Status",
+    "actions": "Actions",
+    "schemaJson": "JSON Schema",
+    "uiHints": "UI hints (JSON)",
+    "livePreview": "Live preview",
+    "previewSubmit": "Submit (preview only)",
+    "preview": "Preview",
+    "edit": "Edit",
+    "publish": "Publish",
+    "archive": "Archive",
+    "delete": "Delete",
+    "close": "Close",
+    "save": "Save draft",
+    "update": "Update",
+    "saving": "Saving…",
+    "total": "total",
+    "loading": "Loading…",
+    "empty": "No forms yet. Create one to get started.",
+    "adminRestricted": "This section is restricted to administrators."
   }
 }

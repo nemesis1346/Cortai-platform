@@ -215,7 +215,8 @@ export function Sidebar({ locale }: { locale: string }) {
         items: [
           { id: "users", label: t("users"), href: (l) => `/${l}/dashboard/admin/users`, roles: adminRoles },
           { id: "properties", label: t("properties"), href: (l) => `/${l}/dashboard/admin/properties`, roles: adminRoles },
-          { id: "devices", label: t("devices"), href: (l) => `/${l}/dashboard/admin/devices`, roles: adminRoles }
+          { id: "devices", label: t("devices"), href: (l) => `/${l}/dashboard/admin/devices`, roles: adminRoles },
+          { id: "forms", label: t("forms"), href: (l) => `/${l}/dashboard/admin/forms`, roles: adminRoles }
         ]
       }
     ];

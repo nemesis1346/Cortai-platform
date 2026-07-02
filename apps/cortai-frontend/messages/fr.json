@@ -49,6 +49,7 @@
     "users": "Utilisateurs",
     "devices": "Appareils",
     "properties": "Propriétés",
+    "forms": "Formulaires",
     "adminRestricted": "Menu admin",
     "logout": "Se déconnecter",
     "loggingOut": "Déconnexion..."
@@ -1210,5 +1211,35 @@
     "previous": "Précédent",
     "next": "Suivant",
     "rowsPerPage": "Lignes par page"
+  },
+  "forms": {
+    "title": "Admin / Formulaires",
+    "subtitle": "Définissez des formulaires JSON Schema rendus dynamiquement dans l'interface.",
+    "create": "Nouveau formulaire",
+    "createForm": "Créer un formulaire",
+    "editForm": "Modifier le formulaire",
+    "slug": "Slug",
+    "titleEn": "Titre (EN)",
+    "titleFr": "Titre (FR)",
+    "version": "Version",
+    "status": "Statut",
+    "actions": "Actions",
+    "schemaJson": "JSON Schema",
+    "uiHints": "Indications UI (JSON)",
+    "livePreview": "Aperçu en direct",
+    "previewSubmit": "Soumettre (aperçu seulement)",
+    "preview": "Aperçu",
+    "edit": "Modifier",
+    "publish": "Publier",
+    "archive": "Archiver",
+    "delete": "Supprimer",
+    "close": "Fermer",
+    "save": "Enregistrer le brouillon",
+    "update": "Mettre à jour",
+    "saving": "Enregistrement…",
+    "total": "total",
+    "loading": "Chargement…",
+    "empty": "Aucun formulaire. Créez-en un pour commencer.",
+    "adminRestricted": "Cette section est réservée aux administrateurs."
   }
 }
