@@ -2,11 +2,12 @@ import uuid
 from datetime import UTC, datetime
 
 import sqlalchemy as sa
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select, text
 from sqlalchemy.dialects import postgresql
 
 from app.auth.dependencies import PrincipalDep
+from app.auth.rate_limit import auth_rate_limit, client_ip
 from app.auth.schemas import AuthUser, LoginRequest, TokenResponse
 from app.auth.security import create_token, verify_password
 from app.config import get_settings
@@ -14,13 +15,6 @@ from app.db import SessionDep, SessionLocal, set_current_org
 from app.models import Organization, User, UserStatus
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
-
-
-def _req_ip(request: Request) -> str | None:
-    xff = request.headers.get("x-forwarded-for")
-    if xff:
-        return xff.split(",", 1)[0].strip() or None
-    return request.client.host if request.client else None
 
 
 async def _record_login_event(
@@ -74,11 +68,11 @@ def set_auth_cookie(response: Response, token_response: TokenResponse) -> None:
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse, dependencies=[Depends(auth_rate_limit)])
 async def login(
     payload: LoginRequest, request: Request, response: Response, session: SessionDep
 ) -> TokenResponse:
-    ip = _req_ip(request)
+    ip = client_ip(request)
     ua = request.headers.get("user-agent")
 
     org_slug = payload.org_slug
@@ -131,7 +125,7 @@ async def me(principal: PrincipalDep, session: SessionDep) -> AuthUser:
     )
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/refresh", response_model=TokenResponse, dependencies=[Depends(auth_rate_limit)])
 async def refresh(
     principal: PrincipalDep, response: Response, session: SessionDep
 ) -> TokenResponse:
