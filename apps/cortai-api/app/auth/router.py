@@ -1,14 +1,63 @@
-from fastapi import APIRouter, HTTPException, Response, status
-from sqlalchemy import select
+import uuid
+from datetime import UTC, datetime
+
+import sqlalchemy as sa
+from fastapi import APIRouter, HTTPException, Request, Response, status
+from sqlalchemy import select, text
+from sqlalchemy.dialects import postgresql
 
 from app.auth.dependencies import PrincipalDep
 from app.auth.schemas import AuthUser, LoginRequest, TokenResponse
 from app.auth.security import create_token, verify_password
 from app.config import get_settings
-from app.db import SessionDep, set_current_org
+from app.db import SessionDep, SessionLocal, set_current_org
 from app.models import Organization, User, UserStatus
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+
+def _req_ip(request: Request) -> str | None:
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",", 1)[0].strip() or None
+    return request.client.host if request.client else None
+
+
+async def _record_login_event(
+    org_id: uuid.UUID,
+    *,
+    user_id: uuid.UUID | None,
+    email: str,
+    result: str,
+    ip: str | None,
+    user_agent: str | None,
+) -> None:
+    """Write a login success/failure row to audit.change_log. Never raises."""
+    try:
+        async with SessionLocal() as session:
+            await set_current_org(session, str(org_id))
+            await session.execute(
+                text(
+                    "insert into audit.change_log"
+                    " (id, org_id, user_id, action, entity_type, entity_id,"
+                    "  after_json, ts, ip, user_agent)"
+                    " values (:id, :org_id, :user_id, 'post', 'auth_login', :entity_id,"
+                    "  :after_json, :ts, :ip, :user_agent)"
+                ).bindparams(sa.bindparam("after_json", type_=postgresql.JSONB)),
+                {
+                    "id": str(uuid.uuid4()),
+                    "org_id": str(org_id),
+                    "user_id": str(user_id) if user_id else None,
+                    "entity_id": str(user_id) if user_id else None,
+                    "after_json": {"result": result, "email": email},
+                    "ts": datetime.now(UTC),
+                    "ip": ip,
+                    "user_agent": user_agent,
+                },
+            )
+            await session.commit()
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def set_auth_cookie(response: Response, token_response: TokenResponse) -> None:
@@ -26,7 +75,12 @@ def set_auth_cookie(response: Response, token_response: TokenResponse) -> None:
 
 
 @router.post("/login", response_model=TokenResponse)
-async def login(payload: LoginRequest, response: Response, session: SessionDep) -> TokenResponse:
+async def login(
+    payload: LoginRequest, request: Request, response: Response, session: SessionDep
+) -> TokenResponse:
+    ip = _req_ip(request)
+    ua = request.headers.get("user-agent")
+
     org_slug = payload.org_slug
     organization = await session.scalar(select(Organization).where(Organization.slug == org_slug))
     if organization is None:
@@ -37,12 +91,28 @@ async def login(payload: LoginRequest, response: Response, session: SessionDep) 
         select(User).where(User.org_id == organization.id, User.email == payload.email.lower())
     )
     if user is None or not verify_password(payload.password, user.password_hash):
+        await _record_login_event(
+            organization.id,
+            user_id=None,
+            email=payload.email.lower(),
+            result="failure",
+            ip=ip,
+            user_agent=ua,
+        )
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if user.status != UserStatus.ACTIVE:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User is not active")
 
     token_response = create_token(user)
     set_auth_cookie(response, token_response)
+    await _record_login_event(
+        organization.id,
+        user_id=user.id,
+        email=user.email,
+        result="success",
+        ip=ip,
+        user_agent=ua,
+    )
     return token_response
 
 
