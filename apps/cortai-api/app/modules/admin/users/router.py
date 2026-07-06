@@ -9,6 +9,7 @@ from app.auth.dependencies import PrincipalDep, require_roles_dep
 from app.auth.password_policy import CURRENT_POLICY_VERSION, validate_password
 from app.auth.revocation import invalidate_user_sessions
 from app.auth.security import hash_password
+from app.bridges.email_client import send_email
 from app.db import SessionDep
 from app.models import User, UserRole
 from app.modules.admin.users.schemas import UserCreate, UserList, UserRead, UserUpdate
@@ -109,12 +110,39 @@ async def update_user(
         user.password_changed_at = datetime.now(UTC)
         user.password_policy_version = CURRENT_POLICY_VERSION
         await invalidate_user_sessions(user.id)
+        _changed_by = principal.email if str(principal.user_id) != str(user.id) else None
+        await _notify_password_changed(user.email, user.full_name, _changed_by)
     for field, value in data.items():
         setattr(user, field, value)
 
     await session.commit()
     await session.refresh(user)
     return UserRead.model_validate(user)
+
+
+async def _notify_password_changed(
+    user_email: str, user_name: str, changed_by: str | None
+) -> None:
+    """Send password_changed email — best effort, never raises."""
+    import logging
+    from datetime import UTC, datetime
+    log = logging.getLogger(__name__)
+    try:
+        now = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+        for locale in ("en", "fr"):
+            await send_email(
+                to=user_email,
+                template_name="password_changed",
+                locale=locale,
+                context={
+                    "user_name": user_name,
+                    "user_email": user_email,
+                    "changed_at": now,
+                    "changed_by": changed_by,
+                },
+            )
+    except Exception:  # noqa: BLE001
+        log.exception("Failed to send password_changed email to %s", user_email)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
