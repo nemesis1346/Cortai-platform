@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 import bcrypt
 import jwt
 from fastapi import HTTPException, Request, status
+from pydantic import ValidationError
 
 from app.auth.schemas import AuthUser, Principal, TokenClaims, TokenResponse
 from app.config import get_settings
@@ -36,11 +37,13 @@ def create_token(user: User) -> TokenResponse:
     settings = get_settings()
     now = datetime.now(UTC)
     expires_at = now + timedelta(seconds=settings.jwt_ttl_seconds)
+    jti = str(uuid.uuid4())
     payload = {
         "sub": str(user.id),
         "org_id": str(user.org_id),
         "email": user.email,
         "role": user.role.value,
+        "jti": jti,
         "iat": int(now.timestamp()),
         "exp": int(expires_at.timestamp()),
         "iss": settings.jwt_issuer,
@@ -70,7 +73,8 @@ def decode_token(token: str) -> Principal:
                 issuer=settings.jwt_issuer,
             )
         )
-    except jwt.PyJWTError as exc:
+    except (jwt.PyJWTError, ValidationError) as exc:
+        # ValidationError catches tokens issued before jti was added to the schema.
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
         ) from exc
@@ -80,6 +84,8 @@ def decode_token(token: str) -> Principal:
         org_id=uuid.UUID(claims.org_id),
         email=claims.email,
         role=claims.role,
+        jti=claims.jti,
+        iat=claims.iat,
     )
 
 

@@ -7,6 +7,7 @@ from sqlalchemy import func, select
 
 from app.auth.dependencies import PrincipalDep, require_roles_dep
 from app.auth.password_policy import CURRENT_POLICY_VERSION, validate_password
+from app.auth.revocation import invalidate_user_sessions
 from app.auth.security import hash_password
 from app.db import SessionDep
 from app.models import User, UserRole
@@ -107,6 +108,7 @@ async def update_user(
         user.password_hash = hash_password(password)
         user.password_changed_at = datetime.now(UTC)
         user.password_policy_version = CURRENT_POLICY_VERSION
+        await invalidate_user_sessions(user.id)
     for field, value in data.items():
         setattr(user, field, value)
 

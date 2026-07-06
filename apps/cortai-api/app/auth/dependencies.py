@@ -3,6 +3,7 @@ from typing import Annotated, cast
 
 from fastapi import Depends, HTTPException, Request, status
 
+from app.auth.revocation import is_token_revoked
 from app.auth.schemas import Principal
 from app.auth.security import decode_token, require_roles, token_from_request
 from app.models import UserRole
@@ -18,7 +19,15 @@ async def get_principal(request: Request) -> Principal:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required"
         )
-    return decode_token(token)
+    principal = decode_token(token)
+
+    if await is_token_revoked(principal.user_id, principal.iat, principal.jti):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session invalidated. Please log in again.",
+        )
+
+    return principal
 
 
 PrincipalDep = Annotated[Principal, Depends(get_principal)]

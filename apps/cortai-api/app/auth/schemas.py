@@ -11,6 +11,7 @@ class TokenClaims(BaseModel):
     org_id: str
     role: UserRole
     email: EmailStr
+    jti: str
     exp: int
     iat: int
     iss: str
@@ -22,6 +23,8 @@ class Principal(BaseModel):
     org_id: uuid.UUID
     email: EmailStr
     role: UserRole
+    jti: str
+    iat: int
 
 
 class LoginRequest(BaseModel):
