@@ -50,11 +50,15 @@ class Settings(BaseSettings):
     aws_access_key_id: str | None = None
     aws_secret_access_key: str | None = None
 
-    # Notifications (email)
+    # Notifications (email) — legacy escalation sender
     email_mode: str = "mock"  # mock|real
     email_from: str | None = None
     email_escalations_to: str | None = None
     email_ses_region: str | None = None
+
+    # Templated email bridge (NOTIF-02)
+    email_bridge_mode: str = "mock"  # mock|real
+    email_sink_path: str = "/tmp/cortai_email_sink.jsonl"
 
 
 @lru_cache
