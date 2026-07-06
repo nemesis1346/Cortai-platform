@@ -1,11 +1,12 @@
 import uuid
-
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, select
 
 from app.auth.dependencies import PrincipalDep, require_roles_dep
+from app.auth.password_policy import CURRENT_POLICY_VERSION, validate_password
 from app.auth.security import hash_password
 from app.db import SessionDep
 from app.models import User, UserRole
@@ -70,6 +71,8 @@ async def create_user(
     if existing is not None:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already exists")
 
+    validate_password(payload.password)
+    now = datetime.now(UTC)
     user = User(
         org_id=principal.org_id,
         email=payload.email.lower(),
@@ -77,6 +80,8 @@ async def create_user(
         role=payload.role,
         status=payload.status,
         password_hash=hash_password(payload.password),
+        password_policy_version=CURRENT_POLICY_VERSION,
+        password_changed_at=now,
     )
     session.add(user)
     await session.commit()
@@ -98,7 +103,10 @@ async def update_user(
     if "email" in data and data["email"] is not None:
         data["email"] = data["email"].lower()
     if password := data.pop("password", None):
+        validate_password(password)
         user.password_hash = hash_password(password)
+        user.password_changed_at = datetime.now(UTC)
+        user.password_policy_version = CURRENT_POLICY_VERSION
     for field, value in data.items():
         setattr(user, field, value)
 

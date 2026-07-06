@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import sqlalchemy as sa
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -12,7 +12,7 @@ from app.auth.schemas import AuthUser, LoginRequest, TokenResponse
 from app.auth.security import create_token, verify_password
 from app.config import get_settings
 from app.db import SessionDep, SessionLocal, set_current_org
-from app.models import Organization, User, UserStatus
+from app.models import Organization, User, UserRole, UserStatus
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -110,11 +110,18 @@ async def login(
     return token_response
 
 
+_ROTATION_DAYS = 180
+
+
 @router.get("/me", response_model=AuthUser)
 async def me(principal: PrincipalDep, session: SessionDep) -> AuthUser:
     user = await session.get(User, principal.user_id)
     if user is None or user.status != UserStatus.ACTIVE:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid session")
+    rotation_due = (
+        user.role == UserRole.IT_ADMIN
+        and datetime.now(UTC) - user.password_changed_at > timedelta(days=_ROTATION_DAYS)
+    )
     return AuthUser(
         id=user.id,
         org_id=user.org_id,
@@ -122,6 +129,7 @@ async def me(principal: PrincipalDep, session: SessionDep) -> AuthUser:
         full_name=user.full_name,
         role=user.role,
         status=user.status,
+        password_rotation_due=rotation_due,
     )
 
 

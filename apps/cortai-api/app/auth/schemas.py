@@ -49,6 +49,7 @@ class AuthUser(BaseModel):
     full_name: str
     role: UserRole
     status: UserStatus
+    password_rotation_due: bool = False
 
 
 class TokenResponse(BaseModel):

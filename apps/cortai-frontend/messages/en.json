@@ -1278,5 +1278,9 @@
     "successTitle": "Submitted successfully",
     "successDetail": "Your response has been recorded.",
     "submitAnother": "Submit another response"
+  },
+  "passwordRotationBanner": {
+    "message": "Your password is over 180 days old. Please update it to maintain IT Admin access.",
+    "action": "Change password"
   }
 }

@@ -1278,5 +1278,9 @@
     "successTitle": "Soumis avec succès",
     "successDetail": "Votre réponse a été enregistrée.",
     "submitAnother": "Soumettre une autre réponse"
+  },
+  "passwordRotationBanner": {
+    "message": "Votre mot de passe a plus de 180 jours. Veuillez le mettre à jour pour conserver votre accès administrateur.",
+    "action": "Changer le mot de passe"
   }
 }

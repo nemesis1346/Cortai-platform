@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { PasswordRotationBanner } from "@/components/auth/PasswordRotationBanner";
 import { LocaleToggleLinks } from "@/components/i18n/LocaleToggleLinks";
 import { PropertySwitcher } from "@/components/nav/PropertySwitcher";
 import { Sidebar } from "@/components/nav/Sidebar";
@@ -32,6 +33,7 @@ export default async function DashboardLayout({
             <LogoutButton />
           </div>
         </header>
+        <PasswordRotationBanner locale={params.locale} />
         <div className="flex-1 overflow-y-auto p-4">{children}</div>
       </section>
     </main>

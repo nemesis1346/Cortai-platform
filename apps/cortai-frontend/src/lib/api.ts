@@ -8,6 +8,7 @@ export type AuthUser = {
   full_name: string;
   role: UserRole;
   status: UserStatus;
+  password_rotation_due: boolean;
 };
 
 export type AdminUser = AuthUser & {
